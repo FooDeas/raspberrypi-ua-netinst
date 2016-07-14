@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-KERNEL_VERSION_RPI1=4.4.0-1-rpi
-KERNEL_VERSION_RPI2=4.4.0-1-rpi2
-
 RASPBIAN_ARCHIVE_KEY_DIRECTORY="https://archive.raspbian.org"
 RASPBIAN_ARCHIVE_KEY_FILE_NAME="raspbian.public.key"
 RASPBIAN_ARCHIVE_KEY_URL="${RASPBIAN_ARCHIVE_KEY_DIRECTORY}/${RASPBIAN_ARCHIVE_KEY_FILE_NAME}"
@@ -13,15 +10,15 @@ RASPBERRYPI_ARCHIVE_KEY_FILE_NAME="raspberrypi.gpg.key"
 RASPBERRYPI_ARCHIVE_KEY_URL="${RASPBERRYPI_ARCHIVE_KEY_DIRECTORY}/${RASPBERRYPI_ARCHIVE_KEY_FILE_NAME}"
 RASPBERRYPI_ARCHIVE_KEY_FINGERPRINT="CF8A1AF502A2AA2D763BAE7E82B129927FA3303E"
 
-mirror=http://archive.raspbian.org/raspbian/
+mirror_raspbian=http://archive.raspbian.org/raspbian/
+mirror_raspberrypi=http://archive.raspberrypi.org/debian/
 release=jessie
 
 packages=()
 
 # programs
-packages+=("raspberrypi-bootloader-nokernel")
-packages+=("linux-image-${KERNEL_VERSION_RPI1}")
-packages+=("linux-image-${KERNEL_VERSION_RPI2}")
+packages+=("raspberrypi-bootloader")
+packages+=("raspberrypi-kernel")
 packages+=("btrfs-tools")
 packages+=("busybox")
 packages+=("cdebootstrap-static")
@@ -191,15 +188,15 @@ download_package_list() {
     for extension in "${extensions[@]}" ; do
 
         # Check that this extension is available
-        if grep -q ${package_section}/binary-armhf/Packages${extension} Release ; then
+        if grep -q ${package_section}/binary-armhf/Packages${extension} $1_Release ; then
 
             # Download Packages file
             echo -e "\nDownloading ${package_section} package list..."
-            curl -# -o tmp${extension} $mirror/dists/$release/$package_section/binary-armhf/Packages${extension}
+            curl -# -o tmp${extension} $2/dists/$release/$package_section/binary-armhf/Packages${extension}
 
             # Verify the checksum of the Packages file, assuming that the last checksums in the Release file are SHA256 sums
             echo -n "Verifying ${package_section} package list... "
-            if [ $(grep ${package_section}/binary-armhf/Packages${extension} Release | tail -n1 | awk '{print $1}') = \
+            if [ $(grep ${package_section}/binary-armhf/Packages${extension} $1_Release | tail -n1 | awk '{print $1}') = \
                  $(sha256sum tmp${extension} | awk '{print $1}') ]; then
                 echo "OK"
             else
@@ -218,7 +215,7 @@ download_package_list() {
             elif [ $extension = "" ] ; then
                 decompressor="cat "
             fi
-            ${decompressor} tmp${extension} >> Packages
+            ${decompressor} tmp${extension} >> $1_Packages
             rm tmp${extension}
             break
         fi
@@ -226,7 +223,6 @@ download_package_list() {
 }
 
 download_package_lists() {
-
     setup_archive_keys
     if [ $? != 0 ] ; then
         echo -e "ERROR\nSetting up the archives failed! Exiting."
@@ -235,9 +231,10 @@ download_package_lists() {
     fi
 
     echo -e "\nDownloading Release file and its signature..."
-    curl -# -O $mirror/dists/$release/Release -O $mirror/dists/$release/Release.gpg
+    curl -# -o $1_Release $2/dists/$release/Release
+    curl -# -o $1_Release.gpg $2/dists/$release/Release.gpg
     echo -n "Verifying Release file... "
-    if gpg --homedir gnupg --verify Release.gpg Release &> /dev/null ; then
+    if gpg --homedir gnupg --verify $1_Release.gpg $1_Release &> /dev/null ; then
         echo "OK"
     else
         echo -e "ERROR\nBroken GPG signature on Release file!"
@@ -245,48 +242,68 @@ download_package_lists() {
         exit 1
     fi
 
-    echo -n > Packages
+    echo -n > $1_Packages
     package_section=firmware
-    download_package_list
+    download_package_list $1 $2
     package_section=main
-    download_package_list
+    download_package_list $1 $2
     package_section=non-free
-    download_package_list
+    download_package_list $1 $2
+}
+
+add_packages() {
+    echo -e "\nAdding required packages..."
+    while read k v
+    do
+        if [ "$k" = "Package:" ]; then
+            current_package=$v
+        elif [ "$k" = "Filename:" ]; then
+            current_filename=$v
+        elif [ "$k" = "SHA256:" ]; then
+            current_sha256=$v
+        elif [ "$k" = "" ]; then
+            if required $current_package; then
+                printf "  %-32s %s\n" $current_package $(basename $current_filename)
+                unset_required $current_package
+                packages_debs+=("${2}${current_filename}")
+                packages_sha256+=("${current_sha256}  $(basename ${current_filename})")
+                allfound && break
+            fi
+
+            current_package=
+            current_filename=
+            current_sha256=
+        fi
+    done < <(filter_package_list <$1_Packages)
+}
+
+download_packages() {
+    echo -e "\nDownloading packages..."
+    curl -# --remote-name-all ${packages_debs[@]}
+
+    echo -n "Verifying downloaded packages... "
+    printf "%s\n" "${packages_sha256[@]}" > SHA256SUMS
+    if sha256sum --quiet -c SHA256SUMS ; then
+        echo "OK"
+    else
+        echo -e "ERROR\nThe checksums of the downloaded packages don't match the package lists!"
+        cd ..
+        exit 1
+    fi
 }
 
 rm -rf packages/
 mkdir packages
 cd packages
 
-download_package_lists
+download_package_lists raspbian $mirror_raspbian
+download_package_lists raspberry $mirror_raspberrypi
 
 packages_debs=()
 packages_sha256=()
 
-echo -e "\nSearching for required packages..."
-while read k v
-do
-    if [ "$k" = "Package:" ]; then
-        current_package=$v
-    elif [ "$k" = "Filename:" ]; then
-        current_filename=$v
-    elif [ "$k" = "SHA256:" ]; then
-        current_sha256=$v
-    elif [ "$k" = "" ]; then
-        if required $current_package; then
-            printf "  %-32s %s\n" $current_package $(basename $current_filename)
-            unset_required $current_package
-            packages_debs+=("${mirror}${current_filename}")
-            packages_sha256+=("${current_sha256}  $(basename ${current_filename})")
-            allfound && break
-        fi
-
-        current_package=
-        current_filename=
-        current_sha256=
-    fi
-done < <(filter_package_list <Packages)
-
+add_packages raspbian $mirror_raspbian
+add_packages raspberry $mirror_raspberrypi
 if ! allfound ; then
     echo "ERROR: Unable to find all required packages in package list!"
     echo "Missing packages: ${packages[@]}"
@@ -294,17 +311,6 @@ if ! allfound ; then
     exit 1
 fi
 
-echo -e "\nDownloading packages..."
-curl -# --remote-name-all ${packages_debs[@]}
-
-echo -n "Verifying downloaded packages... "
-printf "%s\n" "${packages_sha256[@]}" > SHA256SUMS
-if sha256sum --quiet -c SHA256SUMS ; then
-    echo "OK"
-else
-    echo -e "ERROR\nThe checksums of the downloaded packages don't match the package lists!"
-    cd ..
-    exit 1
-fi
+download_packages
 
 cd ..
