@@ -2,8 +2,8 @@
 
 set -e
 
-KERNEL_VERSION_RPI1=4.4.0-1-rpi
-KERNEL_VERSION_RPI2=4.4.0-1-rpi2
+KERNEL_VERSION_RPI1=4.4.13+
+KERNEL_VERSION_RPI2=4.4.13-v7+
 
 INSTALL_MODULES="kernel/fs/btrfs/btrfs.ko"
 INSTALL_MODULES="$INSTALL_MODULES kernel/drivers/scsi/sg.ko"
@@ -529,12 +529,8 @@ done
 rm -rf bootfs
 mkdir bootfs
 
-# raspberrypi-bootloader-nokernel components and kernel
+# raspberrypi-bootloader components and kernel
 cp -r tmp/boot/* bootfs/
-rm bootfs/System*
-rm bootfs/config-*
-mv bootfs/vmlinuz-${KERNEL_VERSION_RPI1} bootfs/kernel-rpi1_install.img
-mv bootfs/vmlinuz-${KERNEL_VERSION_RPI2} bootfs/kernel-rpi2_install.img
 
 if [ ! -f bootfs/config.txt ] ; then
     touch bootfs/config.txt
@@ -543,14 +539,17 @@ fi
 create_cpio "rpi1"
 cp installer-rpi1.cpio.gz bootfs/
 echo "[pi1]" >> bootfs/config.txt
-echo "kernel=kernel-rpi1_install.img" >> bootfs/config.txt
+echo "kernel=kernel.img" >> bootfs/config.txt
 echo "initramfs installer-rpi1.cpio.gz" >> bootfs/config.txt
 echo "device_tree=" >> bootfs/config.txt
 
 create_cpio "rpi2"
 cp installer-rpi2.cpio.gz bootfs/
 echo "[pi2]" >> bootfs/config.txt
-echo "kernel=kernel-rpi2_install.img" >> bootfs/config.txt
+echo "kernel=kernel7.img" >> bootfs/config.txt
+echo "initramfs installer-rpi2.cpio.gz" >> bootfs/config.txt
+echo "[pi3]" >> bootfs/config.txt
+echo "kernel=kernel7.img" >> bootfs/config.txt
 echo "initramfs installer-rpi2.cpio.gz" >> bootfs/config.txt
 
 # clean up
