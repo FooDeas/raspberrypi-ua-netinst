@@ -442,7 +442,7 @@ if [ "$cdebootstrap_cmdline" = "" ]; then
     fi
 
     # base
-    base_packages="cpufrequtils,kmod,dosfstools"
+    base_packages="cpufrequtils,kmod"
 
     if [ "$init_system" = "systemd" ] ; then
         base_packages="${base_packages},libpam-systemd"
