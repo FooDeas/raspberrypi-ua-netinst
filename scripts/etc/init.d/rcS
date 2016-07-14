@@ -443,8 +443,6 @@ if [ "$cdebootstrap_cmdline" = "" ]; then
 
     # base
     base_packages="cpufrequtils,kmod,dosfstools"
-    kernel_meta_package=raspberrypi-kernel
-    base_packages="${kernel_meta_package},${base_packages}"
 
     if [ "$init_system" = "systemd" ] ; then
         base_packages="${base_packages},libpam-systemd"
@@ -1008,10 +1006,10 @@ echo -n "Updating package lists... "
 chroot /rootfs /usr/bin/apt-get update &>/dev/null
 echo "OK"
 
-# firmware package can't be installed during cdebootstrap phase, so do so now
+# kernel and firmware package can't be installed during cdebootstrap phase, so do so now
 if [ "$kernel_module" = true ] ; then
-  echo -n "Installing bootloader package (=firmware)... "
-  chroot /rootfs /usr/bin/apt-get -y install raspberrypi-bootloader &>/dev/null
+  echo -n "Installing kernel and bootloader package (=firmware)... "
+  chroot /rootfs /usr/bin/apt-get -y install raspberrypi-kernel raspberrypi-bootloader &>/dev/null
   if [ $? -eq 0 ]; then
     echo "OK"
   else
@@ -1019,20 +1017,14 @@ if [ "$kernel_module" = true ] ; then
   fi
 fi
 
-# install libraspberrypi-bin to provide vcgencmd functionality
-echo -n "Installing libraspberrypi-bin package (=vcgencmd,raspistill,raspivid,etc)... "
-chroot /rootfs /usr/bin/apt-get -y install libraspberrypi-bin &>/dev/null
-if [ $? -eq 0 ]; then
-    echo "OK"
-else
-    echo "FAILED !"
-fi
-
 # (conditionaly) enable hardware watchdog and set up systemd to use it
 if [ "${enable_watchdog}" = "1" ]; then
     echo "bcm2708_wdog" >> /rootfs/etc/modules
     sed -i 's/^.*RuntimeWatchdogSec=.*$/RuntimeWatchdogSec=14s/' /rootfs/etc/systemd/system.conf
 fi
+
+echo "Configuring bootloader to start the installed system..."
+mv /rootfs/boot/config.txt /rootfs/boot/config-reinstall.txt
 
 # default cmdline.txt
 echo -n "Creating default cmdline.txt... "
