@@ -443,27 +443,8 @@ if [ "$cdebootstrap_cmdline" = "" ]; then
 
     # base
     base_packages="cpufrequtils,kmod,dosfstools"
-    for hv in ${hardware_versions}
-    do
-        case $hv in
-            1) kernel_meta_package=linux-image-rpi-rpfv ;;
-            2) kernel_meta_package=linux-image-rpi2-rpfv ;;
-            *)
-                echo ""
-                echo "================================================="
-                echo "  I don't understand a hardware version of ${hv} "
-                echo "    Skipping the kernel work for that hardware.  "
-                echo "================================================="
-                echo ""
-
-                kernel_meta_package=none ;;
-        esac
-
-        eval kernel_meta_package_${hv}=${kernel_meta_package}
-        if [ ${kernel_meta_package} != "none" ] ; then
-            base_packages="${kernel_meta_package},${base_packages}"
-        fi
-    done
+    kernel_meta_package=raspberrypi-kernel
+    base_packages="${kernel_meta_package},${base_packages}"
 
     if [ "$init_system" = "systemd" ] ; then
         base_packages="${base_packages},libpam-systemd"
@@ -1030,7 +1011,7 @@ echo "OK"
 # firmware package can't be installed during cdebootstrap phase, so do so now
 if [ "$kernel_module" = true ] ; then
   echo -n "Installing bootloader package (=firmware)... "
-  chroot /rootfs /usr/bin/apt-get -y install raspberrypi-bootloader-nokernel &>/dev/null
+  chroot /rootfs /usr/bin/apt-get -y install raspberrypi-bootloader &>/dev/null
   if [ $? -eq 0 ]; then
     echo "OK"
   else
@@ -1053,61 +1034,9 @@ if [ "${enable_watchdog}" = "1" ]; then
     sed -i 's/^.*RuntimeWatchdogSec=.*$/RuntimeWatchdogSec=14s/' /rootfs/etc/systemd/system.conf
 fi
 
-echo "Configuring bootloader to start the installed system..."
-mv /rootfs/boot/config.txt /rootfs/boot/config-reinstall.txt
-
-# no kernel-upgrade-script for the time being
-# just add the kernel/initramfs lines to /boot/config.txt for now
-if [ ! -f /rootfs/boot/config.txt ] ; then
-    touch /rootfs/boot/config.txt
-fi
-
-for hv in ${hardware_versions}
-do
-    # find kernel/initramfs version
-    eval kernel_meta_package=\${kernel_meta_package_${hv}}
-    if [ ${kernel_meta_package} != "none" ]
-    then
-        KERNEL_VERSION=$(sed -n -e "/^Package: ${kernel_meta_package}$/,/Package: /{s/^Depends: .*linux-image-\(.*-rpi2\{0,1\}\).*$/\1/p}" /rootfs/var/lib/dpkg/status)
-        echo "Adding boot config for kernel version: '${KERNEL_VERSION}'"
-
-        {
-            echo "[pi${hv}]"
-            echo "kernel=vmlinuz-$KERNEL_VERSION"
-            echo "initramfs initrd.img-${KERNEL_VERSION} followkernel"
-            if [ "${hv}" = "1" ] ; then
-                echo "# to enable DeviceTree, comment out the next line "
-                echo "device_tree="
-            fi
-        } >> /rootfs/boot/config.txt
-
-        # set the default kernel file based on the hardware
-        case ${hv} in
-            2) default_kernel_file="kernel7.img" ;;
-            *) default_kernel_file="kernel.img" ;;
-        esac
-
-        # make sure there is a /boot/kernel.img or /boot/kernel7.img present
-        if [ ! -f /rootfs/boot/${default_kernel_file} ] ; then
-            echo -n "Copying kernel to /boot/${default_kernel_file}... "
-            cp -- /rootfs/boot/vmlinuz-${KERNEL_VERSION} /rootfs/boot/${default_kernel_file}
-            if [ $? -eq 0 ]; then
-                echo "OK"
-            else
-                echo "FAILED !"
-            fi
-        fi
-    fi
-done
-
-# set gpu_mem if specified in the configuration file
-if [ -n "${gpu_mem}" ] ; then
-    echo "gpu_mem=${gpu_mem}" >> /rootfs/boot/config.txt
-fi
-
 # default cmdline.txt
 echo -n "Creating default cmdline.txt... "
-echo "$cmdline root=$rootpartition rootfstype=$rootfstype rootwait" > /rootfs/boot/cmdline.txt
+echo "$cmdline root=$rootpartition rootfstype=$rootfstype rootwait loglevel=3" > /rootfs/boot/cmdline.txt
 echo "OK"
 
 # run post install script if exists
