@@ -1,4 +1,4 @@
-raspbian-ua-netinst build instructions
+raspberrypi-ua-netinst build instructions
 ======================================
 
 To create an image yourself, you need to have various packages installed on the host machine.
@@ -19,7 +19,7 @@ On Debian based systems you can install them as root or with sudo as follows:
 aptitude install git curl bzip2 zip xz-utils gnupg kpartx dosfstools binutils bc
 ```
 
-The following scripts are used to build the raspbian-ua-netinst installer, listed in the same order they would be used:
+The following scripts are used to build the raspberrypi-ua-netinst installer, listed in the same order they would be used:
 
  - clean.sh - Start with a clean slate by removing everything created by earlier builds. This is not needed on a first build, but won't hurt either.
  - update.sh - Downloads latest Raspbian packages that will be used to build the installer.

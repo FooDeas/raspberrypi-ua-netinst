@@ -1,4 +1,4 @@
-# raspbian-ua-netinst
+# raspberrypi-ua-netinst
 
 - [Intro](#intro)
 - [Features](#features)
@@ -46,7 +46,7 @@ Other presets include _minimal_ which has even less packages (no logging, no tex
 ### Obtaining installer files on Windows and Mac
 Installer archive is around **36MB** and contains all firmware files and the installer.
 
-Go to [our latest release page](https://github.com/debian-pi/raspbian-ua-netinst/releases/latest) and download the .zip file.
+Go to [our latest release page](https://github.com/Phiber2000/raspberrypi-ua-netinst/releases/latest) and download the .zip file.
 
 Format your SD card as **FAT32** (MS-DOS on _Mac OS X_) and extract the installer files in.  
 **Note:** If you get an error saying it can't mount /dev/mmcblk0p1 on /boot then the most likely cause is that you're using exFAT instead of FAT32.
@@ -55,15 +55,15 @@ Try formatting the SD card with this tool: https://www.sdcard.org/downloads/form
 ### Alternative method for Mac, writing image to SD card
 Prebuilt image is around **36MB** bzip2 compressed and **64MB** uncompressed. It contains the same files as the .zip but is more convenient for Mac users.
 
-Go to [our latest release page](https://github.com/debian-pi/raspbian-ua-netinst/releases/latest) and download the .img.bz2 file.
+Go to [our latest release page](https://github.com/Phiber2000/raspberrypi-ua-netinst/releases/latest) and download the .img.bz2 file.
 
-Extract the .img file from the archive with `bunzip2 raspbian-ua-netinst-<latest-version-number>.img.bz2`.  
+Extract the .img file from the archive with `bunzip2 raspberrypi-ua-netinst-<latest-version-number>.img.bz2`.  
 Find the _/dev/diskX_ device you want to write to using `diskutil list`. It will probably be 1 or 2.  
 
 To flash your SD card on Mac:
 
     diskutil unmountDisk /dev/diskX
-    sudo dd bs=1m if=/path/to/raspbian-ua-netinst-<latest-version-number>.img of=/dev/rdiskX
+    sudo dd bs=1m if=/path/to/raspberrypi-ua-netinst-<latest-version-number>.img of=/dev/rdiskX
     diskutil eject /dev/diskX
 
 _Note the **r** in the of=/dev/rdiskX part on the dd line which should speed up writing the image considerably._
@@ -71,11 +71,11 @@ _Note the **r** in the of=/dev/rdiskX part on the dd line which should speed up 
 ### SD card image for Linux
 Prebuilt image is around **32MB** xz compressed and **64MB** uncompressed. It contains the same files as the .zip but is more convenient for Linux users.
 
-Go to [our latest release page](https://github.com/debian-pi/raspbian-ua-netinst/releases/latest) and download the .img.xz file.
+Go to [our latest release page](https://github.com/Phiber2000/raspberrypi-ua-netinst/releases/latest) and download the .img.xz file.
 
 To flash your SD card on Linux:
 
-    xzcat /path/to/raspbian-ua-netinst-<latest-version-number>.img.xz > /dev/sdX
+    xzcat /path/to/raspberrypi-ua-netinst-<latest-version-number>.img.xz > /dev/sdX
 
 Replace _/dev/sdX_ with the real path to your SD card.
 
@@ -188,12 +188,12 @@ Please be aware that some restrictions may apply to the sum of the file sizes. I
 
 It is possible to replace the installer script completely, without rebuilding the installer image. To do this, place a custom `rcS` file in the config directory of your SD card. The installer script will check this location and run this script instead of itself. Take great care when doing this, as it is intended to be used for development purposes.
 
-Should you still choose to go this route, please use the original [rcs](https://github.com/debian-pi/raspbian-ua-netinst/blob/master/scripts/etc/init.d/rcS) file as a starting point.
+Should you still choose to go this route, please use the original [rcs](https://github.com/Phiber2000/raspberrypi-ua-netinst/blob/master/scripts/etc/init.d/rcS) file as a starting point.
 
 ## Logging
 The output of the installation process is now also logged to file.  
-When the installation completes successfully, the logfile is moved to /var/log/raspbian-ua-netinst.log on the installed system.  
-When an error occurs during install, the logfile is moved to the sd card, which gets normally mounted on /boot/ and will be named raspbian-ua-netinst-\<datetimestamp\>.log
+When the installation completes successfully, the logfile is moved to /var/log/raspberrypi-ua-netinst.log on the installed system.  
+When an error occurs during install, the logfile is moved to the sd card, which gets normally mounted on /boot/ and will be named raspberrypi-ua-netinst-\<datetimestamp\>.log
 
 ## First boot
 The system is almost completely unconfigured on first boot. Here are some tasks you most definitely want to do on first boot.

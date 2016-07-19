@@ -1,6 +1,6 @@
 #!/bin/busybox sh
 
-LOGFILE=/tmp/raspbian-ua-netinst.log
+LOGFILE=/tmp/raspberrypi-ua-netinst.log
 
 # default options, can be overriden in installer-config.txt
 preset=server
@@ -61,7 +61,7 @@ fail()
         mount $bootpartition /boot
         fail_boot_mounted=true
     fi
-    cp -- $LOGFILE /boot/raspbian-ua-netinst-"$(date +%Y%m%dT%H%M%S)".log
+    cp -- $LOGFILE /boot/raspberrypi-ua-netinst-"$(date +%Y%m%dT%H%M%S)".log
     sync
 
     # if we mounted /boot in the fail command, unmount it.
@@ -117,7 +117,7 @@ mkdir -p /boot
 mkdir -p /usr/bin
 mkdir -p /usr/sbin
 mkdir -p /var/run
-mkdir -p /etc/raspbian-ua-netinst
+mkdir -p /etc/raspberrypi-ua-netinst
 mkdir -p /rootfs/boot
 mkdir -p /bootfs
 mkdir -p /tmp/
@@ -182,13 +182,13 @@ esac
 
 echo ""
 echo "================================================="
-echo "raspbian-ua-netinst"
+echo "raspberrypi-ua-netinst"
 echo "================================================="
 echo "Revision __VERSION__"
 echo "Built on __DATE__"
 echo "Running on Raspberry Pi version ${rpi_hardware_version}"
 echo "================================================="
-echo "https://github.com/debian-pi/raspbian-ua-netinst/"
+echo "https://github.com/Phiber2000/raspberrypi-ua-netinst/"
 echo "================================================="
 
 echo -n "Starting HWRNG "
@@ -556,7 +556,7 @@ else
 fi
 
 # Create a file for partitioning sd card only
-FDISK_SCHEME_SD_ONLY=/etc/raspbian-ua-netinst/fdisk-sd-only.config
+FDISK_SCHEME_SD_ONLY=/etc/raspberrypi-ua-netinst/fdisk-sd-only.config
 touch $FDISK_SCHEME_SD_ONLY
 {
     if [ -n "$emptyspaceend" ] ; then
@@ -595,7 +595,7 @@ touch $FDISK_SCHEME_SD_ONLY
 } >> ${FDISK_SCHEME_SD_ONLY}
 
 # Create a file for partitioning when only /boot/ is on sd card
-FDISK_SCHEME_SD_BOOT=/etc/raspbian-ua-netinst/fdisk-sd-boot.config
+FDISK_SCHEME_SD_BOOT=/etc/raspberrypi-ua-netinst/fdisk-sd-boot.config
 touch $FDISK_SCHEME_SD_BOOT
 {
     if [ -n "$emptyspaceend" ] ; then
@@ -629,7 +629,7 @@ touch $FDISK_SCHEME_SD_BOOT
 } >> ${FDISK_SCHEME_SD_BOOT}
 
 # Create a file for partitioning when / is on usb
-FDISK_SCHEME_USB_ROOT=/etc/raspbian-ua-netinst/fdisk-usb-root.config
+FDISK_SCHEME_USB_ROOT=/etc/raspberrypi-ua-netinst/fdisk-usb-root.config
 touch $FDISK_SCHEME_USB_ROOT
 {
     echo "n"
@@ -1067,8 +1067,8 @@ echo " and took $((DURATION/60)) min $((DURATION%60)) sec ($DURATION seconds)"
 
 # copy logfile to standard log directory
 sleep 1
-cp -- $LOGFILE /rootfs/var/log/raspbian-ua-netinst.log
-chmod 0640 /rootfs/var/log/raspbian-ua-netinst.log
+cp -- $LOGFILE /rootfs/var/log/raspberrypi-ua-netinst.log
+chmod 0640 /rootfs/var/log/raspberrypi-ua-netinst.log
 
 echo -n "Unmounting filesystems... "
 

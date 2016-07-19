@@ -61,7 +61,7 @@ function create_tempfile {
     local tmp_ptrn="/tmp/$(basename "${0}").${$}"
     if type mktemp &> /dev/null; then
         mktemp 2> /dev/null || \
-            mktemp -t raspbian-ua-netinst 2> /dev/null || \
+            mktemp -t raspberrypi-ua-netinst 2> /dev/null || \
             touch_tempfile "${tmp_ptrn}"
     else
         if type tempfile &> /dev/null; then
