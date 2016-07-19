@@ -2,7 +2,7 @@
 
 set -e
 
-IMG=raspbian-ua-netinst-`date +%Y%m%d`-git`git rev-parse --short @{0}`.img
+IMG=raspberrypi-ua-netinst-`date +%Y%m%d`-git`git rev-parse --short @{0}`.img
 
 rm -f $IMG
 rm -f $IMG.bz2
