@@ -9,7 +9,6 @@
 - [Logging](#logging)
 - [First boot](#first-boot)
 - [Reinstalling or replacing an existing system](#reinstalling-or-replacing-an-existing-system)
-- [Reporting bugs and improving the installer](#reporting-bugs-and-improving-the-installer)
 - [Disclaimer](#disclaimer)
 
 ## Intro
@@ -45,7 +44,7 @@ Other presets include _minimal_ which has even less packages (no logging, no tex
 
 ## Writing the installer to the SD card
 ### Obtaining installer files on Windows and Mac
-Installer archive is around **19MB** and contains all firmware files and the installer.
+Installer archive is around **36MB** and contains all firmware files and the installer.
 
 Go to [our latest release page](https://github.com/debian-pi/raspbian-ua-netinst/releases/latest) and download the .zip file.
 
@@ -54,7 +53,7 @@ Format your SD card as **FAT32** (MS-DOS on _Mac OS X_) and extract the installe
 Try formatting the SD card with this tool: https://www.sdcard.org/downloads/formatter_4/
 
 ### Alternative method for Mac, writing image to SD card
-Prebuilt image is around **19MB** bzip2 compressed and **64MB** uncompressed. It contains the same files as the .zip but is more convenient for Mac users.
+Prebuilt image is around **36MB** bzip2 compressed and **64MB** uncompressed. It contains the same files as the .zip but is more convenient for Mac users.
 
 Go to [our latest release page](https://github.com/debian-pi/raspbian-ua-netinst/releases/latest) and download the .img.bz2 file.
 
@@ -70,7 +69,7 @@ To flash your SD card on Mac:
 _Note the **r** in the of=/dev/rdiskX part on the dd line which should speed up writing the image considerably._
 
 ### SD card image for Linux
-Prebuilt image is around **17MB** xz compressed and **64MB** uncompressed. It contains the same files as the .zip but is more convenient for Linux users.
+Prebuilt image is around **32MB** xz compressed and **64MB** uncompressed. It contains the same files as the .zip but is more convenient for Linux users.
 
 Go to [our latest release page](https://github.com/debian-pi/raspbian-ua-netinst/releases/latest) and download the .img.xz file.
 
@@ -203,14 +202,13 @@ The default **root** password is **raspbian**.
 
 > Set new root password: `passwd`  (can also be set during installation using **rootpw** in [installer-config.txt](#installer-customization))  
 > Configure your default locale: `dpkg-reconfigure locales`  
+> Configure your keyboard layout: `dpkg-reconfigure console-data`  
 > Configure your timezone: `dpkg-reconfigure tzdata`  
 
 The latest kernel and firmware packages are now automatically installed during the unattended installation process.
 When you need a kernel module that isn't loaded by default, you will still have to configure that manually.
 
-> Optional: `apt-get install raspi-copies-and-fills` for improved memory management performance.  
-> Optional: Create a swap file with `dd if=/dev/zero of=/swap bs=1M count=512 && mkswap /swap && chmod 600 /swap` (example is 512MB) and enable it on boot by appending `/swap none swap sw 0 0` to `/etc/fstab`.  
-> Optional: `apt-get install rng-tools` and add `bcm2708-rng` to `/etc/modules` to auto-load and use the kernel module for the hardware random number generator. This improves the performance of various server applications needing random numbers significantly.
+> Optional: Create a swap file with `fallocate -l 512M /swap && mkswap /swap && chmod 600 /swap` (example is 512MB) and enable it on boot by appending `/swap none swap sw 0 0` to `/etc/fstab`.  
 
 ## Reinstalling or replacing an existing system
 If you want to reinstall with the same settings you did your first install you can just move the original _config.txt_ back and reboot. Depending on the hardware you want to reinstall on (Raspberry Pi **1** or **2**), make sure you still have _kernel_rpi1_install.img_ / _kernel_rpi2_install.img_ and _installer-rpi1.cpio.gz_ / _installer-rpi2.cpio.gz_ in your _/boot_ partition. If you are replacing your existing system which was not installed using this method, make sure you copy those files in and the installer _config.txt_ from the original image.
@@ -219,10 +217,6 @@ If you want to reinstall with the same settings you did your first install you c
     reboot
 
 **Remember to backup all your data and original config.txt before doing this!**
-
-## Reporting bugs and improving the installer
-When you encounter issues, have wishes or have code or documentation improvements, we'd like to hear from you!
-We've actually written a document on how to best do this and you can find it [here](CONTRIBUTING.md).
 
 ## Disclaimer
 We take no responsibility for ANY data loss. You will be reflashing your SD card anyway so it should be very clear to you what you are doing and will lose all your data on the card. Same goes for reinstallation.
