@@ -16,6 +16,8 @@
 
 In distinction to the base this fork uses the RaspberryPi.org kernel.
 
+As in Raspbian, audio is enabled by default, too. If you don't want that, comment out last line (`dtparam=audio=on`) in _/boot/config.txt_ after installation.
+
 ## Intro
 
 The minimal Raspbian unattended netinstaller for Raspberry Pi Model 1B to 3.  
@@ -173,7 +175,7 @@ The timeserver parameter is only used during installation for _rdate_ which is u
 Available presets: _server_, _minimal_ and _base_.
 Presets set the `cdebootstrap_cmdline` variable. For example, the current _server_ default is:
 
-> _--flavour=minimal --include=kmod,fake-hwclock,ifupdown,net-tools,isc-dhcp-client,ntp,openssh-server,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,dialog,locales,less,man-db_
+> _--flavour=minimal --include=kmod,fake-hwclock,ifupdown,net-tools,isc-dhcp-client,ntp,openssh-server,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,dialog,locales,less,man-db,bash-completion,console-common_
 
 (If you build your own installer, which most won't need to, and the configuration files exist in the same directory as this `README.md`, it will be include in the installer image automatically.)
 
