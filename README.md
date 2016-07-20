@@ -1,5 +1,6 @@
 # raspberrypi-ua-netinst
 
+- [Fork Modifications](#modifications)
 - [Intro](#intro)
 - [Features](#features)
 - [Requirements](#requirements)
@@ -11,9 +12,13 @@
 - [Reinstalling or replacing an existing system](#reinstalling-or-replacing-an-existing-system)
 - [Disclaimer](#disclaimer)
 
+## Fork Modifications
+
+In distinction to the base this fork uses the RaspberryPi.org kernel.
+
 ## Intro
 
-The minimal Raspbian unattended netinstaller for Raspberry Pi Model 1B, 1B+ and 2B.  
+The minimal Raspbian unattended netinstaller for Raspberry Pi Model 1B to 3.  
 
 This project provides [Raspbian][1] power users the possibility to install a minimal base system unattended using latest Raspbian packages regardless when the installer was built.
 
@@ -162,7 +167,6 @@ The format of the _installer-config.txt_ file and the current defaults:
                               # undesirable.
     enable_watchdog=0         # loads up the hardware watchdog module and configures systemd to use it. Set to
                               # "1" to enable this functionality.
-    gpu_mem=                  # specify the amount of RAM in MB that should be reserved for the GPU
 
 The timeserver parameter is only used during installation for _rdate_ which is used as fallback when setting the time with `ntpdate` fails.  
 
