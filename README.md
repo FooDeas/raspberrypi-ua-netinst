@@ -16,8 +16,6 @@
 
 In distinction to the base this fork uses the RaspberryPi.org kernel.
 
-As in Raspbian, audio is enabled by default, too. If you don't want that, comment out last line (`dtparam=audio=on`) in _/boot/config.txt_ after installation.
-
 ## Intro
 
 The minimal Raspbian unattended netinstaller for Raspberry Pi Model 1B to 3.  

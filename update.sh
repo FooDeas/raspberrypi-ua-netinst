@@ -316,21 +316,27 @@ download_remote_file() {
     fi
 }
 
+# Download additional files
 rm -rf files/
 mkdir files
 cd files
 
+## Download default config.txt and disable audio
 download_remote_file https://downloads.raspberrypi.org/raspbian/ boot.tar.xz xzcat ./config.txt
+sed -i "s/^\(dtparam=audio=on\)/#\1/" config.txt
 chmod 644 config.txt
 cd ..
 
+# Download packages
 rm -rf packages/
 mkdir packages
 cd packages
 
+## Download package list
 download_package_lists raspbian $mirror_raspbian
 download_package_lists raspberry $mirror_raspberrypi
 
+## Select packages for download
 packages_debs=()
 packages_sha256=()
 
@@ -343,6 +349,7 @@ if ! allfound ; then
     exit 1
 fi
 
+## Download selected packages
 download_packages
 
 cd ..
