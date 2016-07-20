@@ -1025,6 +1025,7 @@ fi
 
 echo "Configuring bootloader to start the installed system..."
 mv /rootfs/boot/config.txt /rootfs/boot/config-reinstall.txt
+cp /bootfs/config/boot/config.txt /rootfs/boot/config.txt
 
 # default cmdline.txt
 echo -n "Creating default cmdline.txt... "

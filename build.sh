@@ -568,6 +568,8 @@ fi
 if [ -d config ] ; then
     mkdir bootfs/config
     cp -r config/* bootfs/config
+    mkdir bootfs/config/boot
+    cp files/config.txt bootfs/config/boot
 fi
 
 ZIPFILE=raspberrypi-ua-netinst-`date +%Y%m%d`-git`git rev-parse --short @{0}`.zip
