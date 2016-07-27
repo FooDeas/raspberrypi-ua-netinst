@@ -43,7 +43,7 @@ Other presets include _minimal_ which has even less packages (no logging, no tex
  - option to install root to USB drive
 
 ## Requirements
- - a Raspberry Pi Model 1B, Model 1B+ or Model 2B
+ - a Raspberry Pi Model 1B, Model 1B+, Model 2B or 3
  - SD card of at least 640MB or at least 128MB for USB root install (without customization)
  - working Ethernet with Internet connectivity
 
