@@ -38,7 +38,6 @@ usbroot=
 cmdline="dwc_otg.lpm_enable=0 console=ttyAMA0,115200 kgdboc=ttyAMA0,115200 console=tty1 elevator=deadline"
 rootfstype=ext4
 final_action=reboot
-hardware_versions=detect
 hwrng_support=1
 enable_watchdog=0
 gpu_mem=
@@ -367,23 +366,6 @@ if [ "$online_config" != "" ]; then
     source /online-config.txt
     echo "=== Finished executing online-config.txt. ==="
     echo "================================================="
-fi
-
-if [ "$hardware_versions" = "detect" ]; then
-    case $rpi_hardware_version in
-        1) hardware_versions="1" ;;
-        2) hardware_versions="2" ;;
-        *)
-           echo ""
-           echo "================================================="
-           echo "     No Raspberry Pi hardware detected!!"
-           echo " Value of rpi_hardware variable: '${rpi_hardware}'"
-           echo "          Building for both Pi and Pi 2.         "
-           echo "================================================="
-           echo ""
-           hardware_versions="1 2"
-           ;;
-    esac
 fi
 
 # prepare rootfs mount options

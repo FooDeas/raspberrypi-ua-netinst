@@ -159,8 +159,6 @@ The format of the _installer-config.txt_ file and the current defaults:
     rootfs_install_mount_options='noatime,data=writeback,nobarrier,noinit_itable'
     rootfs_mount_options='errors=remount-ro,noatime'
     final_action=reboot       # what to do at the end of install, one of poweroff / halt / reboot
-    hardware_versions=detect  # "detect" supports the install hardware only, set to "1 2" to produce an install that
-                              # supports both Pi1 and Pi2
     hwrng_support=1           # install support for the ARM hardware random number generator. The default is
                               # enabled (1) on all presets. Users requiring a `base` install are advised that
                               # `hwrng_support=0` must be added in `installer-config.txt` if HWRNG support is
