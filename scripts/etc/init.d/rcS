@@ -1026,7 +1026,7 @@ fi
 
 # enable camera if specified in the configuration file
 if [ "${camera_enable}" = "1" ] ; then
-    if [ "${gpu_mem}" -lt "128" ] ; then
+    if [ "0${gpu_mem}" -lt "128" ] ; then
         gpu_mem=128
     fi
     echo "start_x=1" >> /rootfs/boot/config.txt
