@@ -165,6 +165,11 @@ The format of the _installer-config.txt_ file and the current defaults:
                               # undesirable.
     enable_watchdog=0         # loads up the hardware watchdog module and configures systemd to use it. Set to
                               # "1" to enable this functionality.
+    gpu_mem=                  # Specifies the amount of RAM in MB that should be reserved for the GPU.
+                              # Minimum is "16". If not defined, the bootloader sets it to 64MB.
+    sound_enable=0            # Set to "1" to enable the onboard audio.
+    camera_enable=0           # Set to "1" to enable the camera module. This sets all needed parameters in config.txt.
+    camera_disable_led=0      # Disables the camera led. The option `camera_enable=1` has to be set to take effect.
 
 The timeserver parameter is only used during installation for _rdate_ which is used as fallback when setting the time with `ntpdate` fails.  
 
