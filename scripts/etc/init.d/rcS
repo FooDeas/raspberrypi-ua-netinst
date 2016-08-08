@@ -1021,7 +1021,7 @@ echo "OK"
 
 # enable sound if specified in the configuration file
 if [ "${sound_enable}" = "1" ] ; then
-    sed -i "s/^#\(dtparam=audio=on\)/\1/" config.txt
+    sed -i "s/^#\(dtparam=audio=on\)/\1/" /rootfs/boot/config.txt
 fi
 
 # enable camera if specified in the configuration file
