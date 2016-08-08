@@ -175,11 +175,32 @@ tee < ${LOGFILE}.pipe $LOGFILE &
 exec &> ${LOGFILE}.pipe
 rm ${LOGFILE}.pipe
 
-rpi_hardware=$(grep Hardware /proc/cpuinfo | cut -d " " -f 2)
+# detecting model based on http://elinux.org/RPi_HardwareHistory
+rpi_hardware=$(grep Revision /proc/cpuinfo | cut -d " " -f 2)
 case $rpi_hardware in
-    BCM2708) rpi_hardware_version="1" ;;
-    BCM2709) rpi_hardware_version="2" ;;
-    *) rpi_hardware_version="unknown" ;;
+    0002) rpi_hardware_version="B" ;;
+    0003) rpi_hardware_version="B" ;;
+    0004) rpi_hardware_version="B" ;;
+    0005) rpi_hardware_version="B" ;;
+    0006) rpi_hardware_version="B" ;;
+    0007) rpi_hardware_version="A" ;;
+    0008) rpi_hardware_version="A" ;;
+    0009) rpi_hardware_version="A" ;;
+    000d) rpi_hardware_version="B" ;;
+    000e) rpi_hardware_version="B" ;;
+    000f) rpi_hardware_version="B" ;;
+    0010) rpi_hardware_version="B+" ;;
+    0012) rpi_hardware_version="A+" ;;
+    0013) rpi_hardware_version="B+" ;;
+    0015) rpi_hardware_version="A+" ;;
+    a01040) rpi_hardware_version="2 Model B" ;;
+    a01041) rpi_hardware_version="2 Model B" ;;
+    a21041) rpi_hardware_version="2 Model B" ;;
+    900092) rpi_hardware_version="Zero" ;;
+    900093) rpi_hardware_version="Zero" ;;
+    a02082) rpi_hardware_version="3 Model B" ;;
+    a22082) rpi_hardware_version="3 Model B" ;;
+    *) rpi_hardware_version="unknown (${rpi_hardware})" ;;
 esac
 
 echo ""
