@@ -293,14 +293,14 @@ download_packages() {
 }
 
 download_remote_file() {
-    if [ ${3} != "" ] ; then
+    if [ "${4}" != "" ] ; then
         echo -e "\nDownloading ${4}..."
     else
         echo -e "\nDownloading ${2}..."
     fi
     curl -# -o ${2}_tmp -L ${1}${2}
-    if [ ${3} != "" ] ; then
-        if [ $(expr match "boot.tar.xz" '.*\.\(.*\)\..*') == "tar" ] ; then
+    if [ "${3}" != "" ] ; then
+        if [ $(expr match "${2}" '.*\.\(.*\)\..*') == "tar" ] ; then
             ${3} ${2}_tmp | tar -x ${4}
         else
             ${3} ${2}_tmp
@@ -322,7 +322,7 @@ mkdir files
 cd files
 
 ## Download default config.txt and disable audio
-download_remote_file https://downloads.raspberrypi.org/raspbian/ boot.tar.xz xzcat ./config.txt
+download_remote_file https://downloads.raspberrypi.org/raspbian/ "boot.tar.xz" xzcat ./config.txt
 sed -i "s/^\(dtparam=audio=on\)/#\1/" config.txt
 chmod 644 config.txt
 cd ..
