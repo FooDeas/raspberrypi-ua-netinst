@@ -190,7 +190,7 @@ echo "Revision __VERSION__"
 echo "Built on __DATE__"
 echo "Running on Raspberry Pi version ${rpi_hardware_version}"
 echo "================================================="
-echo "https://github.com/Phiber2000/raspberrypi-ua-netinst/"
+echo "https://github.com/FooDeas/raspberrypi-ua-netinst/"
 echo "================================================="
 
 echo -n "Starting HWRNG "
