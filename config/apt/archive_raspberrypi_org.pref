@@ -1,0 +1,3 @@
+Package: *
+Pin: origin archive.raspberrypi.org
+Pin-Priority: 600
