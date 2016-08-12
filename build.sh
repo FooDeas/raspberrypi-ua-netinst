@@ -551,6 +551,7 @@ echo "initramfs installer-rpi2.cpio.gz" >> bootfs/config.txt
 echo "[pi3]" >> bootfs/config.txt
 echo "kernel=kernel7.img" >> bootfs/config.txt
 echo "initramfs installer-rpi2.cpio.gz" >> bootfs/config.txt
+echo "dtoverlay=pi3-disable-bt" >> bootfs/config.txt
 
 # clean up
 rm -rf tmp
