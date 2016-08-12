@@ -38,6 +38,8 @@ packages+=("rng-tools")
 packages+=("tar")
 packages+=("util-linux")
 packages+=("wpasupplicant")
+packages+=("libraspberrypi-bin")
+packages+=("vim-common")
 
 # libraries
 packages+=("libacl1")
@@ -70,6 +72,7 @@ packages+=("libssl1.0.0")
 packages+=("libtinfo5")
 packages+=("libuuid1")
 packages+=("zlib1g")
+packages+=("libraspberrypi0")
 
 packages_found=
 packages_debs=
@@ -279,7 +282,10 @@ add_packages() {
 
 download_packages() {
     echo -e "\nDownloading packages..."
-    curl -# --remote-name-all ${packages_debs[@]}
+    for package in "${packages_debs[@]}"; do
+        echo -e "Downloading package: \"${package}\""
+        curl -# --remote-name ${package}
+    done
 
     echo -n "Verifying downloaded packages... "
     printf "%s\n" "${packages_sha256[@]}" > SHA256SUMS
@@ -316,32 +322,21 @@ download_remote_file() {
     fi
 }
 
-# Download additional files
-rm -rf files/
-mkdir files
-cd files
-
-## Download default config.txt and disable audio
-download_remote_file https://downloads.raspberrypi.org/raspbian/ "boot.tar.xz" xzcat ./config.txt
-sed -i "s/^\(dtparam=audio=on\)/#\1/" config.txt
-chmod 644 config.txt
-cd ..
-
 # Download packages
 rm -rf packages/
 mkdir packages
 cd packages
 
 ## Download package list
-download_package_lists raspbian $mirror_raspbian
 download_package_lists raspberry $mirror_raspberrypi
+download_package_lists raspbian $mirror_raspbian
 
 ## Select packages for download
 packages_debs=()
 packages_sha256=()
 
-add_packages raspbian $mirror_raspbian
 add_packages raspberry $mirror_raspberrypi
+add_packages raspbian $mirror_raspbian
 if ! allfound ; then
     echo "ERROR: Unable to find all required packages in package list!"
     echo "Missing packages: ${packages[@]}"
@@ -351,5 +346,17 @@ fi
 
 ## Download selected packages
 download_packages
+
+cd ..
+
+# Download additional files
+rm -rf files/
+mkdir files
+cd files
+
+## Download default config.txt and disable audio
+download_remote_file https://downloads.raspberrypi.org/raspbian/ "boot.tar.xz" xzcat ./config.txt
+sed -i "s/^\(dtparam=audio=on\)/#\1/" config.txt
+chmod 644 config.txt
 
 cd ..

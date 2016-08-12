@@ -121,8 +121,8 @@ The format of the _installer-config.txt_ file and the current defaults:
                               # SD-card on the desktop and can be useful when using multiple SD-cards.
     domainname=
     rootpw=raspbian
-    root_ssh_pubkey=          # public SSH key for root; on Debian "jessie" the SSH password login will be disabled for
-                              # root if set; the public SSH key must be on a single line, enclosed in quotes
+    root_ssh_pubkey=          # public SSH key for root; on Debian "jessie" the SSH password login will be disabled
+                              # for root if set; the public SSH key must be on a single line, enclosed in quotes
     disable_root=             # set to 1 to disable root login (and password) altogether
     username=                 # username of the user to create
     userpw=                   # password to use for created user
@@ -152,7 +152,7 @@ The format of the _installer-config.txt_ file and the current defaults:
     ip_nameservers=
     drivers_to_load=
     online_config=            # URL to extra config that will be executed after installer-config.txt
-    usbroot=                  # set to 1 to install to first USB disk
+    usbroot=                  # Set to 1 to install to first USB disk.
     cmdline="dwc_otg.lpm_enable=0 console=ttyAMA0,115200 kgdboc=ttyAMA0,115200 console=tty1 elevator=deadline"
     rootfstype=ext4
     rootfs_mkfs_options=

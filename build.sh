@@ -505,6 +505,24 @@ function create_cpio {
     cp -r tmp/lib/modules/$KERNEL_VERSION/kernel/drivers/net/wireless rootfs/lib/modules/$KERNEL_VERSION/kernel/drivers/net/
     cp -r tmp/lib/modules/$KERNEL_VERSION/kernel/drivers/net/usb rootfs/lib/modules/$KERNEL_VERSION/kernel/drivers/net/
 
+    # vcgencmd
+    ## libraspberrypi-bin
+    mkdir -p rootfs/opt/vc/bin
+    cp tmp/opt/vc/bin/vcgencmd rootfs/opt/vc/bin/
+    mkdir -p rootfs/usr/bin
+    ln -s /opt/vc/bin/vcgencmd rootfs/usr/bin/vcgencmd
+    cp tmp/usr/share/doc/libraspberrypi-bin/LICENCE rootfs/opt/vc/
+    ## libraspberrypi0
+    mkdir -p rootfs/etc
+    cp tmp/etc/ld.so.conf.d/00-vmcs.conf rootfs/etc/ld.so.conf.d/
+    mkdir -p rootfs/opt/vc/lib
+    cp tmp/opt/vc/lib/libvcos.so rootfs/opt/vc/lib/
+    cp tmp/opt/vc/lib/libvchiq_arm.so rootfs/opt/vc/lib/
+
+    # xxd
+    mkdir -p rootfs/usr/bin
+    cp tmp/usr/bin/xxd rootfs/usr/bin/
+
     INITRAMFS="../installer-${target_system}.cpio.gz"
     (cd rootfs && find . | cpio -H newc -ov | gzip --best > $INITRAMFS)
 
@@ -552,6 +570,10 @@ echo "[pi3]" >> bootfs/config.txt
 echo "kernel=kernel7.img" >> bootfs/config.txt
 echo "initramfs installer-rpi2.cpio.gz" >> bootfs/config.txt
 echo "dtoverlay=pi3-disable-bt" >> bootfs/config.txt
+echo >> bootfs/config.txt
+echo "# Only for RPi model 3: The following line enables the ability to boot from USB." >> bootfs/config.txt
+echo "# Notice: This flag will be written to OTP and is permanent." >> bootfs/config.txt
+echo "#program_usb_boot_mode=1" >> bootfs/config.txt
 
 # clean up
 rm -rf tmp

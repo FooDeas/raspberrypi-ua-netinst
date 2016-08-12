@@ -35,6 +35,7 @@ ip_nameservers=
 drivers_to_load=
 online_config=
 usbroot=
+usbboot=
 cmdline="dwc_otg.lpm_enable=0 console=ttyAMA0,115200 kgdboc=ttyAMA0,115200 console=tty1 elevator=deadline"
 rootfstype=ext4
 final_action=reboot
@@ -144,6 +145,22 @@ mdev -s
 
 klogd -c 1
 
+# Detect boot device
+if [ -e /dev/mmcblk0p1 ]; then
+    mount /dev/mmcblk0p1 /boot
+    if [ ! -e /boot/bootcode.bin ]; then
+        umount /boot
+        if [ -e /dev/sda1 ]; then
+            mount /dev/sda1 /boot
+            if [ -e /boot/bootcode.bin ]; then
+                bootdev=/dev/sda
+                bootpartition=/dev/sda1
+            fi
+        fi
+    fi
+    umount /boot
+fi
+
 # Check if there's an alternative rcS file and excute it
 # instead of this file. Only do this if this isn't the
 # alternative script already
@@ -167,6 +184,9 @@ if [ -z ${am_subscript} ]; then
         umount /boot
     fi
 fi
+
+# link shared libraries
+/sbin/ldconfig
 
 # redirect stdout and stderr also to logfile
 # http://stackoverflow.com/questions/3173131/redirect-copy-of-stdout-to-log-file-from-within-bash-script-itself/6635197#6635197
@@ -460,7 +480,7 @@ if [ "$cdebootstrap_cmdline" = "" ]; then
     minimal_packages="fake-hwclock,ifupdown,net-tools,ntp,openssh-server,dosfstools"
 
     # server
-    server_packages="vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,less,man-db,bash-completion,console-common"
+    server_packages="vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,less,man-db,bash-completion,console-common,libraspberrypi-bin"
 
     case $preset in
         base)
@@ -494,6 +514,40 @@ else
     preset=none
 fi
 
+if [ "$usbboot" = "1" ]; then
+    msd_boot_enabled="$(echo '\x'$(vcgencmd otp_dump | grep 17: | cut -b 4-5)'' | xxd -b | cut -d' ' -f2 | cut -b 3)"
+
+    if [ ! "${msd_boot_enabled}" = "1" ]; then
+        echo "================================================================"
+        echo "                    !!! IMPORTANT NOTICE !!!"
+        echo "Booting from USB mass storage device is disabled!"
+        echo "Read the manual to enable it in \"config.txt\"."
+        echo
+        echo "For this reason, only the system is installed on the USB device!"
+        echo
+        echo "The installation will continue in 15 seconds..."
+        echo "================================================================"
+        usbboot=0
+        sleep 15s
+    else
+        echo "Booting from USB mass storage device is enabled."
+        if [ "${bootdev}" = "/dev/mmcblk0" ]; then
+            echo
+            echo "============================================================================================="
+            echo "                                  !!! IMPORTANT NOTICE !!!"
+            echo "Because you are installing from SD card and want to boot from USB,"
+            echo "the system will POWERED OFF after installation."
+            echo "After finishing the installation, you must REMOVE the SD card and reboot the system MANUALLY."
+            echo
+            echo "The installation will continue in 15 seconds..."
+            echo "============================================================================================="
+            sleep 15s
+            final_action=halt
+        fi
+    fi
+    usbroot=1
+fi
+
 if [ "$usbroot" = "1" ]; then
     rootdev=/dev/sda
     echo -n "Loading USB modules... "
@@ -504,7 +558,11 @@ fi
 
 if [ "$rootpartition" = "" ]; then
     if [ "$rootdev" = "/dev/sda" ]; then
-        rootpartition=/dev/sda1
+        if [ ! "$usbboot" = "1" ]; then
+            rootpartition=/dev/sda1
+        else
+            rootpartition=/dev/sda2
+        fi
     else
         rootpartition=/dev/mmcblk0p2
     fi
@@ -536,6 +594,7 @@ echo "  locales = $locales"
 echo "  system_default_locale = $system_default_locale"
 echo "  cmdline = $cmdline"
 echo "  usbroot = $usbroot"
+echo "  usbboot = $usbboot"
 echo "  rootdev = $rootdev"
 echo "  rootpartition = $rootpartition"
 echo "  rootfstype = $rootfstype"
@@ -547,6 +606,9 @@ echo "  gpu_mem = $gpu_mem"
 echo "  sound_enable = $sound_enable"
 echo "  camera_enable = $camera_enable"
 echo "  camera_disable_led = $camera_disable_led"
+echo
+echo "OTP dump:"
+vcgencmd otp_dump | grep -v "..:00000000\|..:ffffffff" | sed 's/^/  /'
 echo
 
 echo -n "Waiting 5 seconds"
@@ -1034,6 +1096,11 @@ fi
 echo "Configuring bootloader to start the installed system..."
 mv /rootfs/boot/config.txt /rootfs/boot/config-reinstall.txt
 cp /bootfs/config/boot/config.txt /rootfs/boot/config.txt
+
+# extend device initialization time when booting from usb
+if [ "$usbboot" = "1" ]; then
+    touch /rootfs/boot/TIMEOUT
+fi
 
 # default cmdline.txt
 echo -n "Creating default cmdline.txt... "
