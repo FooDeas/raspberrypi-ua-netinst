@@ -49,8 +49,6 @@ camera_enable=0
 camera_disable_led=0
 
 # these shouldn't really be changed unless auto-detection fails
-bootdev=/dev/mmcblk0
-bootpartition=/dev/mmcblk0p1
 rootdev=/dev/mmcblk0
 rootpartition=
 
@@ -148,22 +146,32 @@ mdev -s
 klogd -c 1
 
 # Detect boot device
-if [ -e /dev/mmcblk0p1 ]; then
-    mount /dev/mmcblk0p1 /boot
-    if [ ! -e /boot/bootcode.bin ]; then
-        bootdev=/dev/mmcblk0
-        bootpartition=/dev/mmcblk0p1
+echo
+echo "Searching for boot device..."
+while [ -z "$bootdev" ]; do
+    if [ -e /dev/mmcblk0p1 ]; then
+        echo "SD card detected."
+        mount /dev/mmcblk0p1 /boot
+        if [ -e /boot/bootcode.bin ]; then
+            echo "Boot files found on SD card."
+            bootdev=/dev/mmcblk0
+            bootpartition=/dev/mmcblk0p1
+        fi
+        umount /boot
+    else
+        if [ -e /dev/sda1 ]; then
+            echo "USB drive detected."
+            mount /dev/sda1 /boot
+            if [ -e /boot/bootcode.bin ]; then
+                echo "Boot files found on USB drive."
+                bootdev=/dev/sda
+                bootpartition=/dev/sda1
+            fi
+            umount /boot
+        fi
     fi
-    umount /boot
-fi
-if [ -e /dev/sda1 ]; then
-    mount /dev/sda1 /boot
-    if [ -e /boot/bootcode.bin ]; then
-        bootdev=/dev/sda
-        bootpartition=/dev/sda1
-    fi
-    umount /boot
-fi
+    if [ -z "$bootdev" ]; then sleep 1s; fi
+done
 
 # Check if there's an alternative rcS file and excute it
 # instead of this file. Only do this if this isn't the
@@ -518,7 +526,10 @@ else
     preset=none
 fi
 
-if [ "$usbboot" = "1" ]; then
+if [ ! "$usbboot" = "1" ]; then
+    bootdev=/dev/mmcblk0
+    bootpartition=/dev/mmcblk0p1
+else
     msd_boot_enabled="$(vcgencmd otp_dump | grep 17: | cut -b 4-5)"
     msd_boot_enabled="$(printf "${msd_boot_enabled}" | xxd -r -p | xxd -b | cut -d' ' -f2 | cut -b 3)"
 
