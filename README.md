@@ -126,6 +126,10 @@ The format of the _installer-config.txt_ file and the current defaults:
     disable_root=             # set to 1 to disable root login (and password) altogether
     username=                 # username of the user to create
     userpw=                   # password to use for created user
+    usergroups=               # Add user to this additional groups (comma separated). Non-existent groups
+                              # will be created. (e.g. 'usergroups=family,friends')
+    usersysgroups=            # Add user to this additional groups (comma separated). Non-existent groups
+                              # will be created as system groups. (e.g. 'usersysgroups=video,gpio')
     user_ssh_pubkey=          # public SSH key for created user; the public SSH key must be on a single line, enclosed
                               # in quotes
     user_is_admin=            # set to 1 to install sudo and make the user a sudo user
