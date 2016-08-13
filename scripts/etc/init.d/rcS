@@ -151,14 +151,16 @@ klogd -c 1
 if [ -e /dev/mmcblk0p1 ]; then
     mount /dev/mmcblk0p1 /boot
     if [ ! -e /boot/bootcode.bin ]; then
-        umount /boot
-        if [ -e /dev/sda1 ]; then
-            mount /dev/sda1 /boot
-            if [ -e /boot/bootcode.bin ]; then
-                bootdev=/dev/sda
-                bootpartition=/dev/sda1
-            fi
-        fi
+        bootdev=/dev/mmcblk0
+        bootpartition=/dev/mmcblk0p1
+    fi
+    umount /boot
+fi
+if [ -e /dev/sda1 ]; then
+    mount /dev/sda1 /boot
+    if [ -e /boot/bootcode.bin ]; then
+        bootdev=/dev/sda
+        bootpartition=/dev/sda1
     fi
     umount /boot
 fi
