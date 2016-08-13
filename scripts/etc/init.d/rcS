@@ -515,7 +515,8 @@ else
 fi
 
 if [ "$usbboot" = "1" ]; then
-    msd_boot_enabled="$(echo '\x'$(vcgencmd otp_dump | grep 17: | cut -b 4-5)'' | xxd -b | cut -d' ' -f2 | cut -b 3)"
+    msd_boot_enabled="$(vcgencmd otp_dump | grep 17: | cut -b 4-5)"
+    msd_boot_enabled="$(printf "${msd_boot_enabled}" | xxd -r -p | xxd -b | cut -d' ' -f2 | cut -b 3)"
 
     if [ ! "${msd_boot_enabled}" = "1" ]; then
         echo "================================================================"
@@ -544,7 +545,10 @@ if [ "$usbboot" = "1" ]; then
             sleep 15s
             final_action=halt
         fi
+        bootdev=/dev/sda
+        bootpartition=/dev/sda1
     fi
+    echo
     usbroot=1
 fi
 
