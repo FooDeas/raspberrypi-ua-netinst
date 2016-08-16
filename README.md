@@ -124,15 +124,21 @@ The format of the _installer-config.txt_ file and the current defaults:
     root_ssh_pubkey=          # public SSH key for root; on Debian "jessie" the SSH password login will be disabled
                               # for root if set; the public SSH key must be on a single line, enclosed in quotes
     disable_root=             # set to 1 to disable root login (and password) altogether
+
     username=                 # username of the user to create
     userpw=                   # password to use for created user
-    usergroups=               # Add user to this additional groups (comma separated). Non-existent groups
+    usergpio=                 # Set to 1 to give created user permissions to access GPIO pins. A new system group
+                              # 'gpio' will be created automatically.
+    usergpu=                  # Set to 1 to give created user GPU access permissions (e.g. to run vcgencmd
+                              # without using sudo).
+    usergroups=               # Add created user to this additional groups (comma separated). Non-existent groups
                               # will be created. (e.g. 'usergroups=family,friends')
-    usersysgroups=            # Add user to this additional groups (comma separated). Non-existent groups
-                              # will be created as system groups. (e.g. 'usersysgroups=video,gpio')
+    usersysgroups=            # Add created user to this additional groups (comma separated). Non-existent groups
+                              # will be created as system groups. (e.g. 'usersysgroups=video,www-data')
     user_ssh_pubkey=          # public SSH key for created user; the public SSH key must be on a single line, enclosed
                               # in quotes
     user_is_admin=            # set to 1 to install sudo and make the user a sudo user
+
     cdebootstrap_cmdline=
     bootsize=+128M            # /boot partition size in megabytes, provide it in the form '+<number>M' (without quotes)
     bootoffset=8192           # position in sectors where the boot partition should start. Valid values are > 2048.
