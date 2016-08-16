@@ -875,24 +875,24 @@ if [ ! -z "$username" ]; then
         usersysgroups="$usersysgroups,video"
     fi
     if [ ! -z "$usersysgroups" ]; then
-        echo "  Adding $username to system groups... "
+        echo -n "  Adding $username to system groups: "
         usersysgroups="$(echo ${usersysgroups} | tr ',' ' ')"
-        for sysgroup in "${usersysgroups[@]}"; do
-            echo -e "${sysgroup} "
+        for sysgroup in ${usersysgroups}; do
+            echo -n "${sysgroup} "
             chroot /rootfs /usr/sbin/groupadd -fr "${sysgroup}" || fail
             chroot /rootfs /usr/sbin/usermod -aG "${sysgroup}" "$username" || fail
         done
-        echo "  OK"
+        echo " OK"
     fi
     if [ ! -z "$usergroups" ]; then
-        echo "  Adding $username to groups... "
-        usergroups="$(tr ',' ' ')"
-        for usergroup in "${usergroups[@]}"; do
-            echo -e "${sysgroup} "
+        echo -n "  Adding $username to groups: "
+        usergroups="$(echo ${usergroups} | tr ',' ' ')"
+        for usergroup in ${usergroups}; do
+            echo -n "${usergroup} "
             chroot /rootfs /usr/sbin/groupadd -f "${usergroup}" || fail
             chroot /rootfs /usr/sbin/usermod -aG "${usergroup}" "$username" || fail
         done
-        echo "  OK"
+        echo " OK"
     fi
     if [ "$user_is_admin" = "1" ]; then
         echo -n "  Adding $username to sudo group... "
