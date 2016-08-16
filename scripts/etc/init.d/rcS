@@ -454,19 +454,19 @@ esac
 
 # check if we need to install wpasupplicant package
 if [ "$ifname" != "eth0" ]; then
-    if [ -z "$packages" ]; then
-        packages="wpasupplicant"
+    if [ -z "$syspackages" ]; then
+        syspackages="wpasupplicant"
     else
-        packages="$packages,wpasupplicant"
+        syspackages="$syspackages,wpasupplicant"
     fi
 fi
 
 # check if we need the sudo package and add it if so
 if [ "$user_is_admin" = "1" ]; then
-    if [ -z "$packages" ]; then
-        packages="sudo"
+    if [ -z "$syspackages" ]; then
+        syspackages="sudo"
     else
-        packages="$packages,sudo"
+        syspackages="$syspackages,sudo"
     fi
 fi
 
@@ -488,7 +488,7 @@ if [ "$cdebootstrap_cmdline" = "" ]; then
         base_packages="${base_packages},libpam-systemd"
     fi
     if [ "$hwrng_support" = "1" ]; then
-      base_packages="$base_packages,rng-tools"
+        base_packages="$base_packages,rng-tools"
     fi
     # minimal
     minimal_packages="fake-hwclock,ifupdown,net-tools,ntp,openssh-server,dosfstools"
@@ -517,11 +517,6 @@ if [ "$cdebootstrap_cmdline" = "" ]; then
     # add IPv4 DHCP client if needed
     if [ "$ip_addr" = "dhcp" ]; then
         cdebootstrap_cmdline="${cdebootstrap_cmdline},${dhcp_client_package}"
-    fi
-
-    # add user defined packages
-    if [ "$packages" != "" ]; then
-        cdebootstrap_cmdline="${cdebootstrap_cmdline},${packages}"
     fi
 
 else
@@ -881,7 +876,7 @@ if [ ! -z "$username" ]; then
     fi
     if [ ! -z "$usersysgroups" ]; then
         echo "  Adding $username to system groups... "
-        usersysgroups="$(tr ',' ' ')"
+        usersysgroups="$(echo ${usersysgroups} | tr ',' ' ')"
         for sysgroup in "${usersysgroups[@]}"; do
             echo -e "${sysgroup} "
             chroot /rootfs /usr/sbin/groupadd -fr "${sysgroup}" || fail
@@ -1134,13 +1129,19 @@ echo "OK"
 
 # kernel and firmware package can't be installed during cdebootstrap phase, so do so now
 if [ "$kernel_module" = true ] ; then
-  echo -n "Installing kernel, bootloader package (=firmware) and memory acceleration... "
-  chroot /rootfs /usr/bin/apt-get -y install raspberrypi-kernel raspberrypi-bootloader raspi-copies-and-fills &>/dev/null
-  if [ $? -eq 0 ]; then
-    echo "OK"
-  else
-    echo "FAILED !"
-  fi
+    echo -n "Installing kernel, bootloader package (=firmware) and memory acceleration... "
+
+    # add user defined packages
+    if [ "$packages" != "" ]; then
+        packages="$(echo ${packages} | tr ',' ' ')"
+    fi
+
+    chroot /rootfs /usr/bin/apt-get -y install raspberrypi-kernel raspberrypi-bootloader raspi-copies-and-fills ${packages} &>/dev/null
+    if [ $? -eq 0 ]; then
+        echo "OK"
+    else
+        echo "FAILED !"
+    fi
 fi
 
 # (conditionaly) enable hardware watchdog and set up systemd to use it
