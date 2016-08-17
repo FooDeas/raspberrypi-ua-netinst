@@ -111,76 +111,88 @@ The configuration files are read in as  shell scripts, so you can abuse that fac
 
 The format of the _installer-config.txt_ file and the current defaults:
 
+    # Package options
     preset=server
     packages=                 # comma separated list of extra packages
     mirror=http://mirrordirector.raspbian.org/raspbian/
     release=jessie
-    hostname=pi
-    boot_volume_label=        # Sets the volume name of the boot partition. The volume name can be up to 11 characters
-                              # long. The label is used by most OSes (Windows, Mac OSX and Linux) to identify the
-                              # SD-card on the desktop and can be useful when using multiple SD-cards.
-    domainname=
 
+    # Device / peripheral options
+    gpu_mem=                  # Specifies the amount of RAM in MB that should be reserved for the GPU.
+                              #   The minimum is "16". If not defined, the bootloader sets it to 64MB.
+    sound_enable=0            # Set to "1" to enable the onboard audio.
+    camera_enable=0           # Set to "1" to enable the camera module. This sets all needed parameters in config.txt.
+    camera_disable_led=0      # Disables the camera led. The option `camera_enable=1` has to be set to take effect.
+
+    # Root options
     rootpw=raspbian           # Sets password for root. To disable root, also set root_ssh_pubkey empty.
-    root_ssh_pubkey=          # public SSH key for root; on Debian "jessie" the SSH password login will be disabled
-                              # for root if set; the public SSH key must be on a single line, enclosed in quotes
+    root_ssh_pubkey=          # Sets public SSH key for root login. The public SSH key must be on a single
+                              #   line, enclosed in quotes
     root_ssh_allow=1          # Set to 0 to disable ssh password login for root.
 
+    # User options
     username=                 # username of the user to create
     userpw=                   # password to use for created user
     usergpio=                 # Set to 1 to give created user permissions to access GPIO pins. A new system group
-                              # 'gpio' will be created automatically.
+                              #   'gpio' will be created automatically.
     usergpu=                  # Set to 1 to give created user GPU access permissions (e.g. to run vcgencmd
-                              # without using sudo).
+                              #   without using sudo).
     usergroups=               # Add created user to this additional groups (comma separated). Non-existent groups
-                              # will be created. (e.g. 'usergroups=family,friends')
+                              #   will be created. (e.g. 'usergroups=family,friends')
     usersysgroups=            # Add created user to this additional groups (comma separated). Non-existent groups
-                              # will be created as system groups. (e.g. 'usersysgroups=video,www-data')
+                              #   will be created as system groups. (e.g. 'usersysgroups=video,www-data')
     user_ssh_pubkey=          # public SSH key for created user; the public SSH key must be on a single line, enclosed
-                              # in quotes
+                              #   in quotes
     user_is_admin=            # set to 1 to install sudo and make the user a sudo user
 
-    cdebootstrap_cmdline=
-    bootsize=+128M            # /boot partition size in megabytes, provide it in the form '+<number>M' (without quotes)
-    bootoffset=8192           # position in sectors where the boot partition should start. Valid values are > 2048.
-                              # a bootoffset of 8192 is equal to 4MB and that should make for proper alignment
-    rootsize=                 # / partition size in megabytes, provide it in the form '+<number>M' (without quotes),
-                              # leave empty to use all free space
-    timeserver=time.nist.gov
-    timezone=Etc/UTC          # set to desired timezone (e.g. Europe/Ljubljana)
-    locales=                  # a space delimited list of locales that will be generated during install
-                              # (e.g. "en_US.UTF-8 nl_NL sl_SI.UTF-8")
-    system_default_locale=    # the default system locale to set (using the LANG environment variable)
-    disable_predictable_nin=1 # Disable Predictable Network Interface Names. Set to 0 if you want to use predictable
-                              # network interface names, which means if you use the same SD card on a different
-                              # RPi board, your network device might be named differently. This will result in the
-                              # board having no network connectivity.
+    # Network options
+    hostname=pi
+    domainname=
     ifname=eth0
     ip_addr=dhcp
     ip_netmask=0.0.0.0
     ip_broadcast=0.0.0.0
     ip_gateway=0.0.0.0
     ip_nameservers=
-    drivers_to_load=
-    online_config=            # URL to extra config that will be executed after installer-config.txt
+
+    # Localization options
+    timezone=Etc/UTC          # set to desired timezone (e.g. Europe/Ljubljana)
+    locales=                  # a space delimited list of locales that will be generated during install
+                              #   (e.g. "en_US.UTF-8 nl_NL sl_SI.UTF-8")
+    system_default_locale=    # the default system locale to set (using the LANG environment variable)
+
+    # Partitioning / Filesystem options
     usbroot=                  # Set to 1 to install to first USB disk.
-    cmdline="dwc_otg.lpm_enable=0 console=ttyAMA0,115200 kgdboc=ttyAMA0,115200 console=tty1 elevator=deadline"
     rootfstype=ext4
-    rootfs_mkfs_options=
+    boot_volume_label=        # Sets the volume name of the boot partition. The volume name can be up to 11 characters
+                              #   long. The label is used by most OSes (Windows, Mac OSX and Linux) to identify the
+                              #   SD-card on the desktop and can be useful when using multiple SD-cards.
+    bootsize=+128M            # /boot partition size in megabytes, provide it in the form '+<number>M' (without quotes)
+    bootoffset=8192           # position in sectors where the boot partition should start. Valid values are > 2048.
+                              #   a bootoffset of 8192 is equal to 4MB and that should make for proper alignment
+
+    # Advanced options
+    cmdline="dwc_otg.lpm_enable=0 console=ttyAMA0,115200 kgdboc=ttyAMA0,115200 console=tty1 elevator=deadline"
     rootfs_install_mount_options='noatime,data=writeback,nobarrier,noinit_itable'
     rootfs_mount_options='errors=remount-ro,noatime'
     final_action=reboot       # what to do at the end of install, one of poweroff / halt / reboot
     hwrng_support=1           # install support for the ARM hardware random number generator. The default is
-                              # enabled (1) on all presets. Users requiring a `base` install are advised that
-                              # `hwrng_support=0` must be added in `installer-config.txt` if HWRNG support is
-                              # undesirable.
+                              #   enabled (1) on all presets. Users requiring a `base` install are advised that
+                              #   `hwrng_support=0` must be added in `installer-config.txt` if HWRNG support is
+                              #   undesirable.
     enable_watchdog=0         # loads up the hardware watchdog module and configures systemd to use it. Set to
-                              # "1" to enable this functionality.
-    gpu_mem=                  # Specifies the amount of RAM in MB that should be reserved for the GPU.
-                              # Minimum is "16". If not defined, the bootloader sets it to 64MB.
-    sound_enable=0            # Set to "1" to enable the onboard audio.
-    camera_enable=0           # Set to "1" to enable the camera module. This sets all needed parameters in config.txt.
-    camera_disable_led=0      # Disables the camera led. The option `camera_enable=1` has to be set to take effect.
+                              #   "1" to enable this functionality.
+    cdebootstrap_cmdline=
+    rootfs_mkfs_options=
+    rootsize=                 # / partition size in megabytes, provide it in the form '+<number>M' (without quotes),
+                              #   leave empty to use all free space
+    timeserver=time.nist.gov
+    disable_predictable_nin=1 # Disable Predictable Network Interface Names. Set to 0 if you want to use predictable
+                              #   network interface names, which means if you use the same SD card on a different
+                              #   RPi board, your network device might be named differently. This will result in the
+                              #   board having no network connectivity.
+    drivers_to_load=
+    online_config=            # URL to extra config that will be executed after installer-config.txt
 
 The timeserver parameter is only used during installation for _rdate_ which is used as fallback when setting the time with `ntpdate` fails.  
 
