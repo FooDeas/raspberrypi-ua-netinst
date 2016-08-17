@@ -848,12 +848,12 @@ fi
 
 # add user to system
 if [ -n "$username" ]; then
-    echo -n "  Creating $username user... "
-    chroot /rootfs /usr/sbin/adduser "$username" --gecos "" --disabled-password || fail
-    echo "OK"
+    echo -n "  Creating user $username... "
+    chroot /rootfs /usr/sbin/adduser "$username" --gecos "" --disabled-password || fail | sed 's/^/    /'
+    echo "  OK"
     # add SSH key for user (if provided)
     if [ -n "$user_ssh_pubkey" ]; then
-        echo -n "  Setting $username SSH key... "
+        echo -n "  Setting SSH key for $username... "
         ssh_dir="/rootfs/home/$username/.ssh"
         mkdir -p -m 700 "$ssh_dir" && \
             echo "$user_ssh_pubkey" > "$ssh_dir/authorized_keys" || fail
@@ -866,17 +866,18 @@ if [ -n "$username" ]; then
         echo "OK"
     fi
     if [ -n "$userpw" ]; then
-        echo -n "  Setting $username password... "
+        echo -n "  Setting password for $username... "
         echo -n "$username:$userpw" | chroot /rootfs /usr/sbin/chpasswd || fail
         echo "OK"
     fi
     if [ "$usergpio" = "1" ]; then
-        echo "  Giving GPIO access permissions to system group 'gpio'... "
+        echo -n "  Giving GPIO access permissions to system group 'gpio'... "
         usersysgroups="$usersysgroups,gpio"
         mkdir -p "/rootfs/etc/udev/rules.d"
         echo "SUBSYSTEM==\"bcm2835-gpiomem\", KERNEL==\"gpiomem\", GROUP=\"gpio\", MODE=\"0660\"" > /rootfs/etc/udev/rules.d/99-gpio.rules
         echo "SUBSYSTEM==\"gpio\", KERNEL==\"gpiochip*\", ACTION==\"add\", PROGRAM=\"/bin/sh -c 'chown root:gpio /sys/class/gpio/export /sys/class/gpio/unexport ; chmod 220 /sys/class/gpio/export /sys/class/gpio/unexport'\"" >> /rootfs/etc/udev/rules.d/99-gpio.rules
         echo "SUBSYSTEM==\"gpio\", KERNEL==\"gpio*\", ACTION==\"add\", PROGRAM=\"/bin/sh -c 'chown root:gpio /sys%p/active_low /sys%p/direction /sys%p/edge /sys%p/value ; chmod 660 /sys%p/active_low /sys%p/direction /sys%p/edge /sys%p/value'\"" >> /rootfs/etc/udev/rules.d/99-gpio.rules
+        echo "OK"
     fi
     if [ "$usergpu" = "1" ]; then
         usersysgroups="$usersysgroups,video"
@@ -1129,7 +1130,7 @@ done
 # return to the old location for the rest of the processing
 cd $old_dir || fail
 
-
+echo
 echo -n "Updating package lists... "
 chroot /rootfs /usr/bin/apt-get update &>/dev/null
 echo "OK"
