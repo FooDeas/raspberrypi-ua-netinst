@@ -172,6 +172,7 @@ The format of the _installer-config.txt_ file and the current defaults:
                               #   a bootoffset of 8192 is equal to 4MB and that should make for proper alignment
 
     # Advanced options
+    quiet_boot=0              # Disables most log messages on boot.
     cmdline="dwc_otg.lpm_enable=0 console=ttyAMA0,115200 kgdboc=ttyAMA0,115200 console=tty1 elevator=deadline"
     rootfs_install_mount_options='noatime,data=writeback,nobarrier,noinit_itable'
     rootfs_mount_options='errors=remount-ro,noatime'

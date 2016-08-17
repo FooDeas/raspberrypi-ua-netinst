@@ -46,6 +46,7 @@ final_action=reboot
 hwrng_support=1
 enable_watchdog=0
 gpu_mem=
+quiet_boot=0
 sound_enable=0
 camera_enable=0
 camera_disable_led=0
@@ -630,6 +631,7 @@ echo "  rootfs_install_mount_options = $rootfs_install_mount_options"
 echo "  rootfs_mount_options = $rootfs_mount_options"
 echo "  final_action = $final_action"
 echo "  gpu_mem = $gpu_mem"
+echo "  quiet_boot = $quiet_boot"
 echo "  sound_enable = $sound_enable"
 echo "  camera_enable = $camera_enable"
 echo "  camera_disable_led = $camera_disable_led"
@@ -1172,7 +1174,11 @@ fi
 
 # default cmdline.txt
 echo -n "Creating default cmdline.txt... "
-echo "$cmdline root=$rootpartition rootfstype=$rootfstype rootwait loglevel=3" > /rootfs/boot/cmdline.txt
+if [ "$quiet_boot" = "1" ]; then
+    echo "$cmdline root=$rootpartition rootfstype=$rootfstype rootwait quiet" > /rootfs/boot/cmdline.txt
+else
+    echo "$cmdline root=$rootpartition rootfstype=$rootfstype rootwait loglevel=3" > /rootfs/boot/cmdline.txt
+fi
 echo "OK"
 
 # enable sound if specified in the configuration file
