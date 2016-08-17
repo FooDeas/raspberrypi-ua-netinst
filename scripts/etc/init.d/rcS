@@ -519,6 +519,11 @@ if [ "$cdebootstrap_cmdline" = "" ]; then
         cdebootstrap_cmdline="${cdebootstrap_cmdline},${dhcp_client_package}"
     fi
 
+    # add user defined syspackages
+    if [ -n "$syspackages" ]; then
+        cdebootstrap_cmdline="${cdebootstrap_cmdline},${syspackages}"
+    fi
+
 else
     preset=none
 fi
