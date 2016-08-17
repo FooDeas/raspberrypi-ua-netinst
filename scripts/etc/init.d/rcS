@@ -212,7 +212,7 @@ exec &> ${LOGFILE}.pipe
 rm ${LOGFILE}.pipe
 
 # detecting model based on http://elinux.org/RPi_HardwareHistory
-rpi_hardware=$(grep Revision /proc/cpuinfo | cut -d " " -f 2)
+rpi_hardware=$(grep Revision /proc/cpuinfo | cut -d " " -f 2 | sed 's/^1000//')
 case $rpi_hardware in
     0002) rpi_hardware_version="B" ;;
     0003) rpi_hardware_version="B" ;;
