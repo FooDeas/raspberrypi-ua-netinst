@@ -12,7 +12,7 @@ boot_volume_label=
 domainname=
 rootpw=raspbian
 root_ssh_pubkey=
-disable_root=
+root_ssh_allow=1
 username=
 userpw=
 usergpio=
@@ -601,7 +601,7 @@ echo "  hostname = $hostname"
 echo "  domainname = $domainname"
 echo "  rootpw = $rootpw"
 echo "  root_ssh_pubkey = $root_ssh_pubkey"
-echo "  disable_root = $disable_root"
+echo "  root_ssh_allow = $root_ssh_allow"
 echo "  username = $username"
 echo "  userpw = $userpw"
 echo "  usergpio = $usergpio"
@@ -822,26 +822,26 @@ cdebootstrap-static --arch=armhf $cdebootstrap_cmdline $release /rootfs $mirror 
 echo "Configuring installed system:"
 
 # configure root login
-if [ "$disable_root" != "1" ]; then
-    # add SSH key for root (if provided)
-    if [ -n "$root_ssh_pubkey" ]; then
-        echo -n "  Setting root SSH key... "
-        mkdir -p -m 700 /rootfs/root/.ssh && \
-            echo "$root_ssh_pubkey" > /rootfs/root/.ssh/authorized_keys || fail
-        echo "OK"
-        echo -n "  Setting permissions on root SSH authorized_keys... "
-        chmod 600 /rootfs/root/.ssh/authorized_keys || fail
-        echo "OK"
-    fi
-    if [ -n "$rootpw" ]; then
-        # openssh-server in jessie doesn't allow root to login with a password
-        if [ "$release" = "jessie" ] && [ -f /rootfs/etc/ssh/sshd_config ]; then
-            echo -n "  Allowing root to login with password on jessie... "
-            sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /rootfs/etc/ssh/sshd_config || fail
-            echo "OK"
-        fi
-        echo -n "  Setting root password... "
-        echo -n "root:$rootpw" | chroot /rootfs /usr/sbin/chpasswd || fail
+if [ -n "$rootpw" ]; then
+    echo -n "  Setting root password... "
+    echo -n "root:$rootpw" | chroot /rootfs /usr/sbin/chpasswd || fail
+    echo "OK"
+fi
+# add SSH key for root (if provided)
+if [ -n "$root_ssh_pubkey" ]; then
+    echo -n "  Setting root SSH key... "
+    mkdir -p -m 700 /rootfs/root/.ssh && \
+        echo "$root_ssh_pubkey" > /rootfs/root/.ssh/authorized_keys || fail
+    echo "OK"
+    echo -n "  Setting permissions on root SSH authorized_keys... "
+    chmod 600 /rootfs/root/.ssh/authorized_keys || fail
+    echo "OK"
+fi
+# openssh-server in jessie doesn't allow root to login with a password
+if [ "$root_ssh_allow" = "1" ]; then
+    if [ "$release" = "jessie" ] && [ -f /rootfs/etc/ssh/sshd_config ]; then
+        echo -n "  Allowing root to login with password on jessie... "
+        sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /rootfs/etc/ssh/sshd_config || fail
         echo "OK"
     fi
 fi

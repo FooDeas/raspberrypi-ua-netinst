@@ -120,10 +120,11 @@ The format of the _installer-config.txt_ file and the current defaults:
                               # long. The label is used by most OSes (Windows, Mac OSX and Linux) to identify the
                               # SD-card on the desktop and can be useful when using multiple SD-cards.
     domainname=
-    rootpw=raspbian
+
+    rootpw=raspbian           # Sets password for root. To disable root, also set root_ssh_pubkey empty.
     root_ssh_pubkey=          # public SSH key for root; on Debian "jessie" the SSH password login will be disabled
                               # for root if set; the public SSH key must be on a single line, enclosed in quotes
-    disable_root=             # set to 1 to disable root login (and password) altogether
+    root_ssh_allow=1          # Set to 0 to disable ssh password login for root.
 
     username=                 # username of the user to create
     userpw=                   # password to use for created user
