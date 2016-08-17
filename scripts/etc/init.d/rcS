@@ -62,7 +62,7 @@ fail()
 
     # copy logfile to /boot/ partition to preserve it.
     # test whether the sd card is still mounted on /boot and if not, mount it.
-    if [ ! -f /boot/bootcode.bin ] ; then
+    if [ ! -f /boot/bootcode.bin ]; then
         mount $bootpartition /boot
         fail_boot_mounted=true
     fi
@@ -70,7 +70,7 @@ fail()
     sync
 
     # if we mounted /boot in the fail command, unmount it.
-    if [ "$fail_boot_mounted" = true ] ; then
+    if [ "$fail_boot_mounted" = true ]; then
         umount /boot
     fi
 
@@ -146,11 +146,12 @@ echo /opt/busybox/bin/mdev > /proc/sys/kernel/hotplug
 mdev -s
 
 klogd -c 1
+sleep 3s
 
 # Detect boot device
 echo
 echo "Searching for boot device..."
-while [ -z "$bootdev" ]; do
+until [ -n "$bootdev" ]; do
     if [ -e /dev/mmcblk0p1 ]; then
         echo "SD card detected."
         mount /dev/mmcblk0p1 /boot
@@ -294,7 +295,7 @@ echo
 
 # depmod needs to update modules.dep before using modprobe
 depmod -a
-if [ "$drivers_to_load" != "" ] ; then
+if [ -n "$drivers_to_load" ]; then
    echo "Loading additional drivers."
    for driver in $drivers_to_load
    do
@@ -362,10 +363,10 @@ fi
 PRE_NETWORK_DURATION=$(date +%s)
 
 date_set=false
-if [ "$date_set" = "false" ] ; then
+if [ "$date_set" = "false" ]; then
     # set time with ntpdate
     ntpdate-debian -b &>/dev/null
-    if [ $? -eq 0 ] ; then
+    if [ $? -eq 0 ]; then
         echo -n "Time set using ntpdate to... "
         date
         date_set=true
@@ -373,7 +374,7 @@ if [ "$date_set" = "false" ] ; then
         echo "Failed to set time using ntpdate!"
     fi
 
-    if [ "$date_set" = "false" ] ; then
+    if [ "$date_set" = "false" ]; then
         # failed to set time with ntpdate, fall back to rdate
         # time server addresses taken from http://tf.nist.gov/tf-cgi/servers.cgi
         timeservers=$timeserver
@@ -399,7 +400,7 @@ if [ "$date_set" = "false" ] ; then
         done
     fi
 fi
-if [ "$date_set" = "false" ] ; then
+if [ "$date_set" = "false" ]; then
     echo "FAILED to set the date, so things are likely to fail now ..."
     echo "Make sure that rdate port 37 is not blocked by your firewall."
 fi
@@ -413,7 +414,7 @@ echo ""
 echo "Installation started at $(date --date="@$REAL_STARTTIME" --utc)."
 echo ""
 
-if [ "$online_config" != "" ]; then
+if [ -n "$online_config" ]; then
     echo -n "Downloading online config from $online_config... "
     wget -q -O /online-config.txt $online_config &>/dev/null || fail
     echo "OK"
@@ -471,20 +472,20 @@ if [ "$user_is_admin" = "1" ]; then
 fi
 
 # configure different kinds of presets
-if [ "$cdebootstrap_cmdline" = "" ]; then
+if [ -z "$cdebootstrap_cmdline" ]; then
 
     # from small to large: base, minimal, server
     # not very logical that minimal > base, but that's how it was historically defined
 
     init_system=""
-    if [ "$release" = "jessie" ] ; then
+    if [ "$release" = "jessie" ]; then
         init_system="systemd"
     fi
 
     # base
     base_packages="cpufrequtils,kmod"
 
-    if [ "$init_system" = "systemd" ] ; then
+    if [ "$init_system" = "systemd" ]; then
         base_packages="${base_packages},libpam-systemd"
     fi
     if [ "$hwrng_support" = "1" ]; then
@@ -528,14 +529,14 @@ else
     preset=none
 fi
 
-if [ ! "$usbboot" = "1" ]; then
+if [ "$usbboot" != "1" ]; then
     bootdev=/dev/mmcblk0
     bootpartition=/dev/mmcblk0p1
 else
     msd_boot_enabled="$(vcgencmd otp_dump | grep 17: | cut -b 4-5)"
     msd_boot_enabled="$(printf "${msd_boot_enabled}" | xxd -r -p | xxd -b | cut -d' ' -f2 | cut -b 3)"
 
-    if [ ! "${msd_boot_enabled}" = "1" ]; then
+    if [ "${msd_boot_enabled}" != "1" ]; then
         echo "================================================================"
         echo "                    !!! IMPORTANT NOTICE !!!"
         echo "Booting from USB mass storage device is disabled!"
@@ -577,9 +578,9 @@ if [ "$usbroot" = "1" ]; then
     echo "OK"
 fi
 
-if [ "$rootpartition" = "" ]; then
+if [ -z "$rootpartition" ]; then
     if [ "$rootdev" = "/dev/sda" ]; then
-        if [ ! "$usbboot" = "1" ]; then
+        if [ "$usbboot" != "1" ]; then
             rootpartition=/dev/sda1
         else
             rootpartition=/dev/sda2
@@ -644,7 +645,7 @@ done
 echo
 
 # fdisk's boot offset is 2048, so only handle $bootoffset is it's larger then that
-if [ -n "$bootoffset" ] && [ "$bootoffset" -gt 2048 ] ; then
+if [ -n "$bootoffset" ] && [ "$bootoffset" -gt 2048 ]; then
     emptyspaceend=$((bootoffset - 1))
 else
     emptyspaceend=
@@ -654,7 +655,7 @@ fi
 FDISK_SCHEME_SD_ONLY=/etc/raspberrypi-ua-netinst/fdisk-sd-only.config
 touch $FDISK_SCHEME_SD_ONLY
 {
-    if [ -n "$emptyspaceend" ] ; then
+    if [ -n "$emptyspaceend" ]; then
         # we have a custom bootoffset, so first create a temporary
         # partition occupying the space before it.
         # We'll remove it before committing the changes again.
@@ -670,7 +671,7 @@ touch $FDISK_SCHEME_SD_ONLY
     echo ""
     echo "$bootsize"
     echo "t"
-    if [ -n "$emptyspaceend" ] ; then
+    if [ -n "$emptyspaceend" ]; then
         # because we now have more then 1 partition
         # we need to select the one to operate on
         echo "1"
@@ -681,7 +682,7 @@ touch $FDISK_SCHEME_SD_ONLY
     echo "2"
     echo ""
     echo "$rootsize"
-    if [ -n "$emptyspaceend" ] ; then
+    if [ -n "$emptyspaceend" ]; then
         # now remove the temporary partition again
         echo "d"
         echo "4"
@@ -693,7 +694,7 @@ touch $FDISK_SCHEME_SD_ONLY
 FDISK_SCHEME_SD_BOOT=/etc/raspberrypi-ua-netinst/fdisk-sd-boot.config
 touch $FDISK_SCHEME_SD_BOOT
 {
-    if [ -n "$emptyspaceend" ] ; then
+    if [ -n "$emptyspaceend" ]; then
         # we have a custom bootoffset, so first create a temporary
         # partition occupying the space before it.
         # We'll remove it before committing the changes again.
@@ -709,13 +710,13 @@ touch $FDISK_SCHEME_SD_BOOT
     echo ""
     echo "$bootsize"
     echo "t"
-    if [ -n "$emptyspaceend" ] ; then
+    if [ -n "$emptyspaceend" ]; then
         # because we now have more then 1 partition
         # we need to select the one to operate on
         echo "1"
     fi
     echo "b"
-    if [ -n "$emptyspaceend" ] ; then
+    if [ -n "$emptyspaceend" ]; then
         # now remove the temporary partition again
         echo "d"
         echo "4"
@@ -739,7 +740,7 @@ touch $FDISK_SCHEME_USB_ROOT
 echo -n "Waiting for $rootdev... "
 for i in $(seq 1 10); do
 
-    if [ "$(fdisk -l $rootdev 2>&1 | fgrep Disk)" != "" ]; then
+    if [ -n "$(fdisk -l $rootdev 2>&1 | fgrep Disk)" ]; then
         echo "OK"
         break
     fi
@@ -775,7 +776,7 @@ fi
 mdev -s
 
 echo -n "Initializing /boot as vfat... "
-if [ "$boot_volume_label" = "" ]; then
+if [ -z "$boot_volume_label"  ]; then
   mkfs.vfat $bootpartition &>/dev/null || fail
 else
   mkfs.vfat -n $boot_volume_label $bootpartition &>/dev/null || fail
@@ -789,8 +790,8 @@ sync
 umount /boot || fail
 echo "OK"
 
-if [ "$kernel_module" = true ] ; then
-  if [ "$rootfstype" != "ext4" ] ; then
+if [ "$kernel_module" = true ]; then
+  if [ "$rootfstype" != "ext4" ]; then
     echo -n "Loading $rootfstype module... "
     modprobe $rootfstype &> /dev/null || fail
     echo "OK"
@@ -807,8 +808,8 @@ mkdir /rootfs/boot || fail
 mount $bootpartition /rootfs/boot || fail
 echo "OK"
 
-if [ "$kernel_module" = true ] ; then
-  if [ "$rootfstype" != "ext4" ] ; then
+if [ "$kernel_module" = true ]; then
+  if [ "$rootfstype" != "ext4" ]; then
     mkdir -p /rootfs/etc/initramfs-tools
     echo $rootfstype >> /rootfs/etc/initramfs-tools/modules
   fi
@@ -820,9 +821,9 @@ cdebootstrap-static --arch=armhf $cdebootstrap_cmdline $release /rootfs $mirror 
 echo "Configuring installed system:"
 
 # configure root login
-if [ ! "$disable_root" = "1" ]; then
+if [ "$disable_root" != "1" ]; then
     # add SSH key for root (if provided)
-    if [ ! -z "$root_ssh_pubkey" ]; then
+    if [ -n "$root_ssh_pubkey" ]; then
         echo -n "  Setting root SSH key... "
         mkdir -p -m 700 /rootfs/root/.ssh && \
             echo "$root_ssh_pubkey" > /rootfs/root/.ssh/authorized_keys || fail
@@ -831,9 +832,9 @@ if [ ! "$disable_root" = "1" ]; then
         chmod 600 /rootfs/root/.ssh/authorized_keys || fail
         echo "OK"
     fi
-    if [ ! -z "$rootpw" ]; then
+    if [ -n "$rootpw" ]; then
         # openssh-server in jessie doesn't allow root to login with a password
-        if [ "$release" = "jessie" ] && [ -f /rootfs/etc/ssh/sshd_config ] ; then
+        if [ "$release" = "jessie" ] && [ -f /rootfs/etc/ssh/sshd_config ]; then
             echo -n "  Allowing root to login with password on jessie... "
             sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /rootfs/etc/ssh/sshd_config || fail
             echo "OK"
@@ -845,12 +846,12 @@ if [ ! "$disable_root" = "1" ]; then
 fi
 
 # add user to system
-if [ ! -z "$username" ]; then
+if [ -n "$username" ]; then
     echo -n "  Creating $username user... "
     chroot /rootfs /usr/sbin/adduser "$username" --gecos "" --disabled-password || fail
     echo "OK"
     # add SSH key for user (if provided)
-    if [ ! -z "$user_ssh_pubkey" ]; then
+    if [ -n "$user_ssh_pubkey" ]; then
         echo -n "  Setting $username SSH key... "
         ssh_dir="/rootfs/home/$username/.ssh"
         mkdir -p -m 700 "$ssh_dir" && \
@@ -863,7 +864,7 @@ if [ ! -z "$username" ]; then
         chmod 600 "$ssh_dir/authorized_keys" || fail
         echo "OK"
     fi
-    if [ ! -z "$userpw" ]; then
+    if [ -n "$userpw" ]; then
         echo -n "  Setting $username password... "
         echo -n "$username:$userpw" | chroot /rootfs /usr/sbin/chpasswd || fail
         echo "OK"
@@ -879,7 +880,7 @@ if [ ! -z "$username" ]; then
     if [ "$usergpu" = "1" ]; then
         usersysgroups="$usersysgroups,video"
     fi
-    if [ ! -z "$usersysgroups" ]; then
+    if [ -n "$usersysgroups" ]; then
         echo -n "  Adding $username to system groups: "
         usersysgroups="$(echo ${usersysgroups} | tr ',' ' ')"
         for sysgroup in ${usersysgroups}; do
@@ -887,9 +888,9 @@ if [ ! -z "$username" ]; then
             chroot /rootfs /usr/sbin/groupadd -fr "${sysgroup}" || fail
             chroot /rootfs /usr/sbin/usermod -aG "${sysgroup}" "$username" || fail
         done
-        echo " OK"
+        echo "OK"
     fi
-    if [ ! -z "$usergroups" ]; then
+    if [ -n "$usergroups" ]; then
         echo -n "  Adding $username to groups: "
         usergroups="$(echo ${usergroups} | tr ',' ' ')"
         for usergroup in ${usergroups}; do
@@ -897,7 +898,7 @@ if [ ! -z "$username" ]; then
             chroot /rootfs /usr/sbin/groupadd -f "${usergroup}" || fail
             chroot /rootfs /usr/sbin/usermod -aG "${usergroup}" "$username" || fail
         done
-        echo " OK"
+        echo "OK"
     fi
     if [ "$user_is_admin" = "1" ]; then
         echo -n "  Adding $username to sudo group... "
@@ -943,7 +944,7 @@ fi
 # Remove any existing 127.0.1.1 entries
 sed -i 's/^.*127\.0\.1\.1.*$//' /rootfs/etc/hosts
 # Create the 127.0.1.1 entry
-if [ "$domainname" = "" ]; then
+if [ -z "$domainname" ]; then
     echo -n "adding ${hostname}... "
     echo "127.0.1.1 ${hostname}" >> /rootfs/etc/hosts || fail
 else
@@ -1021,7 +1022,7 @@ else
 fi
 
 # generate locale data
-if [ "$locales" != "" ]; then
+if [ -n "$locales" ]; then
     echo -n "  Enabling locales... "
     for locale in $locales; do
         echo -n "$locale... "
@@ -1032,7 +1033,7 @@ if [ "$locales" != "" ]; then
         fi
     done
     echo "OK"
-    if [ -x /rootfs/usr/sbin/locale-gen ] ; then
+    if [ -x /rootfs/usr/sbin/locale-gen ]; then
         chroot /rootfs /usr/sbin/locale-gen | sed 's/^/  /'
         if [ $? -ne 0 ]; then
             echo "  ERROR while generating locales !"
@@ -1043,8 +1044,8 @@ if [ "$locales" != "" ]; then
 fi
 
 # set system default locale
-if [ "$system_default_locale" != "" ] ; then
-    if [ -x /rootfs/usr/sbin/update-locale ] ; then
+if [ -n "$system_default_locale" ]; then
+    if [ -x /rootfs/usr/sbin/update-locale ]; then
         echo -n "  Setting system default locale... "
         chroot /rootfs /usr/sbin/update-locale LANG="$system_default_locale" &> /dev/null
         if [ $? -eq 0 ]; then
@@ -1087,7 +1088,7 @@ cd /rootfs/boot/config/apt/ || fail
 # iterate through all the *.list files and add them to /etc/apt/sources.list.d
 for listfile in ./*.list
 do
-    if [ "$listfile" != "./sources.list" ] && [ -e "$listfile" ] ; then
+    if [ "$listfile" != "./sources.list" ] && [ -e "$listfile" ]; then
         echo -n "  Copying $listfile to /etc/apt/sources.list.d/... "
         sed "s/__RELEASE__/$release/g" "$listfile" > "/rootfs/etc/apt/sources.list.d/$listfile" || fail
         echo "OK"
@@ -1133,11 +1134,11 @@ chroot /rootfs /usr/bin/apt-get update &>/dev/null
 echo "OK"
 
 # kernel and firmware package can't be installed during cdebootstrap phase, so do so now
-if [ "$kernel_module" = true ] ; then
+if [ "$kernel_module" = true ]; then
     echo -n "Installing kernel, bootloader package (=firmware) and memory acceleration... "
 
     # add user defined packages
-    if [ "$packages" != "" ]; then
+    if [ -n "$packages" ]; then
         packages="$(echo ${packages} | tr ',' ' ')"
     fi
 
@@ -1170,23 +1171,23 @@ echo "$cmdline root=$rootpartition rootfstype=$rootfstype rootwait loglevel=3" >
 echo "OK"
 
 # enable sound if specified in the configuration file
-if [ "${sound_enable}" = "1" ] ; then
+if [ "${sound_enable}" = "1" ]; then
     sed -i "s/^#\(dtparam=audio=on\)/\1/" /rootfs/boot/config.txt
 fi
 
 # enable camera if specified in the configuration file
-if [ "${camera_enable}" = "1" ] ; then
-    if [ "0${gpu_mem}" -lt "128" ] ; then
+if [ "${camera_enable}" = "1" ]; then
+    if [ "0${gpu_mem}" -lt "128" ]; then
         gpu_mem=128
     fi
     echo "start_x=1" >> /rootfs/boot/config.txt
-    if [ "${camera_disable_led}" = "1" ] ; then
+    if [ "${camera_disable_led}" = "1" ]; then
         echo "disable_camera_led=1" >> /rootfs/boot/config.txt
     fi
 fi
 
 # set gpu_mem if specified in the configuration file
-if [ -n "${gpu_mem}" ] ; then
+if [ -n "${gpu_mem}" ]; then
     echo "gpu_mem=${gpu_mem}" >> /rootfs/boot/config.txt
 fi
 
