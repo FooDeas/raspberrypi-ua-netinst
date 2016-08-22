@@ -819,7 +819,7 @@ fi
 mdev -s
 
 echo -n "Initializing /boot as vfat... "
-if [ -z "$boot_volume_label"  ]; then
+if [ -z "$boot_volume_label" ]; then
   mkfs.vfat $bootpartition &>/dev/null || fail
 else
   mkfs.vfat -n $boot_volume_label $bootpartition &>/dev/null || fail
@@ -1068,7 +1068,7 @@ if [ -n "$locales" ]; then
     done
     echo "OK"
     if [ -x /rootfs/usr/sbin/locale-gen ]; then
-        chroot /rootfs /usr/sbin/locale-gen | sed 's/^/  /'
+        (s=/tmp/.$$_$RANDOM;((chroot /rootfs /usr/sbin/locale-gen; echo $?>$s) | (sed 's/^/  /')); exit $(cat $s;rm $s))
         if [ $? -ne 0 ]; then
             echo "  ERROR while generating locales !"
         fi
@@ -1169,7 +1169,8 @@ echo "OK"
 
 # kernel and firmware package can't be installed during cdebootstrap phase, so do so now
 if [ "$kernel_module" = true ]; then
-    echo -n "Installing kernel, bootloader package (=firmware) and memory acceleration... "
+    echo
+    echo "Installing kernel, bootloader (=firmware) and user packages..."
     if [ -n "$server_packages_postinstall" ]; then
         server_packages_postinstall="$(echo ${server_packages_postinstall} | tr ',' ' ')"
     fi
@@ -1179,7 +1180,7 @@ if [ "$kernel_module" = true ]; then
         packages="$(echo ${packages} | tr ',' ' ')"
     fi
 
-    chroot /rootfs /usr/bin/apt-get -y install raspberrypi-kernel raspberrypi-bootloader ${server_packages_postinstall} ${packages} &>/dev/null
+    (s=/tmp/.$$_$RANDOM;((chroot /rootfs /usr/bin/apt-get -y install raspberrypi-kernel raspberrypi-bootloader ${server_packages_postinstall} ${packages}; echo $?>$s) | (sed 's/^/  /')); exit $(cat $s;rm $s))
     if [ $? -eq 0 ]; then
         echo "OK"
     else
