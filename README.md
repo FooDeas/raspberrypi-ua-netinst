@@ -14,11 +14,16 @@
 
 ## Fork Modifications
 
-In distinction to the base this fork uses the RaspberryPi.org kernel.
+In distinction to the base this fork has many changes and improvements. This includes:
+ - full featured kernel and bootloader from raspberrypi.org (compatible with apt)
+ - more installer customization options
+ - ability to install via onboard WiFi
+ - better compatibility with accessory
+ - improved performance out of the box
 
 ## Intro
 
-The minimal Raspbian unattended netinstaller for Raspberry Pi Model 1B to 3.  
+The minimal Raspbian unattended netinstaller for Raspberry Pi Model 1B to 3B.  
 
 This project provides [Raspbian][1] power users the possibility to install a minimal base system unattended using latest Raspbian packages regardless when the installer was built.
 
@@ -43,7 +48,7 @@ Other presets include _minimal_ which has even less packages (no logging, no tex
  - option to install root to USB drive
 
 ## Requirements
- - a Raspberry Pi Model 1B, Model 1B+, Model 2B or 3
+ - a Raspberry Pi Model 1B, Model 1B+, Model 2B or 3B
  - SD card of at least 640MB or at least 128MB for USB root install (without customization)
  - working Ethernet with Internet connectivity
 
@@ -90,7 +95,7 @@ In normal circumstances, you can just power on your Pi and cross your fingers.
 If you don't have a display attached you can monitor the Ethernet card leds to guess activity. When it finally reboots after installing everything you will see them going out and on a few times when Raspbian configures it on boot.
 
 If you do have a display, you can follow the progress and catch any possible errors in the default configuration or your own modifications.  
-If you have a serial cable, then remove 'console=tty1' at then end of the `cmdline.txt` file.
+If you have a serial cable connected, installer ouput can be followed there, too. If 'console=tty1' at then end of the `cmdline.txt` file is removed, you have access to the console in case of problems.
 
 **Note:** During the installation you'll see various warning messages, like "Warning: cannot read table of mounted file systems" and "dpkg: warning: ignoring pre-dependency problem!". Those are expected and harmless.
 
@@ -127,7 +132,7 @@ The format of the _installer-config.txt_ file and the current defaults:
     # Root options
     rootpw=raspbian           # Sets password for root. To disable root, also set root_ssh_pubkey empty.
     root_ssh_pubkey=          # Sets public SSH key for root login. The public SSH key must be on a single
-                              #   line, enclosed in quotes
+                              #   line, enclosed in quotes.
     root_ssh_allow=1          # Set to 0 to disable ssh password login for root.
 
     # User options
@@ -148,7 +153,10 @@ The format of the _installer-config.txt_ file and the current defaults:
     # Network options
     hostname=pi
     domainname=
-    ifname=eth0
+    ifname=eth0               # Change to 'wlan0' to use onboard WiFi. Use the 'wlan_*' options below or provide a
+                              #   'wpa_supplicant.conf' with WiFi login data in the directory `/config`.
+    wlan_ssid=                # Sets SSID for WiFi authentication if no 'wpa_supplicant.conf' is provided.
+    wlan_psk=                 # Sets PSK for Wifi authentication if no 'wpa_supplicant.conf' is provided.
     ip_addr=dhcp
     ip_netmask=0.0.0.0
     ip_broadcast=0.0.0.0
@@ -173,7 +181,7 @@ The format of the _installer-config.txt_ file and the current defaults:
 
     # Advanced options
     quiet_boot=0              # Disables most log messages on boot.
-    cmdline="dwc_otg.lpm_enable=0 console=ttyAMA0,115200 kgdboc=ttyAMA0,115200 console=tty1 elevator=deadline"
+    cmdline="dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 elevator=deadline fsck.repair=yes"
     rootfs_install_mount_options='noatime,data=writeback,nobarrier,noinit_itable'
     rootfs_mount_options='errors=remount-ro,noatime'
     final_action=reboot       # what to do at the end of install, one of poweroff / halt / reboot

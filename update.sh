@@ -19,6 +19,7 @@ packages=()
 # programs
 packages+=("raspberrypi-bootloader")
 packages+=("raspberrypi-kernel")
+packages+=("firmware-brcm80211")
 packages+=("btrfs-tools")
 packages+=("busybox")
 packages+=("cdebootstrap-static")
@@ -354,9 +355,11 @@ rm -rf files/
 mkdir files
 cd files
 
-## Download default config.txt and disable audio
+## Download default config.txt and do default changes
 download_remote_file https://downloads.raspberrypi.org/raspbian/ "boot.tar.xz" xzcat ./config.txt
-sed -i "s/^\(dtparam=audio=on\)/#\1/" config.txt
+sed -i "s/^\(dtparam=audio=on\)/#\1/" config.txt # disable audio
+echo -e "\n# Enable serial port" >> config.txt
+echo "dtoverlay=pi3-miniuart-bt" >> config.txt
 chmod 644 config.txt
 
 cd ..

@@ -500,10 +500,19 @@ function create_cpio {
     # zlib1g components
     cp tmp/lib/*/libz.so.1  rootfs/lib/
 
-    # drivers
+    # network drivers
     mkdir -p rootfs/lib/modules/$KERNEL_VERSION/kernel/drivers/net
     cp -r tmp/lib/modules/$KERNEL_VERSION/kernel/drivers/net/wireless rootfs/lib/modules/$KERNEL_VERSION/kernel/drivers/net/
     cp -r tmp/lib/modules/$KERNEL_VERSION/kernel/drivers/net/usb rootfs/lib/modules/$KERNEL_VERSION/kernel/drivers/net/
+    mkdir -p rootfs/lib/modules/$KERNEL_VERSION/kernel/net
+    cp -r tmp/lib/modules/$KERNEL_VERSION/kernel/net/wireless rootfs/lib/modules/$KERNEL_VERSION/kernel/net/
+    cp -r tmp/lib/modules/$KERNEL_VERSION/kernel/net/mac80211 rootfs/lib/modules/$KERNEL_VERSION/kernel/net/
+    cp -r tmp/lib/modules/$KERNEL_VERSION/kernel/net/rfkill rootfs/lib/modules/$KERNEL_VERSION/kernel/net/
+
+    # Binary firmware for version 3 Model B wireless
+    mkdir -p rootfs/lib/firmware/brcm
+    cp -r tmp/lib/firmware/brcm/brcmfmac43430-sdio.txt rootfs/lib/firmware/brcm/
+    cp -r tmp/lib/firmware/brcm/brcmfmac43430-sdio.bin rootfs/lib/firmware/brcm/
 
     # vcgencmd
     ## libraspberrypi-bin
@@ -569,7 +578,7 @@ echo "initramfs installer-rpi2.cpio.gz" >> bootfs/config.txt
 echo "[pi3]" >> bootfs/config.txt
 echo "kernel=kernel7.img" >> bootfs/config.txt
 echo "initramfs installer-rpi2.cpio.gz" >> bootfs/config.txt
-echo "dtoverlay=pi3-disable-bt" >> bootfs/config.txt
+echo "dtoverlay=pi3-miniuart-bt" >> bootfs/config.txt
 echo >> bootfs/config.txt
 echo "# Only for RPi model 3: The following line enables the ability to boot from USB." >> bootfs/config.txt
 echo "# Notice: This flag will be written to OTP and is permanent." >> bootfs/config.txt
@@ -578,7 +587,7 @@ echo "#program_usb_boot_mode=1" >> bootfs/config.txt
 # clean up
 rm -rf tmp
 
-echo "consoleblank=0 console=ttyAMA0,115200 kgdboc=ttyAMA0,115200 console=tty1" > bootfs/cmdline.txt
+echo "dwc_otg.lpm_enable=0 consoleblank=0 console=serial0,115200 console=tty1 elevator=deadline rootwait" > bootfs/cmdline.txt
 
 if [ -f installer-config.txt ]; then
     cp installer-config.txt bootfs/

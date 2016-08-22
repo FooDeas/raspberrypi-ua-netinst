@@ -31,6 +31,8 @@ locales=
 system_default_locale=
 disable_predictable_nin=1
 ifname=eth0
+wlan_ssid=
+wlan_psk=
 ip_addr=dhcp
 ip_netmask=0.0.0.0
 ip_broadcast=0.0.0.0
@@ -40,7 +42,7 @@ drivers_to_load=
 online_config=
 usbroot=
 usbboot=
-cmdline="dwc_otg.lpm_enable=0 console=ttyAMA0,115200 kgdboc=ttyAMA0,115200 console=tty1 elevator=deadline"
+cmdline="dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 elevator=deadline fsck.repair=yes"
 rootfstype=ext4
 final_action=reboot
 hwrng_support=1
@@ -51,9 +53,10 @@ sound_enable=0
 camera_enable=0
 camera_disable_led=0
 
-# these shouldn't really be changed unless auto-detection fails
+# internal variables
 rootdev=/dev/mmcblk0
 rootpartition=
+wlan_configfile=/bootfs/config/wpa_supplicant.conf
 
 fail()
 {
@@ -81,8 +84,7 @@ fail()
 
 sanitize_inputfile()
 {
-    if [ -z "$1" ]
-    then
+    if [ -z "$1" ]; then
         echo "No input file specified!"
     else
         inputfile=$1
@@ -149,11 +151,25 @@ mdev -s
 klogd -c 1
 sleep 3s
 
+# Config serial output device
+echo
+echo -n "Waiting for serial device... "
+until [ -n /dev/ttyAMA0 ]; do sleep 1s; done
+echo "OK"
+if grep -q "console=tty1" /proc/cmdline; then
+    mkfifo serial.pipe
+    tee < serial.pipe /dev/ttyAMA0 &
+    exec &> serial.pipe
+    rm serial.pipe
+    echo > /dev/ttyAMA0
+    echo "Printing console to serial output started."
+fi
+
 # Detect boot device
 echo
 echo "Searching for boot device..."
 until [ -n "$bootdev" ]; do
-    if [ -e /dev/mmcblk0p1 ]; then
+    if [ -e "/dev/mmcblk0p1" ]; then
         echo "SD card detected."
         mount /dev/mmcblk0p1 /boot
         if [ -e /boot/bootcode.bin ]; then
@@ -163,7 +179,7 @@ until [ -n "$bootdev" ]; do
         fi
         umount /boot
     else
-        if [ -e /dev/sda1 ]; then
+        if [ -e "/dev/sda1" ]; then
             echo "USB drive detected."
             mount /dev/sda1 /boot
             if [ -e /boot/bootcode.bin ]; then
@@ -183,7 +199,7 @@ done
 if [ -z ${am_subscript} ]; then
     mkdir -p /boot
     mount $bootpartition /boot
-    if [ -e /boot/config/installer/rcS ]; then
+    if [ -e "/boot/config/installer/rcS" ]; then
         cp /boot/config/installer/rcS /rcS
         umount /boot
         echo "============================================="
@@ -239,7 +255,7 @@ case $rpi_hardware in
     *) rpi_hardware_version="unknown (${rpi_hardware})" ;;
 esac
 
-echo ""
+echo
 echo "================================================="
 echo "raspberrypi-ua-netinst"
 echo "================================================="
@@ -267,7 +283,7 @@ cp -r -- /boot/* /bootfs/ || fail
 umount /boot || fail
 echo "OK"
 
-if [ -e /bootfs/installer-config.txt ]; then
+if [ -e "/bootfs/installer-config.txt" ]; then
     echo "================================================="
     echo "=== Start executing installer-config.txt. ==="
     sanitize_inputfile /bootfs/installer-config.txt
@@ -276,8 +292,8 @@ if [ -e /bootfs/installer-config.txt ]; then
     echo "================================================="
 fi
 
-if [ -e /bootfs/config/wpa_supplicant.conf ]; then
-    sanitize_inputfile /bootfs/config/wpa_supplicant.conf
+if [ -e "$wlan_configfile" ]; then
+    sanitize_inputfile "$wlan_configfile"
 fi
 
 echo
@@ -291,6 +307,23 @@ if [ "$ip_addr" != "dhcp" ]; then
     echo "  ip_nameservers = $ip_nameservers"
 fi
 
+if echo "${ifname}" | grep -q "wlan"; then
+    if [ -z "$drivers_to_load" ]; then
+        drivers_to_load="brcmfmac"
+    else
+        drivers_to_load="$drivers_to_load,brcmfmac"
+    fi
+    if [ ! -e "$wlan_configfile" ]; then
+        wlan_configfile=/tmp/wpa_supplicant.conf
+        echo "  wlan_ssid = $wlan_ssid"
+        echo "  wlan_psk = $wlan_psk"
+        echo "network={" > ${wlan_configfile}
+        echo "    ssid=\"${wlan_ssid}\"" >> ${wlan_configfile}
+        echo "    psk=\"${wlan_psk}\"" >> ${wlan_configfile}
+        echo "}" >> ${wlan_configfile}
+    fi
+fi
+
 echo "  online_config = $online_config"
 echo
 
@@ -298,44 +331,48 @@ echo
 depmod -a
 if [ -n "$drivers_to_load" ]; then
    echo "Loading additional drivers."
+   drivers_to_load="$(echo ${drivers_to_load} | tr ',' ' ')"
    for driver in $drivers_to_load
    do
-      echo -n " Loading driver '$driver' ... "
+      echo -n " Loading driver '$driver'... "
       modprobe $driver || fail
       echo "OK"
    done
    echo "Finished loading additional drivers"
+   echo
 fi
 
-echo "Waiting for $ifname... "
-
+echo -n "Waiting for $ifname... "
 for i in $(seq 1 10); do
-
     ifconfig $ifname &>/dev/null
     if [ $? -eq 0 ]; then
         break
     fi
-
     if [ $i -eq 10 ]; then
         echo "FAILED"
         fail
     fi
-
     sleep 1
-
     echo -n "$i.. "
 done
+echo "OK"
 
 if [ "$ifname" != "eth0" ]; then
     # Replace eth0 as udhcpc dns interface
     sed -i "s/PEERDNS_IF=.*/PEERDNS_IF=$ifname/g" /etc/udhcpc/default.script
-    # if eth0 is not the chosen eth interface it is a wireless interface and wpa_supplicant must connect to wlan
-    echo "Starting wpa_supplicant... "
-    wpa_supplicant -B -Dnl80211 -c/bootfs/config/wpa_supplicant.conf -i$ifname
-    if [ $? -ne 0 ]; then
-        echo "nl80211 driver didn't work. Trying generic driver (wext)..."
-        wpa_supplicant -B -Dwext -c/bootfs/config/wpa_supplicant.conf -i$ifname || fail
-        echo "OK"
+    # wlan* is a wireless interface and wpa_supplicant must connect to wlan
+    if echo "${ifname}" | grep -q "wlan"; then
+        echo "Starting wpa_supplicant... "
+        if [ -e "$wlan_configfile" ]; then
+            wpa_supplicant -B -Dnl80211 -c"$wlan_configfile" -i$ifname
+            if [ $? -eq 0 ]; then
+                echo "OK"
+            else
+                echo "nl80211 driver didn't work. Trying generic driver (wext)..."
+                wpa_supplicant -B -Dwext -c"$wlan_configfile" -i$ifname || fail
+                echo "OK"
+            fi
+        fi
     fi
 fi
 
@@ -411,9 +448,9 @@ STARTTIME=$(date +%s)
 # And substract the PRE_NETWORK_DURATION from STARTTIME to get the
 # REAL starting time.
 REAL_STARTTIME=$((STARTTIME - PRE_NETWORK_DURATION))
-echo ""
+echo
 echo "Installation started at $(date --date="@$REAL_STARTTIME" --utc)."
-echo ""
+echo
 
 if [ -n "$online_config" ]; then
     echo -n "Downloading online config from $online_config... "
@@ -498,6 +535,9 @@ if [ -z "$cdebootstrap_cmdline" ]; then
     # server
     server_packages="vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,less,man-db,bash-completion,console-common"
     server_packages_postinstall="libraspberrypi-bin,raspi-copies-and-fills"
+    if echo "${ifname}" | grep -q "wlan"; then
+        server_packages_postinstall="${server_packages_postinstall},firmware-brcm80211"
+    fi
 
     case $preset in
         base)
@@ -968,7 +1008,6 @@ fi
 
 # configured interface
 echo "" >> /rootfs/etc/network/interfaces
-echo "auto $ifname" >> /rootfs/etc/network/interfaces
 echo "allow-hotplug $ifname" >> /rootfs/etc/network/interfaces
 if [ "$ip_addr" = "dhcp" ]; then
     echo "iface $ifname inet dhcp" >> /rootfs/etc/network/interfaces
@@ -981,14 +1020,14 @@ else
 fi
 
 # wlan config
-if [ "$ifname" != "eth0" ]; then
-    if [ -e /bootfs/config/wpa_supplicant.conf ]; then
+if echo "${ifname}" | grep -q "wlan"; then
+    if [ -e "$wlan_configfile" ]; then
         # copy the installer version of `wpa_supplicant.conf`
-        cp /bootfs/config/wpa_supplicant.conf /rootfs/etc/wpa_supplicant/
-        echo "    wpa-conf /etc/wpa_supplicant/wpa_supplicant.conf"	>> /rootfs/etc/network/interfaces
+        cp "$wlan_configfile" /rootfs/etc/
+        chmod 600 /rootfs/etc/wpa_supplicant.conf
+        echo "    wpa-conf /etc/wpa_supplicant.conf" >> /rootfs/etc/network/interfaces
     fi
     echo "" >> /rootfs/etc/network/interfaces
-    echo "auto eth0" >> /rootfs/etc/network/interfaces
     echo "allow-hotplug eth0" >> /rootfs/etc/network/interfaces
     echo "iface eth0 inet dhcp" >> /rootfs/etc/network/interfaces
 fi
@@ -1004,15 +1043,6 @@ if [ "$ip_addr" != "dhcp" ]; then
     cp /etc/resolv.conf /rootfs/etc/ || fail
 fi
 
-echo "OK"
-
-# enable serial console on installed system
-echo -n "  Enabling serial console... "
-touch /rootfs/etc/inittab
-{
-    echo "#Spawn a getty on Raspberry Pi serial line"
-    echo "T0:23:respawn:/sbin/getty -L ttyAMA0 115200 vt100"
-} >> /rootfs/etc/inittab
 echo "OK"
 
 # set timezone and reconfigure tzdata package
@@ -1203,7 +1233,7 @@ if [ -n "${gpu_mem}" ]; then
 fi
 
 # run post install script if exists
-if [ -e /bootfs/post-install.txt ]; then
+if [ -e "/bootfs/post-install.txt" ]; then
     echo "================================================="
     echo "=== Start executing post-install.txt. ==="
     sanitize_inputfile /bootfs/post-install.txt
@@ -1213,10 +1243,10 @@ if [ -e /bootfs/post-install.txt ]; then
 fi
 
 # modify installed network settings
-if [ -f /rootfs/etc/wpa_supplicant/wpa_supplicant.conf ]; then
+if [ -f /rootfs/etc/wpa_supplicant.conf ]; then
     if [ $(grep "iface" /rootfs/etc/network/interfaces | grep -v "lo\|eth0" | wc -l) -ne 0 ]; then
         if [ $(grep "wpa[-_]" /rootfs/etc/network/interfaces | wc -l) -eq 0 ]; then
-            echo "wpa-conf /etc/wpa_supplicant/wpa_supplicant.conf" >> /rootfs/etc/network/interfaces
+            echo "wpa-conf /etc/wpa_supplicant.conf" >> /rootfs/etc/network/interfaces
         fi
     fi
 fi
