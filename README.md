@@ -17,29 +17,29 @@
 In distinction to the base this fork has many changes and improvements. This includes:
  - full featured kernel and bootloader from raspberrypi.org (compatible with apt)
  - more installer customization options
- - ability to install via onboard WiFi
+ - ability to install via onboard wireless lan
  - better compatibility with accessory
  - improved performance out of the box
 
 ## Intro
 
-The minimal Raspbian unattended netinstaller for Raspberry Pi Model 1B to 3B.  
+The minimal Raspbian unattended netinstaller for Raspberry Pi model 1B to 3B.  
 
 This project provides [Raspbian][1] power users the possibility to install a minimal base system unattended using latest Raspbian packages regardless when the installer was built.
 
-The installer with default settings configures eth0 with DHCP to get Internet connectivity and completely wipes the SD card from any previous installation.
+The installer with default settings configures eth0 with DHCP to get internet connectivity and completely wipes the SD card from any previous installation.
 
 There are different kinds of "presets" that define the default packages that are going to be installed. Currently, the default one is called _server_ which installs only the essential base system packages including _NTP_ and _OpenSSH_ to provide a sane minimal base system that you can immediately after install ssh in and continue installing your software.
 
 Other presets include _minimal_ which has even less packages (no logging, no text editor, no cron) and _base_ which doesn't even have networking. You can customize the installed packages by adding a small configuration file to your SD card before booting up.
 
 ## Features
- - completely unattended, you only need working Internet connection through the Ethernet port
+ - completely unattended, you only need working internet connection through the ethernet port or use onboard wireless lan (model 3B)
  - DHCP and static ip configuration (DHCP is the default)
  - always installs the latest version of Raspbian
  - configurable default settings
  - extra configuration over HTTP possible - gives unlimited flexibility
- - installation takes about **15 minutes** with fast Internet from power on to sshd running
+ - installation takes about **15 minutes** with fast internet from power on to sshd running
  - can fit on 512MB SD card, but 1GB is more reasonable
  - default install includes fake-hwclock to save time on shutdown
  - default install includes NTP to keep time
@@ -48,9 +48,9 @@ Other presets include _minimal_ which has even less packages (no logging, no tex
  - option to install root to USB drive
 
 ## Requirements
- - a Raspberry Pi Model 1B, Model 1B+, Model 2B or 3B
+ - a Raspberry Pi model 1B, model 1B+, model 2B or 3B
  - SD card of at least 640MB or at least 128MB for USB root install (without customization)
- - working Ethernet with Internet connectivity
+ - working ethernet or wireless lan with internet connectivity
 
 ## Writing the installer to the SD card
 ### Obtaining installer files on Windows and Mac
@@ -92,7 +92,7 @@ Replace _/dev/sdX_ with the real path to your SD card.
 ## Installing
 In normal circumstances, you can just power on your Pi and cross your fingers.
 
-If you don't have a display attached you can monitor the Ethernet card leds to guess activity. When it finally reboots after installing everything you will see them going out and on a few times when Raspbian configures it on boot.
+If you don't have a display attached you can monitor the ethernet card leds to guess activity. When it finally reboots after installing everything you will see them going out and on a few times when Raspbian configures it on boot.
 
 If you do have a display, you can follow the progress and catch any possible errors in the default configuration or your own modifications.  
 If you have a serial cable connected, installer ouput can be followed there, too. If 'console=tty1' at then end of the `cmdline.txt` file is removed, you have access to the console in case of problems.
