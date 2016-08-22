@@ -1023,9 +1023,9 @@ fi
 if echo "${ifname}" | grep -q "wlan"; then
     if [ -e "$wlan_configfile" ]; then
         # copy the installer version of `wpa_supplicant.conf`
-        cp "$wlan_configfile" /rootfs/etc/
-        chmod 600 /rootfs/etc/wpa_supplicant.conf
-        echo "    wpa-conf /etc/wpa_supplicant.conf" >> /rootfs/etc/network/interfaces
+        cp "$wlan_configfile" /rootfs/etc/wpa_supplicant/
+        chmod 600 /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
+        echo "    wpa-conf /etc/wpa_supplicant/wpa_supplicant.conf" >> /rootfs/etc/network/interfaces
     fi
     echo "" >> /rootfs/etc/network/interfaces
     echo "allow-hotplug eth0" >> /rootfs/etc/network/interfaces
@@ -1225,12 +1225,14 @@ if [ "${camera_enable}" = "1" ]; then
     echo "start_x=1" >> /rootfs/boot/config.txt
     if [ "${camera_disable_led}" = "1" ]; then
         echo "disable_camera_led=1" >> /rootfs/boot/config.txt
+        echo >> /rootfs/boot/config.txt
     fi
 fi
 
 # set gpu_mem if specified in the configuration file
 if [ -n "${gpu_mem}" ]; then
     echo "gpu_mem=${gpu_mem}" >> /rootfs/boot/config.txt
+    echo >> /rootfs/boot/config.txt
 fi
 
 # run post install script if exists
