@@ -1206,7 +1206,7 @@ fi
 # default cmdline.txt
 echo -n "Creating default cmdline.txt... "
 if [ "$quiet_boot" = "1" ]; then
-    echo "$cmdline root=$rootpartition rootfstype=$rootfstype rootwait quiet" > /rootfs/boot/cmdline.txt
+    echo "$cmdline root=$rootpartition rootfstype=$rootfstype rootwait quiet logo.nologo" > /rootfs/boot/cmdline.txt
 else
     echo "$cmdline root=$rootpartition rootfstype=$rootfstype rootwait loglevel=3" > /rootfs/boot/cmdline.txt
 fi
