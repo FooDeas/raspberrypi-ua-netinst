@@ -2,7 +2,15 @@
 
 set -e
 
-IMG=raspberrypi-ua-netinst-`date +%Y%m%d`-git`git rev-parse --short @{0}`.img
+version_tag="$(git describe --exact-match --tags HEAD 2> /dev/null)"
+version_commit="$(git rev-parse --short @{0})"
+if [ -n "${version_tag}" ]; then
+    IMG="raspberrypi-ua-netinst-${version_tag}.img"
+elif [ -n "${version_commit}" ]; then
+    IMG="raspberrypi-ua-netinst-git-${version_commit}.img"
+else
+    IMG="raspberrypi-ua-netinst-$(date +%Y%m%d).img"
+fi
 
 rm -f $IMG
 rm -f $IMG.bz2

@@ -604,7 +604,15 @@ if [ -d config ] ; then
     cp files/config.txt bootfs/config/boot
 fi
 
-ZIPFILE=raspberrypi-ua-netinst-`date +%Y%m%d`-git`git rev-parse --short @{0}`.zip
+version_tag="$(git describe --exact-match --tags HEAD 2> /dev/null)"
+version_commit="$(git rev-parse --short @{0})"
+if [ -n "${version_tag}" ]; then
+    ZIPFILE="raspberrypi-ua-netinst-${version_tag}.zip"
+elif [ -n "${version_commit}" ]; then
+    ZIPFILE="raspberrypi-ua-netinst-git-${version_commit}.zip"
+else
+    ZIPFILE="raspberrypi-ua-netinst-$(date +%Y%m%d).zip"
+fi
 rm -f $ZIPFILE
 
 cd bootfs && zip -r -9 ../$ZIPFILE *; cd ..
