@@ -362,7 +362,7 @@ if [ "$ifname" != "eth0" ]; then
     sed -i "s/PEERDNS_IF=.*/PEERDNS_IF=$ifname/g" /etc/udhcpc/default.script
     # wlan* is a wireless interface and wpa_supplicant must connect to wlan
     if echo "${ifname}" | grep -q "wlan"; then
-        echo "Starting wpa_supplicant... "
+        echo -n "Starting wpa_supplicant... "
         if [ -e "$wlan_configfile" ]; then
             wpa_supplicant -B -Dnl80211 -c"$wlan_configfile" -i$ifname
             if [ $? -eq 0 ]; then
