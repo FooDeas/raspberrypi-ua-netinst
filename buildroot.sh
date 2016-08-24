@@ -65,3 +65,5 @@ if ! xz -9 --keep $IMG ; then
 fi
 
 cat $IMG | bzip2 -9 > $IMG.bz2
+
+rm -f raspberrypi-ua-netinst-v1.2.1.img

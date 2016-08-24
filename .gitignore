@@ -1,6 +1,6 @@
 /bootfs/
+/files/
 /packages/
-/installer*.cpio*
 /raspberrypi-ua-netinst-*.zip
 /raspberrypi-ua-netinst-*.img
 /raspberrypi-ua-netinst-*.img.xz
