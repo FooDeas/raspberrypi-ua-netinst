@@ -2,9 +2,6 @@
 
 set -e
 
-KERNEL_VERSION_RPI1=4.4.13+
-KERNEL_VERSION_RPI2=4.4.13-v7+
-
 INSTALL_MODULES="kernel/fs/btrfs/btrfs.ko"
 INSTALL_MODULES="$INSTALL_MODULES kernel/drivers/scsi/sg.ko"
 
@@ -73,20 +70,6 @@ function create_tempfile {
 }
 
 function create_cpio {
-    local KERNEL_VERSION=""
-    local target_system
-
-    if [ "$1" = "rpi1" ] ; then
-        KERNEL_VERSION=$KERNEL_VERSION_RPI1
-        target_system="rpi1"
-    elif [ "$1" = "rpi2" ] ; then
-        KERNEL_VERSION=$KERNEL_VERSION_RPI2
-        target_system="rpi2"
-    else
-        echo "Invalid parameter to 'create_cpio' function!"
-        return 1
-    fi
-
     # initialize rootfs
     rm -rf rootfs
     mkdir -p rootfs
@@ -99,7 +82,7 @@ function create_cpio {
     mkdir -p rootfs/etc/network/{if-down.d,if-post-down.d,if-pre-up.d,if-up.d,interfaces.d}
     mkdir -p rootfs/lib/ifupdown/
     mkdir -p rootfs/lib/lsb/init-functions.d/
-    mkdir -p rootfs/lib/modules/${KERNEL_VERSION}
+    mkdir -p rootfs/lib/modules/
     mkdir -p rootfs/sbin/
     mkdir -p rootfs/usr/bin/
     mkdir -p rootfs/usr/lib/mime/packages/
@@ -112,11 +95,24 @@ function create_cpio {
     mkdir -p rootfs/var/log/
     mkdir -p rootfs/var/run/
 
-    cp -a tmp/lib/modules/${KERNEL_VERSION}/modules.{builtin,order} rootfs/lib/modules/${KERNEL_VERSION}
+    moduleconf="$(find tmp/lib/modules/ -type f -name "modules.order" -o -name "modules.builtin")"
+    kernels=()
+    for i in ${moduleconf[@]}; do
+        i="${i/tmp\/}"
+        # Add kernel version from file path
+        if [ "$(basename "$i")" == "modules.builtin" ]; then
+            kernels+=("$(dirname ${i/lib\/modules\//})")
+        fi
+        # Copy file
+        mkdir -p "rootfs/$(dirname ${i})"
+        cp "tmp/${i}" "rootfs/${i}"
+    done
 
     # calculate module dependencies
     depmod_file=$(create_tempfile)
-    /sbin/depmod -nab tmp ${KERNEL_VERSION} > ${depmod_file}
+    for kernel in ${kernels[@]}; do
+        /sbin/depmod -nb tmp ${kernel} > ${depmod_file}
+    done
 
     modules=(${INSTALL_MODULES})
 
@@ -135,13 +131,19 @@ function create_cpio {
     # copy the needed kernel modules to the rootfs (create directories as needed)
     for module in ${modules[@]}; do
         # calculate the target dir, just so the following line of code is shorter :)
-        dstdir="rootfs/lib/modules/${KERNEL_VERSION}/$(dirname ${module})"
-        # check if destination dir exist, create it otherwise
-        [ -d "${dstdir}" ] || mkdir -p "${dstdir}"
-        cp -a "tmp/lib/modules/${KERNEL_VERSION}/${module}" "${dstdir}"
+        for kernel in ${kernels[@]}; do
+            if [ -e "tmp/lib/modules/${kernel}/${module}" ]; then
+                dstdir="rootfs/lib/modules/${kernel}/$(dirname ${module})"
+                # check if destination dir exist, create it otherwise
+                [ -d "${dstdir}" ] || mkdir -p "${dstdir}"
+                cp -a "tmp/lib/modules/${kernel}/${module}" "${dstdir}"
+            fi
+        done
     done
 
-    /sbin/depmod -a -b rootfs ${KERNEL_VERSION}
+    for kernel in ${kernels[@]}; do
+        /sbin/depmod -b rootfs ${kernel}
+    done
 
     # install scripts
     cp -r scripts/* rootfs/
@@ -501,13 +503,15 @@ function create_cpio {
     cp tmp/lib/*/libz.so.1  rootfs/lib/
 
     # network drivers
-    mkdir -p rootfs/lib/modules/$KERNEL_VERSION/kernel/drivers/net
-    cp -r tmp/lib/modules/$KERNEL_VERSION/kernel/drivers/net/wireless rootfs/lib/modules/$KERNEL_VERSION/kernel/drivers/net/
-    cp -r tmp/lib/modules/$KERNEL_VERSION/kernel/drivers/net/usb rootfs/lib/modules/$KERNEL_VERSION/kernel/drivers/net/
-    mkdir -p rootfs/lib/modules/$KERNEL_VERSION/kernel/net
-    cp -r tmp/lib/modules/$KERNEL_VERSION/kernel/net/wireless rootfs/lib/modules/$KERNEL_VERSION/kernel/net/
-    cp -r tmp/lib/modules/$KERNEL_VERSION/kernel/net/mac80211 rootfs/lib/modules/$KERNEL_VERSION/kernel/net/
-    cp -r tmp/lib/modules/$KERNEL_VERSION/kernel/net/rfkill rootfs/lib/modules/$KERNEL_VERSION/kernel/net/
+    for kernel in ${kernels[@]}; do
+        mkdir -p rootfs/lib/modules/${kernel}/kernel/drivers/net
+        mkdir -p rootfs/lib/modules/${kernel}/kernel/net
+    done
+    cp -r tmp/lib/modules/*/kernel/drivers/net/wireless rootfs/lib/modules/*/kernel/drivers/net/
+    cp -r tmp/lib/modules/*/kernel/drivers/net/usb rootfs/lib/modules/*/kernel/drivers/net/
+    cp -r tmp/lib/modules/*/kernel/net/wireless rootfs/lib/modules/*/kernel/net/
+    cp -r tmp/lib/modules/*/kernel/net/mac80211 rootfs/lib/modules/*/kernel/net/
+    cp -r tmp/lib/modules/*/kernel/net/rfkill rootfs/lib/modules/*/kernel/net/
 
     # Binary firmware for version 3 Model B wireless
     mkdir -p rootfs/lib/firmware/brcm
@@ -532,7 +536,7 @@ function create_cpio {
     mkdir -p rootfs/usr/bin
     cp tmp/usr/bin/xxd rootfs/usr/bin/
 
-    INITRAMFS="../installer-${target_system}.cpio.gz"
+    INITRAMFS="../installer.cpio.gz"
     (cd rootfs && find . | cpio -H newc -ov | gzip --best > $INITRAMFS)
 
     rm -rf rootfs
@@ -563,21 +567,12 @@ if [ ! -f bootfs/config.txt ] ; then
     touch bootfs/config.txt
 fi
 
-create_cpio "rpi1"
-cp installer-rpi1.cpio.gz bootfs/
-echo "[pi1]" >> bootfs/config.txt
-echo "kernel=kernel.img" >> bootfs/config.txt
-echo "initramfs installer-rpi1.cpio.gz" >> bootfs/config.txt
-echo "device_tree=" >> bootfs/config.txt
+create_cpio
+cp installer.cpio.gz bootfs/
 
-create_cpio "rpi2"
-cp installer-rpi2.cpio.gz bootfs/
-echo "[pi2]" >> bootfs/config.txt
-echo "kernel=kernel7.img" >> bootfs/config.txt
-echo "initramfs installer-rpi2.cpio.gz" >> bootfs/config.txt
+echo "[all]" >> bootfs/config.txt
+echo "initramfs installer.cpio.gz" >> bootfs/config.txt
 echo "[pi3]" >> bootfs/config.txt
-echo "kernel=kernel7.img" >> bootfs/config.txt
-echo "initramfs installer-rpi2.cpio.gz" >> bootfs/config.txt
 echo "dtoverlay=pi3-miniuart-bt" >> bootfs/config.txt
 echo >> bootfs/config.txt
 echo "# Only for RPi model 3: The following line enables the ability to boot from USB." >> bootfs/config.txt
@@ -586,6 +581,7 @@ echo "#program_usb_boot_mode=1" >> bootfs/config.txt
 
 # clean up
 rm -rf tmp
+rm -f installer.cpio.gz
 
 echo "dwc_otg.lpm_enable=0 consoleblank=0 console=serial0,115200 console=tty1 elevator=deadline rootwait" > bootfs/cmdline.txt
 
