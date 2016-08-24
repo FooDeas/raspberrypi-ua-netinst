@@ -358,7 +358,10 @@ cd files
 ## Download default config.txt and do default changes
 download_remote_file https://downloads.raspberrypi.org/raspbian/ "boot.tar.xz" xzcat ./config.txt
 sed -i "s/^\(dtparam=audio=on\)/#\1/" config.txt # disable audio
-echo -e "\n# Enable serial port\ndtoverlay=pi3-miniuart-bt\n" >> config.txt
+echo -e "\n[pi3]" >> config.txt
+echo -e "# Enable serial port\ndtoverlay=pi3-miniuart-bt" >> config.txt
+echo -e "\n[all]" >> config.txt
+echo -e "# Add other config parameters below this line." >> config.txt
 chmod 644 config.txt
 
 cd ..
