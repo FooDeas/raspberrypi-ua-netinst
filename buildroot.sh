@@ -2,8 +2,8 @@
 
 set -e
 
-version_tag="$(git describe --exact-match --tags HEAD 2> /dev/null)"
-version_commit="$(git rev-parse --short @{0})"
+version_tag="$(git describe --exact-match --tags HEAD 2> /dev/null || true)"
+version_commit="$(git rev-parse --short @{0} 2> /dev/null || true)"
 if [ -n "${version_tag}" ]; then
     IMG="raspberrypi-ua-netinst-${version_tag}.img"
 elif [ -n "${version_commit}" ]; then
