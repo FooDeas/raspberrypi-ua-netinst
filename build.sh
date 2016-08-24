@@ -149,7 +149,17 @@ function create_cpio {
     cp -r scripts/* rootfs/
 
     # update version and date
-    sed -i "s/__VERSION__/git~`git rev-parse --short @{0}`/" rootfs/etc/init.d/rcS
+    version_tag="$(git describe --exact-match --tags HEAD 2> /dev/null || true)"
+    version_commit="$(git rev-parse --short @{0} 2> /dev/null || true)"
+    if [ -n "${version_tag}" ]; then
+        version_info="${version_tag} (${version_commit})"
+    elif [ -n "${version_commit}" ]; then
+        version_info="${version_commit}"
+    else
+        version_info="unknown"
+    fi
+
+    sed -i "s/__VERSION__/${version_info}/" rootfs/etc/init.d/rcS
     sed -i "s/__DATE__/`date`/" rootfs/etc/init.d/rcS
 
 
