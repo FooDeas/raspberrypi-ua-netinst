@@ -1061,7 +1061,15 @@ if [ -n "$locales" ]; then
     for locale in $locales; do
         echo -n "$locale... "
         if [ -f /rootfs/etc/locale.gen ] && [ "$(grep -c $locale /rootfs/etc/locale.gen)" -gt 0 ]; then
-            sed -i "s/^# \($locale .*\)/\1/" /rootfs/etc/locale.gen
+            if [ "$(grep -c "$locale UTF-8" /rootfs/etc/locale.gen)" -eq 1 ]; then
+                sed -i "s/^# \($locale UTF-8\)/\1/" /rootfs/etc/locale.gen
+            elif [ "$(grep -c "$locale.UTF-8 " /rootfs/etc/locale.gen)" -eq 1 ]; then
+                sed -i "s/^# \($locale\.UTF-8 \)/\1/" /rootfs/etc/locale.gen
+            elif [ "$(grep -c "$locale " /rootfs/etc/locale.gen)" -eq 1 ]; then
+                sed -i "s/^# \($locale \)/\1/" /rootfs/etc/locale.gen
+            else
+                echo -n "NOT unique... "
+            fi
         else
             echo -n "NOT found... "
         fi
