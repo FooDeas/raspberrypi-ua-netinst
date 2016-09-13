@@ -202,14 +202,14 @@ if [ -z ${am_subscript} ]; then
     if [ -e "/boot/config/installer/rcS" ]; then
         cp /boot/config/installer/rcS /rcS
         umount /boot
-        echo "============================================="
-        echo "=== Start executing alternative rcS ========="
-        echo "---------------------------------------------"
+        echo "=================================================="
+        echo "=== Start executing alternative rcS =============="
+        echo "--------------------------------------------------"
         export am_subscript=true
         source /rcS
-        echo "---------------------------------------------"
-        echo "=== Execution of alternative rcS finished ==="
-        echo "============================================="
+        echo "--------------------------------------------------"
+        echo "=== Execution of alternative rcS finished ========"
+        echo "=================================================="
         ${final_action} || reboot || exit
     else
         # Clean up, so the rest of the script continues as expected
@@ -284,12 +284,12 @@ umount /boot || fail
 echo "OK"
 
 if [ -e "/bootfs/installer-config.txt" ]; then
-    echo "================================================="
-    echo "=== Start executing installer-config.txt. ==="
+    echo "=================================================="
+    echo "=== Start executing installer-config.txt. ========"
     sanitize_inputfile /bootfs/installer-config.txt
     source /bootfs/installer-config.txt
-    echo "=== Finished executing installer-config.txt. ==="
-    echo "================================================="
+    echo "=== Finished executing installer-config.txt. ====="
+    echo "=================================================="
 fi
 
 if [ -e "$wlan_configfile" ]; then
@@ -334,7 +334,7 @@ if [ -n "$drivers_to_load" ]; then
    drivers_to_load="$(echo ${drivers_to_load} | tr ',' ' ')"
    for driver in $drivers_to_load
    do
-      echo -n " Loading driver '$driver'... "
+      echo -n "  Loading driver '$driver'... "
       modprobe $driver || fail
       echo "OK"
    done
