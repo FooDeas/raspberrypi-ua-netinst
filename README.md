@@ -124,7 +124,9 @@ The format of the _installer-config.txt_ file and the current defaults:
 
     # Device / peripheral options
     gpu_mem=                  # Specifies the amount of RAM in MB that should be reserved for the GPU.
-                              #   The minimum is "16". If not defined, the bootloader sets it to 64MB.
+                              #   To allow the VideoCore GPU kernel driver to be loaded correctly, you should
+                              #   use at least "32". If not defined, the bootloader sets it to 64MB. The
+                              #   minimum value is "16".
     sound_enable=0            # Set to "1" to enable the onboard audio.
     camera_enable=0           # Set to "1" to enable the camera module. This sets all needed parameters in config.txt.
     camera_disable_led=0      # Disables the camera led. The option `camera_enable=1` has to be set to take effect.
