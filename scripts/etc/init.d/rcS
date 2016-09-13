@@ -256,15 +256,15 @@ case $rpi_hardware in
 esac
 
 echo
-echo "================================================="
+echo "=================================================="
 echo "raspberrypi-ua-netinst"
-echo "================================================="
+echo "=================================================="
 echo "Revision __VERSION__"
 echo "Built on __DATE__"
 echo "Running on Raspberry Pi version ${rpi_hardware_version}"
-echo "================================================="
+echo "=================================================="
 echo "https://github.com/FooDeas/raspberrypi-ua-netinst/"
-echo "================================================="
+echo "=================================================="
 
 echo -n "Starting HWRNG "
 /usr/sbin/rngd -r /dev/hwrng
