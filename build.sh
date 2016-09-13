@@ -5,6 +5,23 @@ set -e
 INSTALL_MODULES="kernel/fs/btrfs/btrfs.ko"
 INSTALL_MODULES="$INSTALL_MODULES kernel/drivers/scsi/sg.ko"
 
+# defines array with kernel versions
+function get_kernels {
+    local moduleconf
+    moduleconf="$(find tmp/lib/modules/ -type f -name "modules.builtin")"
+    kernels=()
+    for i in ${moduleconf[@]}; do
+        kernels+=("$(dirname ${i/tmp\/lib\/modules\//})")
+    done
+}
+
+# copies files replacing "kernel*" with kernel versions in path
+function cp_kernelfiles {
+    for kernel in ${kernels[@]}; do
+        eval cp -r "$(echo "$1" | sed 's/kernel\*/${kernel}/')" "$(echo "$2" | sed 's/kernel\*/${kernel}/')"
+    done
+}
+
 # checks if first parameter is contained in the array passed as the second parameter
 #   use: contains_element "search_for" "${some_array[@]}" || do_if_not_found
 function contains_element {
@@ -96,14 +113,9 @@ function create_cpio {
     mkdir -p rootfs/var/run/
 
     moduleconf="$(find tmp/lib/modules/ -type f -name "modules.order" -o -name "modules.builtin")"
-    kernels=()
     for i in ${moduleconf[@]}; do
         i="${i/tmp\/}"
-        # Add kernel version from file path
-        if [ "$(basename "$i")" == "modules.builtin" ]; then
-            kernels+=("$(dirname ${i/lib\/modules\//})")
-        fi
-        # Copy file
+        # Copy modules file
         mkdir -p "rootfs/$(dirname ${i})"
         cp "tmp/${i}" "rootfs/${i}"
     done
@@ -165,15 +177,49 @@ function create_cpio {
 
     # btrfs-tools components
     cp tmp/sbin/mkfs.btrfs rootfs/sbin/
-    cp tmp/usr/lib/*/libbtrfs.so.0  rootfs/lib/
+    cp tmp/usr/lib/*/libbtrfs.so.0 rootfs/lib/
 
     # busybox components
     cp tmp/bin/busybox rootfs/bin
     cd rootfs && ln -s bin/busybox init; cd ..
 
+    # bash-static components
+    cp tmp/bin/bash-static rootfs/bin
+    cd rootfs/bin && ln -s bash-static bash; cd ../..
+
     # cdebootstrap-static components
     cp -r tmp/usr/share/cdebootstrap-static rootfs/usr/share/
     cp tmp/usr/bin/cdebootstrap-static rootfs/usr/bin/
+
+    # coreutils components
+    cp tmp/bin/cat rootfs/bin/
+    cp tmp/bin/chgrp rootfs/bin/
+    cp tmp/bin/chmod rootfs/bin/
+    cp tmp/bin/chown rootfs/bin/
+    cp tmp/bin/cp rootfs/bin/
+    cp tmp/bin/date rootfs/bin/
+    cp tmp/bin/dd rootfs/bin/
+    cp tmp/bin/df rootfs/bin/
+    cp tmp/bin/dir rootfs/bin/
+    cp tmp/bin/echo rootfs/bin/
+    cp tmp/bin/false rootfs/bin/
+    cp tmp/bin/ln rootfs/bin/
+    cp tmp/bin/ls rootfs/bin/
+    cp tmp/bin/mkdir rootfs/bin/
+    cp tmp/bin/mknod rootfs/bin/
+    cp tmp/bin/mktemp rootfs/bin/
+    cp tmp/bin/mv rootfs/bin/
+    cp tmp/bin/pwd rootfs/bin/
+    cp tmp/bin/readlink rootfs/bin/
+    cp tmp/bin/rm rootfs/bin/
+    cp tmp/bin/rmdir rootfs/bin/
+    cp tmp/bin/sleep rootfs/bin/
+    cp tmp/bin/stty rootfs/bin/
+    cp tmp/bin/sync rootfs/bin/
+    cp tmp/bin/touch rootfs/bin/
+    cp tmp/bin/true rootfs/bin/
+    cp tmp/bin/uname rootfs/bin/
+    cp tmp/bin/vdir rootfs/bin/
 
     # dosfstools components
     cp tmp/sbin/fatlabel rootfs/sbin/
@@ -517,11 +563,13 @@ function create_cpio {
         mkdir -p rootfs/lib/modules/${kernel}/kernel/drivers/net
         mkdir -p rootfs/lib/modules/${kernel}/kernel/net
     done
-    cp -r tmp/lib/modules/*/kernel/drivers/net/wireless rootfs/lib/modules/*/kernel/drivers/net/
-    cp -r tmp/lib/modules/*/kernel/drivers/net/usb rootfs/lib/modules/*/kernel/drivers/net/
-    cp -r tmp/lib/modules/*/kernel/net/wireless rootfs/lib/modules/*/kernel/net/
-    cp -r tmp/lib/modules/*/kernel/net/mac80211 rootfs/lib/modules/*/kernel/net/
-    cp -r tmp/lib/modules/*/kernel/net/rfkill rootfs/lib/modules/*/kernel/net/
+    cp_kernelfiles tmp/lib/modules/kernel*/kernel/net/mac80211 rootfs/lib/modules/kernel*/kernel/net/
+    cp_kernelfiles tmp/lib/modules/kernel*/kernel/net/rfkill rootfs/lib/modules/kernel*/kernel/net/
+    cp_kernelfiles tmp/lib/modules/kernel*/kernel/net/wireless rootfs/lib/modules/kernel*/kernel/net/
+    cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/net/ethernet rootfs/lib/modules/kernel*/kernel/net/
+    cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/net/phy rootfs/lib/modules/kernel*/kernel/net/
+    cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/net/usb rootfs/lib/modules/kernel*/kernel/drivers/net/
+    cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/net/wireless rootfs/lib/modules/kernel*/kernel/drivers/net/
 
     # Binary firmware for version 3 Model B wireless
     mkdir -p rootfs/lib/firmware/brcm
@@ -550,7 +598,6 @@ function create_cpio {
     (cd rootfs && find . | cpio -H newc -ov | gzip --best > $INITRAMFS)
 
     rm -rf rootfs
-
 }
 
 if [ ! -d packages ]; then
@@ -565,6 +612,8 @@ for i in packages/*.deb; do
     cd tmp && ar x ../$i && tar -xf data.tar.*; rm data.tar.*; cd ..
 done
 
+# get kernel versions
+get_kernels
 
 # initialize bootfs
 rm -rf bootfs

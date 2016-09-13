@@ -1,4 +1,4 @@
-#!/bin/busybox sh
+#!/bin/bash
 
 LOGFILE=/tmp/raspberrypi-ua-netinst.log
 
