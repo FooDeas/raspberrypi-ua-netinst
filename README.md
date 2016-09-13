@@ -20,10 +20,11 @@ In distinction to the base this fork has many changes and improvements. This inc
  - ability to install via onboard wireless lan
  - better compatibility with accessory
  - improved performance out of the box
+ - support for Raspberry Pi Zero
 
 ## Intro
 
-The minimal Raspbian unattended netinstaller for Raspberry Pi model 1B to 3B.  
+The minimal Raspbian unattended netinstaller for Raspberry Pi.  
 
 This project provides [Raspbian][1] power users the possibility to install a minimal base system unattended using latest Raspbian packages regardless when the installer was built.
 
@@ -48,7 +49,7 @@ Other presets include _minimal_ which has even less packages (no logging, no tex
  - option to install root to USB drive
 
 ## Requirements
- - a Raspberry Pi model 1B, model 1B+, model 2B or 3B
+ - a Raspberry Pi from model 1B(+) up to 3B or Zero
  - SD card of at least 640MB or at least 128MB for USB root install (without customization)
  - working ethernet or wireless lan with internet connectivity
 
@@ -202,7 +203,7 @@ The format of the _installer-config.txt_ file and the current defaults:
                               #   network interface names, which means if you use the same SD card on a different
                               #   RPi board, your network device might be named differently. This will result in the
                               #   board having no network connectivity.
-    drivers_to_load=
+    drivers_to_load=          # If you use an USB ethernet adapter, specify the kernel modules here (comma separated).
     online_config=            # URL to extra config that will be executed after installer-config.txt
 
 The timeserver parameter is only used during installation for _rdate_ which is used as fallback when setting the time with `ntpdate` fails.  
