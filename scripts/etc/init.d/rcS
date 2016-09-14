@@ -545,7 +545,7 @@ if [ -z "$cdebootstrap_cmdline" ]; then
 
     # always add firmware if requested
     if [ "$firmware_packages" = "1" ]; then
-        custom_packages_postinstall="${custom_packages_postinstall},firmware-atheros,firmware-brcm80211,firmware-brcm80211,firmware-libertas,firmware-ralink,firmware-realtek"
+        custom_packages_postinstall="${custom_packages_postinstall},firmware-atheros,firmware-brcm80211,firmware-libertas,firmware-ralink,firmware-realtek"
     fi
     # add user defined packages
     if [ -n "${packages}" ]; then
