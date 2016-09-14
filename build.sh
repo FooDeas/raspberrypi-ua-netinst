@@ -635,7 +635,7 @@ cp installer.cpio.gz bootfs/
 echo "[all]" >> bootfs/config.txt
 echo "initramfs installer.cpio.gz" >> bootfs/config.txt
 echo "[pi3]" >> bootfs/config.txt
-echo "dtoverlay=pi3-miniuart-bt" >> bootfs/config.txt
+echo "enable_uart=1" >> bootfs/config.txt
 echo >> bootfs/config.txt
 echo "# Only for RPi model 3: The following line enables the ability to boot from USB." >> bootfs/config.txt
 echo "# Notice: This flag will be written to OTP and is permanent." >> bootfs/config.txt
