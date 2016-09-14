@@ -221,6 +221,9 @@ function create_cpio {
     cp tmp/bin/uname rootfs/bin/
     cp tmp/bin/vdir rootfs/bin/
 
+    # diffutils components
+    cp tmp/usr/bin/cmp rootfs/usr/bin/
+
     # dosfstools components
     cp tmp/sbin/fatlabel rootfs/sbin/
     cp tmp/sbin/fsck.fat rootfs/sbin/

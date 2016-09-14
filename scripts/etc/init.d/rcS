@@ -156,12 +156,22 @@ echo
 echo -n "Waiting for serial device... "
 until [ -n /dev/ttyAMA0 ]; do sleep 1s; done
 echo "OK"
+if cmp -s /proc/device-tree/aliases/uart0 /proc/device-tree/aliases/serial0; then
+    ln -s /dev/ttyAMA0 /dev/serial0
+elif cmp -s /proc/device-tree/aliases/uart0 /proc/device-tree/aliases/serial1; then
+    ln -s /dev/ttyAMA0 /dev/serial1
+fi
+if cmp -s /proc/device-tree/aliases/uart1 /proc/device-tree/aliases/serial0; then
+    ln -s /dev/ttyS0 /dev/serial0
+elif cmp -s /proc/device-tree/aliases/uart1 /proc/device-tree/aliases/serial1; then
+    ln -s /dev/ttyS0 /dev/serial1
+fi
 if grep -q "console=tty1" /proc/cmdline; then
     mkfifo serial.pipe
-    tee < serial.pipe /dev/ttyAMA0 &
+    tee < serial.pipe /dev/serial0 &
     exec &> serial.pipe
     rm serial.pipe
-    echo > /dev/ttyAMA0
+    echo > /dev/serial0
     echo "Printing console to serial output started."
 fi
 
@@ -534,7 +544,7 @@ if [ -z "$cdebootstrap_cmdline" ]; then
 
     # server
     server_packages="vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,less,man-db,bash-completion,console-common"
-    server_packages_postinstall="libraspberrypi-bin,raspi-copies-and-fills"
+    server_packages_postinstall="libraspberrypi-bin,raspi-copies-and-fills,raspberrypi-sys-mods"
     if echo "${ifname}" | grep -q "wlan"; then
         server_packages_postinstall="${server_packages_postinstall},firmware-brcm80211"
     fi
@@ -1188,7 +1198,7 @@ if [ "$kernel_module" = true ]; then
         packages="$(echo ${packages} | tr ',' ' ')"
     fi
 
-    (s=/tmp/.$$_$RANDOM;((chroot /rootfs /usr/bin/apt-get -y install raspberrypi-kernel raspberrypi-bootloader ${server_packages_postinstall} ${packages}; echo $?>$s) | (sed 's/^/  /')); exit $(cat $s;rm $s))
+    (s=/tmp/.$$_$RANDOM;((chroot /rootfs /usr/bin/apt-get -y install raspberrypi-kernel raspberrypi-bootloader raspbian-archive-keyring ${server_packages_postinstall} ${packages}; echo $?>$s) | (sed 's/^/  /')); exit $(cat $s;rm $s))
     if [ $? -eq 0 ]; then
         echo "OK"
     else
