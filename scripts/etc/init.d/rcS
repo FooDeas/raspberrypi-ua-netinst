@@ -5,6 +5,7 @@ LOGFILE=/tmp/raspberrypi-ua-netinst.log
 # default options, can be overriden in installer-config.txt
 preset=server
 packages=
+firmware_packages=
 mirror=http://mirrordirector.raspbian.org/raspbian/
 release=jessie
 hostname=pi
@@ -543,10 +544,15 @@ if [ -z "$cdebootstrap_cmdline" ]; then
     minimal_packages="fake-hwclock,ifupdown,net-tools,ntp,openssh-server,dosfstools"
 
     # server
-    server_packages="vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,less,man-db,bash-completion,console-common"
+    server_packages="vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,less,man-db,bash-completion,console-common,raspbian-archive-keyring,apt-utils"
     server_packages_postinstall="libraspberrypi-bin,raspi-copies-and-fills,raspberrypi-sys-mods"
     if echo "${ifname}" | grep -q "wlan"; then
         server_packages_postinstall="${server_packages_postinstall},firmware-brcm80211"
+    fi
+
+    # firmware
+    if [ "$firmware_packages" = "1" ]; then
+        server_packages_postinstall="${server_packages_postinstall},firmware-atheros,firmware-brcm80211,firmware-brcm80211,firmware-libertas,firmware-ralink,firmware-realtek"
     fi
 
     case $preset in
@@ -646,6 +652,7 @@ echo
 echo "Installer configuration:"
 echo "  preset = $preset"
 echo "  packages = $packages"
+echo "  firmware_packages = $firmware_packages"
 echo "  mirror = $mirror"
 echo "  release = $release"
 echo "  hostname = $hostname"
@@ -671,6 +678,7 @@ echo "  timezone = $timezone"
 echo "  locales = $locales"
 echo "  system_default_locale = $system_default_locale"
 echo "  cmdline = $cmdline"
+echo "  drivers_to_load = $drivers_to_load"
 echo "  usbroot = $usbroot"
 echo "  usbboot = $usbboot"
 echo "  rootdev = $rootdev"
@@ -1195,7 +1203,7 @@ if [ "$kernel_module" = true ]; then
         packages="$(echo ${packages} | tr ',' ' ')"
     fi
 
-    (s=/tmp/.$$_$RANDOM;((chroot /rootfs /usr/bin/apt-get -y install raspberrypi-kernel raspberrypi-bootloader raspbian-archive-keyring ${server_packages_postinstall} ${packages}; echo $?>$s) | (sed 's/^/  /')); exit $(cat $s;rm $s))
+    (s=/tmp/.$$_$RANDOM;((chroot /rootfs /usr/bin/apt-get -y install raspberrypi-kernel raspberrypi-bootloader ${server_packages_postinstall} ${packages}; echo $?>$s) | (sed 's/^/  /')); exit $(cat $s;rm $s))
     if [ $? -eq 0 ]; then
         echo "OK"
     else
