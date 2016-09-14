@@ -68,7 +68,7 @@ fail()
     # copy logfile to /boot/ partition to preserve it.
     # test whether the sd card is still mounted on /boot and if not, mount it.
     if [ ! -f /boot/bootcode.bin ]; then
-        mount $bootpartition /boot
+        mount "$bootpartition" /boot
         fail_boot_mounted=true
     fi
     cp -- $LOGFILE /boot/raspberrypi-ua-netinst-"$(date +%Y%m%dT%H%M%S)".log
@@ -79,7 +79,7 @@ fail()
         umount /boot
     fi
 
-    read -t 10 || reboot && exit
+    read -rt 10 || reboot && exit
     sh
 }
 
@@ -90,8 +90,24 @@ sanitize_inputfile()
     else
         inputfile=$1
         # convert line endings to unix
-        dos2unix $inputfile
+        dos2unix "$inputfile"
     fi
+}
+
+sanitize_variable()
+{
+    local tmp_variable
+    tmp_variable="${!1}"
+    while [ "${tmp_variable:0:1}" == "," ]; do
+        tmp_variable="${tmp_variable:1}"
+    done
+    while [ "${tmp_variable: -1}" == "," ]; do
+        tmp_variable="${tmp_variable:0:-1}"
+    done
+    while echo "${tmp_variable}" | grep -q ",,"; do
+        tmp_variable="${tmp_variable//,,/,}"
+    done
+    eval "${1}"="${tmp_variable}"
 }
 
 install_files()
@@ -155,7 +171,7 @@ sleep 3s
 # Config serial output device
 echo
 echo -n "Waiting for serial device... "
-until [ -n /dev/ttyAMA0 ]; do sleep 1s; done
+until [ -e /dev/ttyAMA0 ]; do sleep 1s; done
 echo "OK"
 if cmp -s /proc/device-tree/aliases/uart0 /proc/device-tree/aliases/serial0; then
     ln -s /dev/ttyAMA0 /dev/serial0
@@ -207,7 +223,7 @@ done
 # Check if there's an alternative rcS file and excute it
 # instead of this file. Only do this if this isn't the
 # alternative script already
-if [ -z ${am_subscript} ]; then
+if [ -z "${am_subscript}" ]; then
     mkdir -p /boot
     mount $bootpartition /boot
     if [ -e "/boot/config/installer/rcS" ]; then
@@ -278,8 +294,7 @@ echo "https://github.com/FooDeas/raspberrypi-ua-netinst/"
 echo "=================================================="
 
 echo -n "Starting HWRNG "
-/usr/sbin/rngd -r /dev/hwrng
-if [ $? -eq 0 ]; then
+if /usr/sbin/rngd -r /dev/hwrng; then
     echo "succeeded!"
 else
     echo "FAILED! (continuing to use the software RNG)"
@@ -328,10 +343,12 @@ if echo "${ifname}" | grep -q "wlan"; then
         wlan_configfile=/tmp/wpa_supplicant.conf
         echo "  wlan_ssid = $wlan_ssid"
         echo "  wlan_psk = $wlan_psk"
-        echo "network={" > ${wlan_configfile}
-        echo "    ssid=\"${wlan_ssid}\"" >> ${wlan_configfile}
-        echo "    psk=\"${wlan_psk}\"" >> ${wlan_configfile}
-        echo "}" >> ${wlan_configfile}
+        {
+            echo "network={"
+            echo "    ssid=\"${wlan_ssid}\""
+            echo "    psk=\"${wlan_psk}\""
+            echo "}"
+        } > ${wlan_configfile}
     fi
 fi
 
@@ -346,7 +363,7 @@ if [ -n "$drivers_to_load" ]; then
    for driver in $drivers_to_load
    do
       echo -n "  Loading driver '$driver'... "
-      modprobe $driver || fail
+      modprobe "$driver" || fail
       echo "OK"
    done
    echo "Finished loading additional drivers"
@@ -355,11 +372,10 @@ fi
 
 echo -n "Waiting for $ifname... "
 for i in $(seq 1 10); do
-    ifconfig $ifname &>/dev/null
-    if [ $? -eq 0 ]; then
+    if ifconfig "${ifname}" &>/dev/null; then
         break
     fi
-    if [ $i -eq 10 ]; then
+    if [ "$i" -eq 10 ]; then
         echo "FAILED"
         fail
     fi
@@ -370,13 +386,12 @@ echo "OK"
 
 if [ "$ifname" != "eth0" ]; then
     # Replace eth0 as udhcpc dns interface
-    sed -i "s/PEERDNS_IF=.*/PEERDNS_IF=$ifname/g" /etc/udhcpc/default.script
+    sed -i "s/PEERDNS_IF=.*/PEERDNS_IF=${ifname}/g" /etc/udhcpc/default.script
     # wlan* is a wireless interface and wpa_supplicant must connect to wlan
     if echo "${ifname}" | grep -q "wlan"; then
         echo -n "Starting wpa_supplicant... "
         if [ -e "$wlan_configfile" ]; then
-            wpa_supplicant -B -Dnl80211 -c"$wlan_configfile" -i$ifname
-            if [ $? -eq 0 ]; then
+            if wpa_supplicant -B -Dnl80211 -c"${wlan_configfile}" -i$ifname; then
                 echo "OK"
             else
                 echo "nl80211 driver didn't work. Trying generic driver (wext)..."
@@ -390,9 +405,8 @@ fi
 if [ "$ip_addr" = "dhcp" ]; then
     echo -n "Configuring $ifname with DHCP... "
 
-    udhcpc -i $ifname &>/dev/null
-    if [ $? -eq 0 ]; then
-        ifconfig $ifname | fgrep addr: | awk '{print $2}' | cut -d: -f2
+    if udhcpc -i ${ifname} &>/dev/null; then
+        ifconfig ${ifname} | fgrep addr: | awk '{print $2}' | cut -d: -f2
     else
         echo "FAILED"
         fail
@@ -414,8 +428,7 @@ PRE_NETWORK_DURATION=$(date +%s)
 date_set=false
 if [ "$date_set" = "false" ]; then
     # set time with ntpdate
-    ntpdate-debian -b &>/dev/null
-    if [ $? -eq 0 ]; then
+    if ntpdate-debian -b &>/dev/null; then
         echo -n "Time set using ntpdate to... "
         date
         date_set=true
@@ -437,8 +450,7 @@ if [ "$date_set" = "false" ]; then
         timeservers="$timeservers nist1-ny2.ustiming.org wwv.nist.gov"
         for ts in $timeservers
         do
-            rdate $ts &>/dev/null
-            if [ $? -eq 0 ]; then
+            if rdate "$ts" &>/dev/null; then
                 echo -n "Time set using timeserver '$ts' to... "
                 date
                 date_set=true
@@ -531,40 +543,59 @@ if [ -z "$cdebootstrap_cmdline" ]; then
         init_system="systemd"
     fi
 
-    # base
-    base_packages="cpufrequtils,kmod"
+    # always add firmware if requested
+    if [ "$firmware_packages" = "1" ]; then
+        custom_packages_postinstall="${custom_packages_postinstall},firmware-atheros,firmware-brcm80211,firmware-brcm80211,firmware-libertas,firmware-ralink,firmware-realtek"
+    fi
+    # add user defined packages
+    if [ -n "${packages}" ]; then
+        custom_packages_postinstall="${custom_packages_postinstall},${packages}"
+    fi
 
+    # base
+    base_packages="cpufrequtils,kmod,raspbian-archive-keyring"
+    base_packages_postinstall=raspberrypi-kernel,raspberrypi-bootloader
+    base_packages_postinstall="${custom_packages_postinstall},${base_packages_postinstall}"
     if [ "$init_system" = "systemd" ]; then
         base_packages="${base_packages},libpam-systemd"
     fi
     if [ "$hwrng_support" = "1" ]; then
         base_packages="$base_packages,rng-tools"
     fi
+    
     # minimal
     minimal_packages="fake-hwclock,ifupdown,net-tools,ntp,openssh-server,dosfstools"
+    minimal_packages_postinstall=raspberrypi-sys-mods
+    minimal_packages_postinstall="${base_packages_postinstall},${minimal_packages_postinstall}"
+    if echo "${ifname}" | grep -q "wlan"; then
+        minimal_packages_postinstall="${minimal_packages_postinstall},firmware-brcm80211"
+    fi
 
     # server
-    server_packages="vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,less,man-db,bash-completion,console-common,raspbian-archive-keyring,apt-utils"
-    server_packages_postinstall="libraspberrypi-bin,raspi-copies-and-fills,raspberrypi-sys-mods"
-    if echo "${ifname}" | grep -q "wlan"; then
-        server_packages_postinstall="${server_packages_postinstall},firmware-brcm80211"
-    fi
+    server_packages="vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,less,man-db,bash-completion,console-common,apt-utils"
+    server_packages_postinstall="libraspberrypi-bin,raspi-copies-and-fills"
+    server_packages_postinstall="${minimal_packages_postinstall},${server_packages_postinstall}"
 
-    # firmware
-    if [ "$firmware_packages" = "1" ]; then
-        server_packages_postinstall="${server_packages_postinstall},firmware-atheros,firmware-brcm80211,firmware-brcm80211,firmware-libertas,firmware-ralink,firmware-realtek"
-    fi
-
+    # cleanup package variables
+    sanitize_variable base_packages
+    sanitize_variable base_packages_postinstall
+    sanitize_variable minimal_packages
+    sanitize_variable minimal_packages_postinstall
+    sanitize_variable server_packages
+    sanitize_variable server_packages_postinstall
     case $preset in
         base)
             cdebootstrap_cmdline="--flavour=minimal --include=${base_packages}"
+            packages_postinstall="${base_packages_postinstall}"
             ;;
         minimal)
             cdebootstrap_cmdline="--flavour=minimal --include=${base_packages},${minimal_packages}"
+            packages_postinstall="${minimal_packages_postinstall}"
             ;;
         *)
             # this should be 'server', but using '*' for backward-compatibility
             cdebootstrap_cmdline="--flavour=minimal --include=${base_packages},${minimal_packages},${server_packages}"
+            packages_postinstall="${server_packages_postinstall}"
             if [ "$preset" != "server" ]; then
                 echo "Unknown preset specified: $preset"
                 echo "Using 'server' as fallback"
@@ -592,7 +623,7 @@ if [ "$usbboot" != "1" ]; then
     bootpartition=/dev/mmcblk0p1
 else
     msd_boot_enabled="$(vcgencmd otp_dump | grep 17: | cut -b 4-5)"
-    msd_boot_enabled="$(printf "${msd_boot_enabled}" | xxd -r -p | xxd -b | cut -d' ' -f2 | cut -b 3)"
+    msd_boot_enabled="$(printf "%s" "${msd_boot_enabled}" | xxd -r -p | xxd -b | cut -d' ' -f2 | cut -b 3)"
 
     if [ "${msd_boot_enabled}" != "1" ]; then
         echo "================================================================"
@@ -669,6 +700,7 @@ echo "  usersysgroups = $usersysgroups"
 echo "  user_ssh_pubkey = $user_ssh_pubkey"
 echo "  user_is_admin = $user_is_admin"
 echo "  cdebootstrap_cmdline = $cdebootstrap_cmdline"
+echo "  packages_postinstall = $packages_postinstall"
 echo "  boot_volume_label = $boot_volume_label"
 echo "  bootsize = $bootsize"
 echo "  bootoffset = $bootoffset"
@@ -798,15 +830,14 @@ touch $FDISK_SCHEME_USB_ROOT
 } >> ${FDISK_SCHEME_USB_ROOT}
 
 
-echo -n "Waiting for $rootdev... "
+echo "Waiting for ${rootdev}... "
 for i in $(seq 1 10); do
-
-    if [ -n "$(fdisk -l $rootdev 2>&1 | fgrep Disk)" ]; then
+    if fdisk -l "${rootdev}" 2>&1 | fgrep Disk | sed 's/^/  /'; then
         echo "OK"
         break
     fi
 
-    if [ $i -eq 10 ]; then
+    if [ "$i" -eq 10 ]; then
         echo "FAILED"
         fail
     fi
@@ -860,11 +891,11 @@ if [ "$kernel_module" = true ]; then
 fi
 
 echo -n "Initializing / as $rootfstype... "
-mkfs.$rootfstype $rootfs_mkfs_options $rootpartition &>/dev/null || fail
+eval mkfs."${rootfstype}" "${rootfs_mkfs_options}" "${rootpartition}" &> /dev/null || fail
 echo "OK"
 
 echo -n "Mounting new filesystems... "
-mount $rootpartition /rootfs -o $rootfs_install_mount_options || fail
+mount $rootpartition /rootfs -o "${rootfs_install_mount_options}" || fail
 mkdir /rootfs/boot || fail
 mount $bootpartition /rootfs/boot || fail
 echo "OK"
@@ -877,10 +908,9 @@ if [ "$kernel_module" = true ]; then
 fi
 
 echo "Starting install process..."
-cdebootstrap-static --arch=armhf $cdebootstrap_cmdline $release /rootfs $mirror --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg || fail
+eval cdebootstrap-static --arch=armhf "${cdebootstrap_cmdline}" "${release}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg || fail
 
 echo "Configuring installed system:"
-
 # configure root login
 if [ -n "$rootpw" ]; then
     echo -n "  Setting root password... "
@@ -890,8 +920,11 @@ fi
 # add SSH key for root (if provided)
 if [ -n "$root_ssh_pubkey" ]; then
     echo -n "  Setting root SSH key... "
-    mkdir -p -m 700 /rootfs/root/.ssh && \
-        echo "$root_ssh_pubkey" > /rootfs/root/.ssh/authorized_keys || fail
+    if mkdir -p /rootfs/root/.ssh && chmod 700 /rootfs/root/.ssh; then
+        echo "${root_ssh_pubkey}" > /rootfs/root/.ssh/authorized_keys
+    else
+        fail
+    fi
     echo "OK"
     echo -n "  Setting permissions on root SSH authorized_keys... "
     chmod 600 /rootfs/root/.ssh/authorized_keys || fail
@@ -910,27 +943,33 @@ fi
 chroot /rootfs /usr/sbin/groupadd -fr gpio || fail
 
 # add user to system
-if [ -n "$username" ]; then
-    echo -n "  Creating user $username... "
-    chroot /rootfs /usr/sbin/adduser "$username" --gecos "" --disabled-password || fail | sed 's/^/    /'
+if [ -n "${username}" ]; then
+    echo -n "  Creating user ${username}... "
+    chroot /rootfs /usr/sbin/adduser "${username}" --gecos "" --disabled-password | sed 's/^/    /'
+    if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+        fail
+    fi
     echo "  OK"
     # add SSH key for user (if provided)
     if [ -n "$user_ssh_pubkey" ]; then
-        echo -n "  Setting SSH key for $username... "
-        ssh_dir="/rootfs/home/$username/.ssh"
-        mkdir -p -m 700 "$ssh_dir" && \
-            echo "$user_ssh_pubkey" > "$ssh_dir/authorized_keys" || fail
+        echo -n "  Setting SSH key for ${username}... "
+        ssh_dir="/rootfs/home/${username}/.ssh"
+        if mkdir -p "${ssh_dir}" && chmod 700 "${ssh_dir}"; then
+            echo "${user_ssh_pubkey}" > "${ssh_dir}/authorized_keys"
+        else
+            fail
+        fi
         echo "OK"
-        echo -n "  Setting owner as $username on SSH directory... "
-        chroot /rootfs /bin/chown -R "$username:$username" "/home/$username/.ssh" || fail
+        echo -n "  Setting owner as ${username} on SSH directory... "
+        chroot /rootfs /bin/chown -R "${username}:${username}" "/home/${username}/.ssh" || fail
         echo "OK"
-        echo -n "  Setting permissions on $username SSH authorized_keys... "
+        echo -n "  Setting permissions on ${username} SSH authorized_keys... "
         chmod 600 "$ssh_dir/authorized_keys" || fail
         echo "OK"
     fi
-    if [ -n "$userpw" ]; then
-        echo -n "  Setting password for $username... "
-        echo -n "$username:$userpw" | chroot /rootfs /usr/sbin/chpasswd || fail
+    if [ -n "${userpw}" ]; then
+        echo -n "  Setting password for ${username}... "
+        echo -n "${username}:${userpw}" | chroot /rootfs /usr/sbin/chpasswd || fail
         echo "OK"
     fi
     if [ "$usergpio" = "1" ]; then
@@ -940,32 +979,32 @@ if [ -n "$username" ]; then
         usersysgroups="$usersysgroups,video"
     fi
     if [ -n "$usersysgroups" ]; then
-        echo -n "  Adding $username to system groups: "
+        echo -n "  Adding ${username} to system groups: "
         usersysgroups="$(echo ${usersysgroups} | tr ',' ' ')"
         for sysgroup in ${usersysgroups}; do
             echo -n "${sysgroup} "
             chroot /rootfs /usr/sbin/groupadd -fr "${sysgroup}" || fail
-            chroot /rootfs /usr/sbin/usermod -aG "${sysgroup}" "$username" || fail
+            chroot /rootfs /usr/sbin/usermod -aG "${sysgroup}" "${username}" || fail
         done
         echo "OK"
     fi
     if [ -n "$usergroups" ]; then
-        echo -n "  Adding $username to groups: "
+        echo -n "  Adding ${username} to groups: "
         usergroups="$(echo ${usergroups} | tr ',' ' ')"
         for usergroup in ${usergroups}; do
             echo -n "${usergroup} "
             chroot /rootfs /usr/sbin/groupadd -f "${usergroup}" || fail
-            chroot /rootfs /usr/sbin/usermod -aG "${usergroup}" "$username" || fail
+            chroot /rootfs /usr/sbin/usermod -aG "${usergroup}" "${username}" || fail
         done
         echo "OK"
     fi
     if [ "$user_is_admin" = "1" ]; then
-        echo -n "  Adding $username to sudo group... "
-        chroot /rootfs /usr/sbin/usermod -aG sudo "$username" || fail
+        echo -n "  Adding ${username} to sudo group... "
+        chroot /rootfs /usr/sbin/usermod -aG sudo "${username}" || fail
         echo "OK"
-        if [ -z "$userpw" ]; then
-            echo -n "  Setting $username to sudo without a password... "
-            echo -n "$username ALL = (ALL) NOPASSWD: ALL" > "/rootfs/etc/sudoers.d/$username" || fail
+        if [ -z "${userpw}" ]; then
+            echo -n "  Setting ${username} to sudo without a password... "
+            echo -n "${username} ALL = (ALL) NOPASSWD: ALL" > "/rootfs/etc/sudoers.d/${username}" || fail
             echo "OK"
         fi
     fi
@@ -1027,11 +1066,13 @@ echo "allow-hotplug $ifname" >> /rootfs/etc/network/interfaces
 if [ "$ip_addr" = "dhcp" ]; then
     echo "iface $ifname inet dhcp" >> /rootfs/etc/network/interfaces
 else
-    echo "iface $ifname inet static" >> /rootfs/etc/network/interfaces
-    echo "    address $ip_addr" >> /rootfs/etc/network/interfaces
-    echo "    netmask $ip_netmask" >> /rootfs/etc/network/interfaces
-    echo "    broadcast $ip_broadcast" >> /rootfs/etc/network/interfaces
-    echo "    gateway $ip_gateway" >> /rootfs/etc/network/interfaces
+    {
+        echo "iface $ifname inet static"
+        echo "    address $ip_addr"
+        echo "    netmask $ip_netmask"
+        echo "    broadcast $ip_broadcast"
+        echo "    gateway $ip_gateway"
+    } >> /rootfs/etc/network/interfaces
 fi
 
 # wlan config
@@ -1042,9 +1083,11 @@ if echo "${ifname}" | grep -q "wlan"; then
         chmod 600 /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
         echo "    wpa-conf /etc/wpa_supplicant/wpa_supplicant.conf" >> /rootfs/etc/network/interfaces
     fi
-    echo "" >> /rootfs/etc/network/interfaces
-    echo "allow-hotplug eth0" >> /rootfs/etc/network/interfaces
-    echo "iface eth0 inet dhcp" >> /rootfs/etc/network/interfaces
+    {
+        echo ""
+        echo "allow-hotplug eth0"
+        echo "iface eth0 inet dhcp"
+    } >> /rootfs/etc/network/interfaces
 fi
 
 if [ "${disable_predictable_nin}" = "1" ]; then
@@ -1063,8 +1106,7 @@ echo "OK"
 # set timezone and reconfigure tzdata package
 echo -n "  Configuring tzdata, setting timezone to $timezone... "
 echo "$timezone" > /rootfs/etc/timezone
-chroot /rootfs /usr/sbin/dpkg-reconfigure -f noninteractive tzdata &> /dev/null
-if [ $? -eq 0 ]; then
+if chroot /rootfs /usr/sbin/dpkg-reconfigure -f noninteractive tzdata &> /dev/null; then
     echo "OK"
 else
     echo "FAILED !"
@@ -1091,8 +1133,8 @@ if [ -n "$locales" ]; then
     done
     echo "OK"
     if [ -x /rootfs/usr/sbin/locale-gen ]; then
-        (s=/tmp/.$$_$RANDOM;((chroot /rootfs /usr/sbin/locale-gen; echo $?>$s) | (sed 's/^/  /')); exit $(cat $s;rm $s))
-        if [ $? -ne 0 ]; then
+        chroot /rootfs /usr/sbin/locale-gen | sed 's/^/  /'
+        if [ "${PIPESTATUS[0]}" -ne 0 ]; then
             echo "  ERROR while generating locales !"
         fi
     else
@@ -1104,8 +1146,7 @@ fi
 if [ -n "$system_default_locale" ]; then
     if [ -x /rootfs/usr/sbin/update-locale ]; then
         echo -n "  Setting system default locale... "
-        chroot /rootfs /usr/sbin/update-locale LANG="$system_default_locale" &> /dev/null
-        if [ $? -eq 0 ]; then
+        if chroot /rootfs /usr/sbin/update-locale LANG="${system_default_locale}" &> /dev/null; then
             echo "OK"
         else
             echo "FAILED !"
@@ -1136,7 +1177,7 @@ else
 fi
 
 echo "  Adding raspberrypi.org gpg key to apt-key."
-cat /usr/share/keyrings/raspberrypi.gpg.key | chroot /rootfs /usr/bin/apt-key add - &>/dev/null
+(chroot /rootfs /usr/bin/apt-key add - &>/dev/null) < /usr/share/keyrings/raspberrypi.gpg.key || fail
 
 # save the current location so that we can go back to it later on
 old_dir=$(pwd)
@@ -1167,7 +1208,7 @@ for keyfile in ./*.key
 do
     if [ -e "$keyfile" ]; then
         echo -n "  Adding key $keyfile to apt."
-        cat "$keyfile" | chroot /rootfs /usr/bin/apt-key add - || fail
+        (chroot /rootfs /usr/bin/apt-key add -) < "$keyfile" || fail
         echo "OK"
     fi
 done
@@ -1183,7 +1224,7 @@ do
 done
 
 # return to the old location for the rest of the processing
-cd $old_dir || fail
+cd "$old_dir" || fail
 
 echo
 echo -n "Updating package lists... "
@@ -1194,17 +1235,12 @@ echo "OK"
 if [ "$kernel_module" = true ]; then
     echo
     echo "Installing kernel, bootloader (=firmware) and user packages..."
-    if [ -n "$server_packages_postinstall" ]; then
-        server_packages_postinstall="$(echo ${server_packages_postinstall} | tr ',' ' ')"
+    if [ -n "${packages_postinstall}" ]; then
+        packages_postinstall="$(echo "${packages_postinstall}" | tr ',' ' ')"
     fi
 
-    # add user defined packages
-    if [ -n "$packages" ]; then
-        packages="$(echo ${packages} | tr ',' ' ')"
-    fi
-
-    (s=/tmp/.$$_$RANDOM;((chroot /rootfs /usr/bin/apt-get -y install raspberrypi-kernel raspberrypi-bootloader ${server_packages_postinstall} ${packages}; echo $?>$s) | (sed 's/^/  /')); exit $(cat $s;rm $s))
-    if [ $? -eq 0 ]; then
+    eval chroot /rootfs /usr/bin/apt-get -y install "${packages_postinstall}" | sed 's/^/  /'
+    if [ "${PIPESTATUS[0]}" -eq 0 ]; then
         echo "OK"
     else
         echo "FAILED !"
@@ -1270,8 +1306,8 @@ fi
 
 # modify installed network settings
 if [ -f /rootfs/etc/wpa_supplicant.conf ]; then
-    if [ $(grep "iface" /rootfs/etc/network/interfaces | grep -v "lo\|eth0" | wc -l) -ne 0 ]; then
-        if [ $(grep "wpa[-_]" /rootfs/etc/network/interfaces | wc -l) -eq 0 ]; then
+    if [ "$(grep -c "iface" /rootfs/etc/network/interfaces | grep -v "lo\|eth0")" -ne 0 ]; then
+        if [ "$(grep -c "wpa[-_]" /rootfs/etc/network/interfaces)" -eq 0 ]; then
             echo "wpa-conf /etc/wpa_supplicant.conf" >> /rootfs/etc/network/interfaces
         fi
     fi
