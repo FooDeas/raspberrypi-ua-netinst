@@ -898,6 +898,9 @@ if [ "$root_ssh_allow" = "1" ]; then
     fi
 fi
 
+# add basic system groups
+chroot /rootfs /usr/sbin/groupadd -fr gpio || fail
+
 # add user to system
 if [ -n "$username" ]; then
     echo -n "  Creating user $username... "
@@ -923,13 +926,7 @@ if [ -n "$username" ]; then
         echo "OK"
     fi
     if [ "$usergpio" = "1" ]; then
-        echo -n "  Giving GPIO access permissions to system group 'gpio'... "
         usersysgroups="$usersysgroups,gpio"
-        mkdir -p "/rootfs/etc/udev/rules.d"
-        echo "SUBSYSTEM==\"bcm2835-gpiomem\", KERNEL==\"gpiomem\", GROUP=\"gpio\", MODE=\"0660\"" > /rootfs/etc/udev/rules.d/99-gpio.rules
-        echo "SUBSYSTEM==\"gpio\", KERNEL==\"gpiochip*\", ACTION==\"add\", PROGRAM=\"/bin/sh -c 'chown root:gpio /sys/class/gpio/export /sys/class/gpio/unexport ; chmod 220 /sys/class/gpio/export /sys/class/gpio/unexport'\"" >> /rootfs/etc/udev/rules.d/99-gpio.rules
-        echo "SUBSYSTEM==\"gpio\", KERNEL==\"gpio*\", ACTION==\"add\", PROGRAM=\"/bin/sh -c 'chown root:gpio /sys%p/active_low /sys%p/direction /sys%p/edge /sys%p/value ; chmod 660 /sys%p/active_low /sys%p/direction /sys%p/edge /sys%p/value'\"" >> /rootfs/etc/udev/rules.d/99-gpio.rules
-        echo "OK"
     fi
     if [ "$usergpu" = "1" ]; then
         usersysgroups="$usersysgroups,video"
