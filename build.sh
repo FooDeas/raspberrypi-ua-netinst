@@ -153,6 +153,20 @@ function create_cpio {
         done
     done
 
+    # copy network drivers
+    for kernel in ${kernels[@]}; do
+        mkdir -p rootfs/lib/modules/${kernel}/kernel/drivers/net
+        mkdir -p rootfs/lib/modules/${kernel}/kernel/net
+    done
+    cp_kernelfiles tmp/lib/modules/kernel*/kernel/net/mac80211 rootfs/lib/modules/kernel*/kernel/net/
+    cp_kernelfiles tmp/lib/modules/kernel*/kernel/net/rfkill rootfs/lib/modules/kernel*/kernel/net/
+    cp_kernelfiles tmp/lib/modules/kernel*/kernel/net/wireless rootfs/lib/modules/kernel*/kernel/net/
+    cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/net/ethernet rootfs/lib/modules/kernel*/kernel/net/
+    cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/net/phy rootfs/lib/modules/kernel*/kernel/net/
+    cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/net/usb rootfs/lib/modules/kernel*/kernel/drivers/net/
+    cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/net/wireless rootfs/lib/modules/kernel*/kernel/drivers/net/
+
+    # create dependency lists
     for kernel in ${kernels[@]}; do
         /sbin/depmod -b rootfs ${kernel}
     done
@@ -182,6 +196,7 @@ function create_cpio {
     # busybox components
     cp tmp/bin/busybox rootfs/bin
     cd rootfs && ln -s bin/busybox init; cd ..
+    echo "\$MODALIAS=.* 0:0 660 @/opt/busybox/bin/modprobe \"\$MODALIAS\"" > rootfs/etc/mdev.conf
 
     # bash-static components
     cp tmp/bin/bash-static rootfs/bin
@@ -560,19 +575,6 @@ function create_cpio {
 
     # zlib1g components
     cp tmp/lib/*/libz.so.1  rootfs/lib/
-
-    # network drivers
-    for kernel in ${kernels[@]}; do
-        mkdir -p rootfs/lib/modules/${kernel}/kernel/drivers/net
-        mkdir -p rootfs/lib/modules/${kernel}/kernel/net
-    done
-    cp_kernelfiles tmp/lib/modules/kernel*/kernel/net/mac80211 rootfs/lib/modules/kernel*/kernel/net/
-    cp_kernelfiles tmp/lib/modules/kernel*/kernel/net/rfkill rootfs/lib/modules/kernel*/kernel/net/
-    cp_kernelfiles tmp/lib/modules/kernel*/kernel/net/wireless rootfs/lib/modules/kernel*/kernel/net/
-    cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/net/ethernet rootfs/lib/modules/kernel*/kernel/net/
-    cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/net/phy rootfs/lib/modules/kernel*/kernel/net/
-    cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/net/usb rootfs/lib/modules/kernel*/kernel/drivers/net/
-    cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/net/wireless rootfs/lib/modules/kernel*/kernel/drivers/net/
 
     # Binary firmware for version 3 Model B wireless
     mkdir -p rootfs/lib/firmware/brcm
