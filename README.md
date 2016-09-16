@@ -210,10 +210,13 @@ The format of the _installer-config.txt_ file and the current defaults:
 
 The timeserver parameter is only used during installation for _rdate_ which is used as fallback when setting the time with `ntpdate` fails.  
 
-Available presets: _server_, _minimal_ and _base_.
-Presets set the `cdebootstrap_cmdline` variable. For example, the current _server_ default is:
+Available presets are _server_, _minimal_ and _base_. The current packages that are installed by default are listed below.
 
-> _--flavour=minimal --include=kmod,fake-hwclock,ifupdown,net-tools,isc-dhcp-client,ntp,openssh-server,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,dialog,locales,less,man-db,bash-completion,console-common_
+preset  |  packages
+--------|----------
+base    | _\<essential\>,apt,cpufrequtils,kmod,raspbian-archive-keyring_
+minimal | _\<base\>,fake-hwclock,ifupdown,net-tools,ntp,openssh-server,dosfstools,raspberrypi-sys-mods_
+server  | _\<minimal\>,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,less,man-db,bash-completion,console-common,apt-utils,libraspberrypi-bin,raspi-copies-and-fills_
 
 (If you build your own installer, which most won't need to, and the configuration files exist in the same directory as this `README.md`, it will be include in the installer image automatically.)
 
