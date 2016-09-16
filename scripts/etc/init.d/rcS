@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC1091
 
 LOGFILE=/tmp/raspberrypi-ua-netinst.log
 
