@@ -119,7 +119,8 @@ The format of the _installer-config.txt_ file and the current defaults:
 
     # Package options
     preset=server
-    packages=                 # comma separated list of extra packages
+    packages=                 # Install this additional packages (comma separated and quoted).
+                              #   (e.g. "pi-bluetooth,cifs-utils,curl")
     firmware_packages=0       # Set to "1" to install common firmware packages (Atheros, Broadcom, Libertas, Ralink
                               #   and Realtek)
     mirror=http://mirrordirector.raspbian.org/raspbian/
@@ -147,10 +148,10 @@ The format of the _installer-config.txt_ file and the current defaults:
                               #   'gpio' will be created automatically.
     usergpu=                  # Set to 1 to give created user GPU access permissions (e.g. to run vcgencmd
                               #   without using sudo).
-    usergroups=               # Add created user to this additional groups (comma separated). Non-existent groups
-                              #   will be created. (e.g. 'usergroups=family,friends')
-    usersysgroups=            # Add created user to this additional groups (comma separated). Non-existent groups
-                              #   will be created as system groups. (e.g. 'usersysgroups=video,www-data')
+    usergroups=               # Add created user to this additional groups (comma separated and quoted). Non-existent
+                              #   groups will be created. (e.g. 'usergroups=family,friends')
+    usersysgroups=            # Add created user to this additional groups (comma separated and quoted). Non-existent
+                              #   groups will be created as system groups. (e.g. 'usersysgroups=video,www-data')
     user_ssh_pubkey=          # public SSH key for created user; the public SSH key must be on a single line, enclosed
                               #   in quotes
     user_is_admin=            # set to 1 to install sudo and make the user a sudo user
@@ -170,9 +171,10 @@ The format of the _installer-config.txt_ file and the current defaults:
 
     # Localization options
     timezone=Etc/UTC          # set to desired timezone (e.g. Europe/Ljubljana)
-    locales=                  # a space delimited list of locales that will be generated during install
-                              #   (e.g. "en_US.UTF-8 nl_NL sl_SI.UTF-8")
-    system_default_locale=    # the default system locale to set (using the LANG environment variable)
+    locales=                  # Generate locales from this list (comma separated and quoted). UTF-8 is chosen
+                              #   preferentially if no encoding is specified. (e.g. "en_US.UTF-8,nl_NL,sl_SI.UTF-8")
+    system_default_locale=    # Set default system locale (using the LANG environment variable). UTF-8 is chosen
+                              #   preferentially if no encoding is specified. (e.g. "nl_NL" or "sl_SI.UTF-8") 
 
     # Partitioning / Filesystem options
     usbroot=                  # Set to 1 to install to first USB disk.
@@ -205,7 +207,7 @@ The format of the _installer-config.txt_ file and the current defaults:
                               #   network interface names, which means if you use the same SD card on a different
                               #   RPi board, your network device might be named differently. This will result in the
                               #   board having no network connectivity.
-    drivers_to_load=          # If you use an USB ethernet adapter, specify the kernel modules here (comma separated).
+    drivers_to_load=          # Loads additional kernel modules at installation (comma separated and quoted).
     online_config=            # URL to extra config that will be executed after installer-config.txt
 
 The timeserver parameter is only used during installation for _rdate_ which is used as fallback when setting the time with `ntpdate` fails.  

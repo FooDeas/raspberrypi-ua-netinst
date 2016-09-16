@@ -94,10 +94,12 @@ sanitize_inputfile()
     fi
 }
 
+# sanitizes variables that use comma separation
 sanitize_variable()
 {
     local tmp_variable
     tmp_variable="${!1}"
+    tmp_variable="$(echo "${tmp_variable}" | tr ' ' ',')"
     while [ "${tmp_variable:0:1}" == "," ]; do
         tmp_variable="${tmp_variable:1}"
     done
@@ -461,7 +463,7 @@ if [ "$date_set" = "false" ]; then
         done
     fi
 fi
-if [ "$date_set" = "false" ]; then
+if [ "${date_set}" = "false" ]; then
     echo "FAILED to set the date, so things are likely to fail now ..."
     echo "Make sure that rdate port 37 is not blocked by your firewall."
 fi
@@ -475,7 +477,7 @@ echo
 echo "Installation started at $(date --date="@$REAL_STARTTIME" --utc)."
 echo
 
-if [ -n "$online_config" ]; then
+if [ -n "${online_config}" ]; then
     echo -n "Downloading online config from $online_config... "
     wget -q -O /online-config.txt $online_config &>/dev/null || fail
     echo "OK"
@@ -489,7 +491,7 @@ if [ -n "$online_config" ]; then
 fi
 
 # prepare rootfs mount options
-case "$rootfstype" in
+case "${rootfstype}" in
   "btrfs")
     kernel_module=true
     rootfs_mkfs_options=${rootfs_mkfs_options:-'-f'}
@@ -515,20 +517,20 @@ case "$rootfstype" in
 esac
 
 # check if we need to install wpasupplicant package
-if [ "$ifname" != "eth0" ]; then
-    if [ -z "$syspackages" ]; then
+if [ "${ifname}" != "eth0" ]; then
+    if [ -z "${syspackages}" ]; then
         syspackages="wpasupplicant"
     else
-        syspackages="$syspackages,wpasupplicant"
+        syspackages="${syspackages},wpasupplicant"
     fi
 fi
 
 # check if we need the sudo package and add it if so
-if [ "$user_is_admin" = "1" ]; then
-    if [ -z "$syspackages" ]; then
+if [ "${user_is_admin}" = "1" ]; then
+    if [ -z "${syspackages}" ]; then
         syspackages="sudo"
     else
-        syspackages="$syspackages,sudo"
+        syspackages="${syspackages},sudo"
     fi
 fi
 
@@ -539,13 +541,16 @@ if [ -z "$cdebootstrap_cmdline" ]; then
     # not very logical that minimal > base, but that's how it was historically defined
 
     init_system=""
-    if [ "$release" = "jessie" ]; then
+    if [ "${release}" = "{jessie}" ]; then
         init_system="systemd"
     fi
 
     # always add firmware if requested
-    if [ "$firmware_packages" = "1" ]; then
+    if [ "${firmware_packages}" = "1" ]; then
         custom_packages_postinstall="${custom_packages_postinstall},firmware-atheros,firmware-brcm80211,firmware-libertas,firmware-ralink,firmware-realtek"
+    fi
+    if [ -n "${locales}" ] || [ -n "${system_default_locale}" ]; then
+        custom_packages_postinstall="${custom_packages_postinstall},locales"
     fi
     # add user defined packages
     if [ -n "${packages}" ]; then
@@ -556,10 +561,10 @@ if [ -z "$cdebootstrap_cmdline" ]; then
     base_packages="cpufrequtils,kmod,raspbian-archive-keyring"
     base_packages_postinstall=raspberrypi-kernel,raspberrypi-bootloader
     base_packages_postinstall="${custom_packages_postinstall},${base_packages_postinstall}"
-    if [ "$init_system" = "systemd" ]; then
+    if [ "${init_system}" = "systemd" ]; then
         base_packages="${base_packages},libpam-systemd"
     fi
-    if [ "$hwrng_support" = "1" ]; then
+    if [ "${hwrng_support}" = "1" ]; then
         base_packages="$base_packages,rng-tools"
     fi
     
@@ -596,7 +601,7 @@ if [ -z "$cdebootstrap_cmdline" ]; then
             # this should be 'server', but using '*' for backward-compatibility
             cdebootstrap_cmdline="--flavour=minimal --include=${base_packages},${minimal_packages},${server_packages}"
             packages_postinstall="${server_packages_postinstall}"
-            if [ "$preset" != "server" ]; then
+            if [ "${preset}" != "server" ]; then
                 echo "Unknown preset specified: $preset"
                 echo "Using 'server' as fallback"
             fi
@@ -679,6 +684,18 @@ if [ -z "$rootpartition" ]; then
     fi
 fi
 
+# sanitize_variables
+sanitize_variable locales
+
+# modify variables
+# add $system_default_locale to $locales if not included
+if [ -n "${locales}" ]; then
+    if ! echo "${tmp_variable}" | grep -q "${locales}"; then
+        locales="${system_default_locale},${locales}"
+    fi
+fi
+
+# show resulting variables
 echo
 echo "Installer configuration:"
 echo "  preset = $preset"
@@ -1113,17 +1130,18 @@ else
 fi
 
 # generate locale data
-if [ -n "$locales" ]; then
+if [ -n "${locales}" ]; then
     echo -n "  Enabling locales... "
-    for locale in $locales; do
-        echo -n "$locale... "
-        if [ -f /rootfs/etc/locale.gen ] && [ "$(grep -c $locale /rootfs/etc/locale.gen)" -gt 0 ]; then
-            if [ "$(grep -c "$locale UTF-8" /rootfs/etc/locale.gen)" -eq 1 ]; then
-                sed -i "s/^# \($locale UTF-8\)/\1/" /rootfs/etc/locale.gen
-            elif [ "$(grep -c "$locale.UTF-8 " /rootfs/etc/locale.gen)" -eq 1 ]; then
-                sed -i "s/^# \($locale\.UTF-8 \)/\1/" /rootfs/etc/locale.gen
-            elif [ "$(grep -c "$locale " /rootfs/etc/locale.gen)" -eq 1 ]; then
-                sed -i "s/^# \($locale \)/\1/" /rootfs/etc/locale.gen
+    locales="$(echo "${locales}" | tr ',' ' ')"
+    for locale in ${locales}; do
+        echo -n "${locale}... "
+        if [ -f /rootfs/etc/locale.gen ] && [ "$(grep -c "${locale}" /rootfs/etc/locale.gen)" -gt 0 ]; then
+            if [ "$(grep -c "${locale} UTF-8" /rootfs/etc/locale.gen)" -eq 1 ]; then
+                sed -i "s/^# \(${locale} UTF-8\)/\1/" /rootfs/etc/locale.gen
+            elif [ "$(grep -c "${locale}.UTF-8 " /rootfs/etc/locale.gen)" -eq 1 ]; then
+                sed -i "s/^# \(${locale}\.UTF-8 \)/\1/" /rootfs/etc/locale.gen
+            elif [ "$(grep -c "${locale} " /rootfs/etc/locale.gen)" -eq 1 ]; then
+                sed -i "s/^# \(${locale} \)/\1/" /rootfs/etc/locale.gen
             else
                 echo -n "NOT unique... "
             fi
@@ -1137,30 +1155,49 @@ if [ -n "$locales" ]; then
         if [ "${PIPESTATUS[0]}" -ne 0 ]; then
             echo "  ERROR while generating locales !"
         fi
-    else
-        echo "Not generating locales as the 'locales' package isn't installed !"
     fi
 fi
 
 # set system default locale
-if [ -n "$system_default_locale" ]; then
+if [ -n "${system_default_locale}" ]; then
     if [ -x /rootfs/usr/sbin/update-locale ]; then
-        echo -n "  Setting system default locale... "
-        if chroot /rootfs /usr/sbin/update-locale LANG="${system_default_locale}" &> /dev/null; then
-            echo "OK"
+        echo -n "  Setting system default locale: "
+        if [ -f /rootfs/etc/locale.gen ] && [ "$(grep -c "${system_default_locale}" /rootfs/etc/locale.gen)" -gt 0 ]; then
+            if [ "$(grep -c "${system_default_locale} UTF-8" /rootfs/etc/locale.gen)" -eq 1 ]; then
+                system_default_locale="$(grep "${system_default_locale} UTF-8" /rootfs/etc/locale.gen)"
+            elif [ "$(grep -c "${system_default_locale}.UTF-8 " /rootfs/etc/locale.gen)" -eq 1 ]; then
+                system_default_locale="$(grep "${system_default_locale}.UTF-8 " /rootfs/etc/locale.gen)"
+            elif [ "$(grep -c "${system_default_locale} " /rootfs/etc/locale.gen)" -eq 1 ]; then
+                system_default_locale="$(grep "${system_default_locale} " /rootfs/etc/locale.gen)"
+            else
+                echo "skipped because \"${system_default_locale}\" NOT unique !"
+                unset system_default_locale
+            fi
+            if [ -n "${system_default_locale}" ]; then
+                echo -n "${system_default_locale} "
+                if chroot /rootfs /usr/sbin/update-locale LANG="${system_default_locale}" &> /dev/null; then
+                    echo "OK"
+                else
+                    echo "FAILED !"
+                fi
+            fi
         else
-            echo "FAILED !"
+            echo "skipped because \"${system_default_locale}\" NOT found !"
+            unset system_default_locale
         fi
-    else
-        echo "NOT setting system default locale as the 'locale' package isn't installed !"
     fi
 fi
 
 echo ""
 
 # there is no hw clock on rpi
-echo "HWCLOCKACCESS=no" >> /rootfs/etc/default/hwclock || fail
-
+if grep -q "#HWCLOCKACCESS=yes" /rootfs/etc/default/hwclock; then
+    sed -i "s/^#\(HWCLOCKACCESS=\)yes/\1no/" /rootfs/etc/default/hwclock
+elif grep -q "HWCLOCKACCESS=yes" /rootfs/etc/default/hwclock; then
+    sed -i "s/^\(HWCLOCKACCESS=\)yes/\1no/m" /rootfs/etc/default/hwclock
+else
+    echo -e "HWCLOCKACCESS=no\n" >> /rootfs/etc/default/hwclock
+fi
 
 # copy apt's sources.list to the target system
 echo "Configuring apt:"
