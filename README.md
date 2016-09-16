@@ -120,7 +120,7 @@ The format of the _installer-config.txt_ file and the current defaults:
     # Package options
     preset=server
     packages=                 # comma separated list of extra packages
-    firmware_packages=        # Set to "1" to install common firmware packages (Atheros, Broadcom, Libertas, Ralink
+    firmware_packages=0       # Set to "1" to install common firmware packages (Atheros, Broadcom, Libertas, Ralink
                               #   and Realtek)
     mirror=http://mirrordirector.raspbian.org/raspbian/
     release=jessie
