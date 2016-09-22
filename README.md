@@ -14,7 +14,7 @@
 
 ## Fork Modifications
 
-This is a of fork of [raspbian-ua-netinst](https://github.com/debian-pi/raspbian-ua-netinst) with many changes and improvements. This includes:
+This is a fork of [raspbian-ua-netinst](https://github.com/debian-pi/raspbian-ua-netinst) with many changes and improvements. This includes:
  - full featured kernel and bootloader from raspberrypi.org (compatible with apt)
  - more installer customization options
  - ability to install via onboard wireless lan
