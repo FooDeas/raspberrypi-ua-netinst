@@ -14,7 +14,7 @@
 
 ## Fork Modifications
 
-In distinction to the base this fork has many changes and improvements. This includes:
+This is a of fork of [raspbian-ua-netinst](https://github.com/debian-pi/raspbian-ua-netinst) with many changes and improvements. This includes:
  - full featured kernel and bootloader from raspberrypi.org (compatible with apt)
  - more installer customization options
  - ability to install via onboard wireless lan
@@ -35,16 +35,16 @@ There are different kinds of "presets" that define the default packages that are
 Other presets include _minimal_ which has even less packages (no logging, no text editor, no cron) and _base_ which doesn't even have networking. You can customize the installed packages by adding a small configuration file to your SD card before booting up.
 
 ## Features
- - completely unattended, you only need working internet connection through the ethernet port or use onboard wireless lan (model 3B)
+ - completely unattended, you only need a working internet connection through the ethernet port or use the onboard wireless lan (supported on model 3B)
  - DHCP and static ip configuration (DHCP is the default)
  - always installs the latest version of Raspbian
  - configurable default settings
  - extra configuration over HTTP possible - gives unlimited flexibility
  - installation takes about **20 minutes** with fast internet from power on to sshd running
- - can fit on 512MB SD card, but 1GB is more reasonable
- - default install includes fake-hwclock to save time on shutdown
+ - can fit on a 512MB SD card, but 1GB is more reasonable
+ - default install includes `fake-hwclock` to save time on shutdown
  - default install includes NTP to keep time
- - /tmp is mounted as tmpfs to improve speed
+ - `/tmp` is mounted as tmpfs to improve speed
  - no clutter included, you only get the bare essential packages
  - option to install root to USB drive
 
@@ -59,16 +59,16 @@ Installer archive is around **27MB** and contains all firmware files and the ins
 
 Go to [our latest release page](https://github.com/FooDeas/raspberrypi-ua-netinst/releases/latest) and download the .zip file.
 
-Format your SD card as **FAT32** (MS-DOS on _Mac OS X_) and extract the installer files in.  
-**Note:** If you get an error saying it can't mount /dev/mmcblk0p1 on /boot then the most likely cause is that you're using exFAT instead of FAT32.
-Try formatting the SD card with this tool: https://www.sdcard.org/downloads/formatter_4/
+Format your SD card as **FAT32** (MS-DOS on _Mac OS X_) and extract the installer files.  
+**Note:** If you get an error saying it can't mount `/dev/mmcblk0p1` on `/boot` then the most likely cause is that you're using exFAT instead of FAT32.
+Try formatting the SD card with [this tool](https://www.sdcard.org/downloads/formatter_4/). 
 
 ### Alternative method for Mac, writing image to SD card
 Prebuilt image is around **27MB** bzip2 compressed and **64MB** uncompressed. It contains the same files as the .zip but is more convenient for Mac users.
 
-Go to [our latest release page](https://github.com/FooDeas/raspberrypi-ua-netinst/releases/latest) and download the .img.bz2 file.
+Go to [the latest release page](https://github.com/FooDeas/raspberrypi-ua-netinst/releases/latest) and download the `.img.bz2` file.
 
-Extract the .img file from the archive with `bunzip2 raspberrypi-ua-netinst-<latest-version-number>.img.bz2`.  
+Extract the `.img` file from the archive with `bunzip2 raspberrypi-ua-netinst-<latest-version-number>.img.bz2`.  
 Find the _/dev/diskX_ device you want to write to using `diskutil list`. It will probably be 1 or 2.  
 
 To flash your SD card on Mac:
@@ -82,7 +82,7 @@ _Note the **r** in the of=/dev/rdiskX part on the dd line which should speed up 
 ### SD card image for Linux
 Prebuilt image is around **23MB** xz compressed and **64MB** uncompressed. It contains the same files as the .zip but is more convenient for Linux users.
 
-Go to [our latest release page](https://github.com/FooDeas/raspberrypi-ua-netinst/releases/latest) and download the .img.xz file.
+Go to [our latest release page](https://github.com/FooDeas/raspberrypi-ua-netinst/releases/latest) and download the `.img.xz` file.
 
 To flash your SD card on Linux:
 
@@ -93,7 +93,7 @@ Replace _/dev/sdX_ with the real path to your SD card.
 ## Installing
 In normal circumstances, you can just power on your Pi and cross your fingers.
 
-If you don't have a display attached you can monitor the ethernet card leds to guess activity. When it finally reboots after installing everything you will see them going out and on a few times when Raspbian configures it on boot.
+If you don't have a display attached you can monitor the ethernet card LEDs to guess the activity status. When it finally reboots after installing everything you will see them illuminate on and off a few times when Raspbian configures on boot.
 
 If you do have a display, you can follow the progress and catch any possible errors in the default configuration or your own modifications.  
 If you have a serial cable connected, installer ouput can be followed there, too. If 'console=tty1' at then end of the `cmdline.txt` file is removed, you have access to the console in case of problems.
