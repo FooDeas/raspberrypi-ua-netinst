@@ -463,6 +463,17 @@ if [ "$date_set" = "false" ]; then
             fi
         done
     fi
+
+    if [ "$date_set" = "false" ]; then
+        # Try to set time via http to work behind proxies.
+        http_time="$(wget -O - "http://www.timeapi.org/utc/now?format=%25F+%25T")"
+        if date -u -s "$http_time"; then
+            echo -n "Time set using http://www.timeapi.org to ... "
+            date_set=true
+        else
+            echo "Failed to set time using http://www.timeapi.org."
+        fi
+    fi
 fi
 if [ "${date_set}" = "false" ]; then
     echo "FAILED to set the date, so things are likely to fail now ..."
