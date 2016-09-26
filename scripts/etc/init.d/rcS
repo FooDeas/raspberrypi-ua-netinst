@@ -28,6 +28,7 @@ bootsize=+128M
 bootoffset=8192
 rootsize=
 timeserver=time.nist.gov
+timeserver_http=http://chronic.herokuapp.com/utc/now?format=%25F+%25T
 timezone=Etc/UTC
 locales=
 system_default_locale=
@@ -460,6 +461,25 @@ if [ "$date_set" = "false" ]; then
                 break
             else
                 echo "Failed to set time using timeserver '$ts'."
+            fi
+        done
+    fi
+
+    if [ "$date_set" = "false" ]; then
+        # Try to set time via http to work behind proxies.
+        # Timeserver has to return the time in the format: YYYY-MM-DD HH:MM:SS.
+        timeservers_http="$timeserver_http"
+        timeservers_http="$timeservers_http http://chronic.herokuapp.com/utc/now?format=%25F+%25T"
+        timeservers_http="$timeservers_http http://www.timeapi.org/utc/now?format=%25F+%25T"
+        for ts_http in $timeserver_http
+        do
+            echo -n "Time set using '$ts_http' to ... "
+            http_time="$(wget -q -O - "${timeserver_http}")"
+            if date -u -s "$http_time"; then
+                date
+                date_set=true
+            else
+                echo "failed"
             fi
         done
     fi
