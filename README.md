@@ -203,6 +203,8 @@ The format of the _installer-config.txt_ file and the current defaults:
     rootsize=                 # / partition size in megabytes, provide it in the form '+<number>M' (without quotes),
                               #   leave empty to use all free space
     timeserver=time.nist.gov
+    timeserver_http=          # Url that returns the time in the format: YYYY-MM-DD HH:MM:SS.
+
     disable_predictable_nin=1 # Disable Predictable Network Interface Names. Set to 0 if you want to use predictable
                               #   network interface names, which means if you use the same SD card on a different
                               #   RPi board, your network device might be named differently. This will result in the
