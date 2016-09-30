@@ -472,7 +472,7 @@ if [ "$date_set" = "false" ]; then
         echo -n "Set time using HTTP timeserver "
         for ts_http in $timeservers_http; do
             echo -n "'$ts_http'... "
-            http_time="$(wget -q -O - "${timeserver_http}")"
+            http_time="$(wget -q -O - "${ts_http}")"
             if date -u -s "$http_time"; then
                 echo "OK"
                 date_set=true
