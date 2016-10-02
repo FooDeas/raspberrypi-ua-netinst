@@ -279,6 +279,7 @@ case $rpi_hardware in
     a01040) rpi_hardware_version="2 Model B" ;;
     a01041) rpi_hardware_version="2 Model B" ;;
     a21041) rpi_hardware_version="2 Model B" ;;
+    a22042) rpi_hardware_version="2 Model B+" ;;
     900092) rpi_hardware_version="Zero" ;;
     900093) rpi_hardware_version="Zero" ;;
     a02082) rpi_hardware_version="3 Model B" ;;
