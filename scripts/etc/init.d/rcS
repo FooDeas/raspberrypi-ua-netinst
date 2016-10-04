@@ -1314,7 +1314,7 @@ if [ "${enable_watchdog}" = "1" ]; then
 fi
 
 echo "Configuring bootloader to start the installed system..."
-mv /rootfs/boot/config.txt /rootfs/boot/config-reinstall.txt
+cp /bootfs/config.txt /rootfs/boot/config-reinstall.txt
 cp /bootfs/config/boot/config.txt /rootfs/boot/config.txt
 
 # extend device initialization time when booting from usb
