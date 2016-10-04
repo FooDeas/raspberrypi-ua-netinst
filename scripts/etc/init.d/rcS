@@ -1155,22 +1155,28 @@ fi
 # generate locale data
 if [ -n "${locales}" ]; then
     echo -n "  Enabling locales... "
+    sanitize_variable locales
     locales="$(echo "${locales}" | tr ',' ' ')"
     for locale in ${locales}; do
         echo -n "${locale}... "
-        if [ -f /rootfs/etc/locale.gen ] && [ "$(grep -c "${locale}" /rootfs/etc/locale.gen)" -gt 0 ]; then
-            if [ "$(grep -c "${locale} UTF-8" /rootfs/etc/locale.gen)" -eq 1 ]; then
-                sed -i "s/^# \(${locale} UTF-8\)/\1/" /rootfs/etc/locale.gen
-            elif [ "$(grep -c "${locale}.UTF-8 " /rootfs/etc/locale.gen)" -eq 1 ]; then
-                sed -i "s/^# \(${locale}\.UTF-8 \)/\1/" /rootfs/etc/locale.gen
-            elif [ "$(grep -c "${locale} " /rootfs/etc/locale.gen)" -eq 1 ]; then
-                sed -i "s/^# \(${locale} \)/\1/" /rootfs/etc/locale.gen
+        locale_regex="${locale//./\.}" # escape dots
+        if [ -f /rootfs/etc/locale.gen ] && [ "$(grep -c "^# ${locale_regex}" /rootfs/etc/locale.gen)" -gt 0 ]; then
+            # Accept UTF-8 by using "xx_XX.UTF-8"
+            if [ "$(grep -c "^# ${locale_regex} UTF-8" /rootfs/etc/locale.gen)" -eq 1 ]; then
+                sed -i "s/^# \(${locale_regex} UTF-8\)/\1/" /rootfs/etc/locale.gen
+            # Accept UTF-8 by using "xx_XX"
+            elif [ "$(grep -c "^# ${locale_regex}\.UTF-8 UTF-8" /rootfs/etc/locale.gen)" -eq 1 ]; then
+                sed -i "s/^# \(${locale_regex}\.UTF-8 UTF-8\)/\1/" /rootfs/etc/locale.gen
+            # Accept other by using "xx_XX.XXX"
+            elif [ "$(grep -c "^# ${locale_regex} " /rootfs/etc/locale.gen)" -eq 1 ]; then
+                sed -i "s/^# \(${locale_regex} \)/\1/" /rootfs/etc/locale.gen
             else
                 echo -n "NOT unique... "
             fi
         else
             echo -n "NOT found... "
         fi
+        unset locale_regex
     done
     echo "OK"
     if [ -x /rootfs/usr/sbin/locale-gen ]; then
@@ -1185,18 +1191,23 @@ fi
 if [ -n "${system_default_locale}" ]; then
     if [ -x /rootfs/usr/sbin/update-locale ]; then
         echo -n "  Setting system default locale: "
-        if [ -f /rootfs/etc/locale.gen ] && [ "$(grep -c "${system_default_locale}" /rootfs/etc/locale.gen)" -gt 0 ]; then
-            if [ "$(grep -c "${system_default_locale} UTF-8" /rootfs/etc/locale.gen)" -eq 1 ]; then
-                system_default_locale="$(grep "${system_default_locale} UTF-8" /rootfs/etc/locale.gen)"
-            elif [ "$(grep -c "${system_default_locale}.UTF-8 " /rootfs/etc/locale.gen)" -eq 1 ]; then
-                system_default_locale="$(grep "${system_default_locale}.UTF-8 " /rootfs/etc/locale.gen)"
-            elif [ "$(grep -c "${system_default_locale} " /rootfs/etc/locale.gen)" -eq 1 ]; then
-                system_default_locale="$(grep "${system_default_locale} " /rootfs/etc/locale.gen)"
+        system_default_locale_regex="${system_default_locale//./\.}" # escape dots
+        if [ -f /rootfs/etc/locale.gen ] && [ "$(grep -c "^${system_default_locale_regex}" /rootfs/etc/locale.gen)" -gt 0 ]; then
+            # Accept UTF-8 by using "xx_XX.UTF-8"
+            if [ "$(grep -c "^${system_default_locale_regex} UTF-8" /rootfs/etc/locale.gen)" -eq 1 ]; then
+                system_default_locale="$(grep "^${system_default_locale_regex} UTF-8" /rootfs/etc/locale.gen)"
+            # Accept UTF-8 by using "xx_XX"
+            elif [ "$(grep -c "^${system_default_locale_regex}\.UTF-8 UTF-8" /rootfs/etc/locale.gen)" -eq 1 ]; then
+                system_default_locale="$(grep "^${system_default_locale_regex}\.UTF-8 UTF-8" /rootfs/etc/locale.gen)"
+            # Accept other by using "xx_XX.XXX"
+            elif [ "$(grep -c "^${system_default_locale_regex} " /rootfs/etc/locale.gen)" -eq 1 ]; then
+                system_default_locale="$(grep "^${system_default_locale_regex} " /rootfs/etc/locale.gen)"
             else
                 echo "skipped because \"${system_default_locale}\" NOT unique !"
                 unset system_default_locale
             fi
             if [ -n "${system_default_locale}" ]; then
+                system_default_locale="$(echo "${system_default_locale}" | grep -Eo "^\S+")" # trim to first space character
                 echo -n "${system_default_locale} "
                 if chroot /rootfs /usr/sbin/update-locale LANG="${system_default_locale}" &> /dev/null; then
                     echo "OK"
@@ -1208,6 +1219,7 @@ if [ -n "${system_default_locale}" ]; then
             echo "skipped because \"${system_default_locale}\" NOT found !"
             unset system_default_locale
         fi
+        unset system_default_locale_regex
     fi
 fi
 
