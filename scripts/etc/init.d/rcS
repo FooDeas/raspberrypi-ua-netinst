@@ -956,6 +956,7 @@ fi
 echo "Starting install process..."
 eval cdebootstrap-static --arch=armhf "${cdebootstrap_cmdline}" "${release}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg || fail
 
+echo ""
 echo "Configuring installed system:"
 # configure root login
 if [ -n "$rootpw" ]; then
@@ -990,7 +991,7 @@ chroot /rootfs /usr/sbin/groupadd -fr gpio || fail
 
 # add user to system
 if [ -n "${username}" ]; then
-    echo -n "  Creating user ${username}... "
+    echo "  Creating user ${username}... "
     chroot /rootfs /usr/sbin/adduser "${username}" --gecos "" --disabled-password | sed 's/^/    /'
     if [ "${PIPESTATUS[0]}" -ne 0 ]; then
         fail
