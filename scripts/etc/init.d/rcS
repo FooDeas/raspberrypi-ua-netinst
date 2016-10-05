@@ -1352,6 +1352,9 @@ fi
 echo "Configuring bootloader to start the installed system..."
 cp /bootfs/config.txt /rootfs/boot/config-reinstall.txt
 cp /bootfs/config/boot/config.txt /rootfs/boot/config.txt
+if [ -z "$(tail -c1 /rootfs/boot/config.txt)" ]; then
+    echo >> /rootfs/boot/config.txt
+fi
 
 # extend device initialization time when booting from usb
 if [ "$usbboot" = "1" ]; then
