@@ -1,4 +1,4 @@
-# This file lists all supported timezones
+# This file lists all supported keyboard layouts
 # Source: ./usr/share/console-setup/KeyboardNames.pl from package keyboard-configuration (1.123)
 #         (modified and cleaned up to improve readability)
 
