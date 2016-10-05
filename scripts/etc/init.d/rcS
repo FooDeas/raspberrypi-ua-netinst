@@ -310,6 +310,18 @@ echo -n "Copying boot files... "
 # copy boot data to safety
 mount $bootpartition /boot || fail
 
+if [ -e "/boot/kernel-reinstall.img" ] && [ -e "/boot/kernel7-reinstall.img" ] ; then
+    echo -e "\n"
+    echo "=================================================="
+    echo "== Reinstallation requested. Restoring files... =="
+    mv /boot/kernel-reinstall.img /boot/kernel.img
+    mv /boot/kernel7-reinstall.img /boot/kernel7.img
+    echo "== Done. Rebooting to start installation... ======"
+    echo "=================================================="
+    sleep 3s
+    reboot && exit
+fi
+
 cp -r -- /boot/* /bootfs/ || fail
 
 umount /boot || fail
@@ -1350,8 +1362,11 @@ if [ "${enable_watchdog}" = "1" ]; then
     sed -i 's/^.*RuntimeWatchdogSec=.*$/RuntimeWatchdogSec=14s/' /rootfs/etc/systemd/system.conf
 fi
 
-echo "Configuring bootloader to start the installed system..."
+echo "Preserving original config.txt and kernels..."
 cp /bootfs/config.txt /rootfs/boot/config-reinstall.txt
+cp /bootfs/kernel.img /rootfs/boot/kernel-reinstall.img
+cp /bootfs/kernel7.img /rootfs/boot/kernel7-reinstall.img
+echo "Configuring bootloader to start the installed system..."
 cp /bootfs/config/boot/config.txt /rootfs/boot/config.txt
 if [ -z "$(tail -c1 /rootfs/boot/config.txt)" ]; then
     echo >> /rootfs/boot/config.txt
