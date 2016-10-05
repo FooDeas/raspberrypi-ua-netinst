@@ -569,15 +569,15 @@ if [ -z "$cdebootstrap_cmdline" ]; then
         init_system="systemd"
     fi
 
-    # always add firmware if requested
+    # always add packages if requested or needed
     if [ "${firmware_packages}" = "1" ]; then
         custom_packages_postinstall="${custom_packages_postinstall},firmware-atheros,firmware-brcm80211,firmware-libertas,firmware-ralink,firmware-realtek"
     fi
     if [ -n "${locales}" ] || [ -n "${system_default_locale}" ]; then
-        custom_packages_postinstall="${custom_packages_postinstall},locales"
+        custom_packages="${custom_packages},locales"
     fi
     if [ -n "${keyboard_layout}" ] && [ "${keyboard_layout}" != "us" ]; then
-        custom_packages_postinstall="${custom_packages_postinstall},console-setup"
+        custom_packages="${custom_packages},console-setup"
     fi
     # add user defined packages
     if [ -n "${packages}" ]; then
@@ -586,13 +586,14 @@ if [ -z "$cdebootstrap_cmdline" ]; then
 
     # base
     base_packages="cpufrequtils,kmod,raspbian-archive-keyring"
+    base_packages="${custom_packages},${base_packages}"
     base_packages_postinstall=raspberrypi-kernel,raspberrypi-bootloader
     base_packages_postinstall="${custom_packages_postinstall},${base_packages_postinstall}"
     if [ "${init_system}" = "systemd" ]; then
         base_packages="${base_packages},libpam-systemd"
     fi
     if [ "${hwrng_support}" = "1" ]; then
-        base_packages="$base_packages,rng-tools"
+        base_packages="${base_packages},rng-tools"
     fi
     
     # minimal
