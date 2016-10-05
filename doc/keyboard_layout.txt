@@ -1,0 +1,99 @@
+# This file lists all supported timezones
+# Source: ./usr/share/console-setup/KeyboardNames.pl from package keyboard-configuration (1.123)
+#         (modified and cleaned up to improve readability)
+
+language                                  | layout
+------------------------------------------+------------
+Afghani                                   | af
+Albanian                                  | al
+Amharic                                   | et
+Arabic                                    | ara
+Arabic (Morocco)                          | ma
+Arabic (Syria)                            | sy
+Armenian                                  | am
+Azerbaijani                               | az
+Bambara                                   | ml
+Bangla                                    | bd
+Belarusian                                | by
+Belgian                                   | be
+Bosnian                                   | ba
+Braille                                   | brai
+Bulgarian                                 | bg
+Burmese                                   | mm
+Chinese                                   | cn
+Croatian                                  | hr
+Czech                                     | cz
+Danish                                    | dk
+Dhivehi                                   | mv
+Dutch                                     | nl
+Dzongkha                                  | bt
+English (Cameroon)                        | cm
+English (Ghana)                           | gh
+English (Nigeria)                         | ng
+English (South Africa)                    | za
+English (UK)                              | gb
+English (US)                              | us
+Esperanto                                 | epo
+Estonian                                  | ee
+Faroese                                   | fo
+Filipino                                  | ph
+Finnish                                   | fi
+French                                    | fr
+French (Canada)                           | ca
+French (Democratic Republic of the Congo) | cd
+French (Guinea)                           | gn
+Georgian                                  | ge
+German                                    | de
+German (Austria)                          | at
+German (Switzerland)                      | ch
+Greek                                     | gr
+Hebrew                                    | il
+Hungarian                                 | hu
+Icelandic                                 | is
+Indian                                    | in
+Iraqi                                     | iq
+Irish                                     | ie
+Italian                                   | it
+Japanese                                  | jp
+Japanese (PC-98xx Series)                 | nec_vndr/jp
+Kazakh                                    | kz
+Khmer (Cambodia)                          | kh
+Korean                                    | kr
+Kyrgyz                                    | kg
+Lao                                       | la
+Latvian                                   | lv
+Lithuanian                                | lt
+Macedonian                                | mk
+Maltese                                   | mt
+Maori                                     | mao
+Moldavian                                 | md
+Mongolian                                 | mn
+Montenegrin                               | me
+Nepali                                    | np
+Norwegian                                 | no
+Persian                                   | ir
+Polish                                    | pl
+Portuguese                                | pt
+Portuguese (Brazil)                       | br
+Romanian                                  | ro
+Russian                                   | ru
+Serbian                                   | rs
+Sinhala (phonetic)                        | lk
+Slovak                                    | sk
+Slovenian                                 | si
+Spanish                                   | es
+Spanish (Latin American)                  | latam
+Swahili (Kenya)                           | ke
+Swahili (Tanzania)                        | tz
+Swedish                                   | se
+Taiwanese                                 | tw
+Tajik                                     | tj
+Thai                                      | th
+Tswana                                    | bw
+Turkish                                   | tr
+Turkmen                                   | tm
+Ukrainian                                 | ua
+Urdu (Pakistan)                           | pk
+Uzbek                                     | uz
+Vietnamese                                | vn
+Wolof                                     | sn

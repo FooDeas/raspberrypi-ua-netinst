@@ -170,7 +170,8 @@ The format of the _installer-config.txt_ file and the current defaults:
     ip_nameservers=
 
     # Localization options
-    timezone=Etc/UTC          # set to desired timezone (e.g. Europe/Ljubljana)
+    timezone=Etc/UTC          # Set to desired timezone (e.g. Europe/Ljubljana)
+    keyboard_layout=us        # Set default keyboard layout. (e.g. "de")
     locales=                  # Generate locales from this list (comma separated and quoted). UTF-8 is chosen
                               #   preferentially if no encoding is specified. (e.g. "en_US.UTF-8,nl_NL,sl_SI.UTF-8")
     system_default_locale=    # Set default system locale (using the LANG environment variable). UTF-8 is chosen
@@ -219,7 +220,7 @@ preset  |  packages
 --------|----------
 base    | _\<essential\>,apt,cpufrequtils,kmod,raspbian-archive-keyring_
 minimal | _\<base\>,fake-hwclock,ifupdown,net-tools,ntp,openssh-server,dosfstools,raspberrypi-sys-mods_
-server  | _\<minimal\>,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,less,man-db,bash-completion,console-common,apt-utils,libraspberrypi-bin,raspi-copies-and-fills_
+server  | _\<minimal\>,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,less,man-db,bash-completion,console-setup,apt-utils,libraspberrypi-bin,raspi-copies-and-fills_
 
 (If you build your own installer, which most won't need to, and the configuration files exist in the same directory as this `README.md`, it will be include in the installer image automatically.)
 
@@ -252,7 +253,7 @@ The default **root** password is **raspbian**.
 
 > Set new root password: `passwd`  (can also be set during installation using **rootpw** in [installer-config.txt](#installer-customization))  
 > Configure your default locale: `dpkg-reconfigure locales`  
-> Configure your keyboard layout: `dpkg-reconfigure console-data`  
+> Configure your keyboard layout: `dpkg-reconfigure keyboard-configuration`  
 > Configure your timezone: `dpkg-reconfigure tzdata`  
 
 The latest kernel and firmware packages are now automatically installed during the unattended installation process.

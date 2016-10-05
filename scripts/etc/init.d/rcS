@@ -30,6 +30,7 @@ rootsize=
 timeserver=time.nist.gov
 timeserver_http=
 timezone=Etc/UTC
+keyboard_layout=
 locales=
 system_default_locale=
 disable_predictable_nin=1
@@ -575,6 +576,9 @@ if [ -z "$cdebootstrap_cmdline" ]; then
     if [ -n "${locales}" ] || [ -n "${system_default_locale}" ]; then
         custom_packages_postinstall="${custom_packages_postinstall},locales"
     fi
+    if [ -n "${keyboard_layout}" ] && [ "${keyboard_layout}" != "us" ]; then
+        custom_packages_postinstall="${custom_packages_postinstall},console-setup"
+    fi
     # add user defined packages
     if [ -n "${packages}" ]; then
         custom_packages_postinstall="${custom_packages_postinstall},${packages}"
@@ -600,7 +604,7 @@ if [ -z "$cdebootstrap_cmdline" ]; then
     fi
 
     # server
-    server_packages="vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,less,man-db,bash-completion,console-common,apt-utils"
+    server_packages="vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,less,man-db,bash-completion,console-setup,apt-utils"
     server_packages_postinstall="libraspberrypi-bin,raspi-copies-and-fills"
     server_packages_postinstall="${minimal_packages_postinstall},${server_packages_postinstall}"
 
@@ -747,6 +751,7 @@ echo "  bootoffset = $bootoffset"
 echo "  rootsize = $rootsize"
 echo "  timeserver = $timeserver"
 echo "  timezone = $timezone"
+echo "  keyboard_layout = $keyboard_layout"
 echo "  locales = $locales"
 echo "  system_default_locale = $system_default_locale"
 echo "  cmdline = $cmdline"
@@ -1221,6 +1226,24 @@ if [ -n "${system_default_locale}" ]; then
         fi
         unset system_default_locale_regex
     fi
+fi
+
+# set keyboard layout
+keyboard_layouts=("af" "al" "am" "ara" "at" "az" "ba" "bd" "be" "bg" "br" "brai" "bt" "bw" "by" "ca" "cd" "ch" "cm" "cn" "cz" "de" \
+    "dk" "ee" "epo" "es" "et" "fi" "fo" "fr" "gb" "ge" "gh" "gn" "gr" "hr" "hu" "ie" "il" "in" "iq" "ir" "is" "it" "jp" "ke" "kg" \
+    "kh" "kr" "kz" "la" "latam" "lk" "lt" "lv" "ma" "mao" "md" "me" "mk" "ml" "mm" "mn" "mt" "mv" "nec_vndr/jp" "ng" "nl" "no" "np" \
+    "ph" "pk" "pl" "pt" "ro" "rs" "ru" "se" "si" "sk" "sn" "sy" "th" "tj" "tm" "tr" "tw" "tz" "ua" "us" "uz" "vn" "za" "NA")
+if [ -n "${keyboard_layout}" ]; then
+    echo -n "  Setting default keyboard layout: ${keyboard_layout} "
+    for layout in "${keyboard_layouts[@]}"; do
+        if [ "${layout}" = "${keyboard_layout}" ]; then
+            sed -i "s/^\(XKBLAYOUT=\).*/\1\"${keyboard_layout}\"/" /rootfs/etc/default/keyboard
+            echo "OK"
+            break
+        elif [ "${layout}" = "NA" ]; then
+            echo "NOT found !"
+        fi
+    done
 fi
 
 echo ""
