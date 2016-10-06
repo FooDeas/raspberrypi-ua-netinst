@@ -349,7 +349,7 @@ download_remote_file() {
 
     ## Download selected packages
     download_packages
-)
+) || exit $?
 
 # Download additional files
 (
@@ -367,4 +367,4 @@ download_remote_file() {
         echo -e "# Add other config parameters below this line."
     } >> config.txt
     chmod 644 config.txt
-)
+) || exit $?
