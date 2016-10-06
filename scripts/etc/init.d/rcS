@@ -342,6 +342,7 @@ fi
 
 echo
 echo "Network configuration:"
+echo "  ifname = ${ifname}"
 echo "  ip_addr = ${ip_addr}"
 
 if [ "${ip_addr}" != "dhcp" ]; then
@@ -487,7 +488,7 @@ if [ "${date_set}" = "false" ]; then
         for ts_http in ${timeservers_http}; do
             echo -n "'${ts_http}'... "
             http_time="$(wget -q -O - "${ts_http}")"
-            if date -u -s "${http_time}"; then
+            if date -u -s "${http_time}" &>/dev/null; then
                 echo "OK"
                 date_set=true
                 break
@@ -495,10 +496,7 @@ if [ "${date_set}" = "false" ]; then
         done
     fi
 fi
-if [ "${date_set}" = "true" ]; then
-    echo -n "Time (UTC): "
-    date
-else
+if [ "${date_set}" != "true" ]; then
     echo ""
     echo "FAILED to set the time, so things are likely to fail now..."
     echo "Check your connection or firewall."
@@ -510,7 +508,7 @@ STARTTIME=$(date +%s)
 # REAL starting time.
 REAL_STARTTIME=$((STARTTIME - PRE_NETWORK_DURATION))
 echo
-echo "Installation started at $(date --date="@${REAL_STARTTIME}" --utc)."
+echo "Installation started at $(date --date="@${REAL_STARTTIME}" --utc) (UTC)."
 echo
 
 if [ -n "${online_config}" ]; then
@@ -965,8 +963,12 @@ if [ "${kernel_module}" = true ]; then
   fi
 fi
 
+echo
 echo "Starting install process..."
-eval cdebootstrap-static --arch=armhf "${cdebootstrap_cmdline}" "${release}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg || fail
+eval cdebootstrap-static --arch=armhf "${cdebootstrap_cmdline}" "${release}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg 2>&1 | sed 's/^/  /'
+if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+    fail
+fi
 
 echo ""
 echo "Configuring installed system:"
@@ -1348,7 +1350,7 @@ if [ "${kernel_module}" = true ]; then
         packages_postinstall="$(echo "${packages_postinstall}" | tr ',' ' ')"
     fi
 
-    eval chroot /rootfs /usr/bin/apt-get -y install "${packages_postinstall}" | sed 's/^/  /'
+    eval chroot /rootfs /usr/bin/apt-get -y install "${packages_postinstall}" 2>&1 | sed 's/^/  /'
     if [ "${PIPESTATUS[0]}" -eq 0 ]; then
         echo "OK"
     else
@@ -1440,6 +1442,7 @@ date +"%Y-%m-%d %H:%M:%S" > /rootfs/etc/fake-hwclock.data
 
 ENDTIME=$(date +%s)
 DURATION=$((ENDTIME - REAL_STARTTIME))
+echo
 echo -n "Installation finished at $(date --date="@${ENDTIME}" --utc)"
 echo " and took $((DURATION/60)) min $((DURATION%60)) sec (${DURATION} seconds)"
 
