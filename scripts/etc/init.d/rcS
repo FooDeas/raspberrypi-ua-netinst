@@ -71,14 +71,14 @@ fail()
     # copy logfile to /boot/ partition to preserve it.
     # test whether the sd card is still mounted on /boot and if not, mount it.
     if [ ! -f /boot/bootcode.bin ]; then
-        mount "$bootpartition" /boot
+        mount "${bootpartition}" /boot
         fail_boot_mounted=true
     fi
-    cp -- $LOGFILE /boot/raspberrypi-ua-netinst-"$(date +%Y%m%dT%H%M%S)".log
+    cp -- ${LOGFILE} /boot/raspberrypi-ua-netinst-"$(date +%Y%m%dT%H%M%S)".log
     sync
 
     # if we mounted /boot in the fail command, unmount it.
-    if [ "$fail_boot_mounted" = true ]; then
+    if [ "${fail_boot_mounted}" = true ]; then
         umount /boot
     fi
 
@@ -88,12 +88,12 @@ fail()
 
 sanitize_inputfile()
 {
-    if [ -z "$1" ]; then
+    if [ -z "${1}" ]; then
         echo "No input file specified!"
     else
-        inputfile=$1
+        inputfile=${1}
         # convert line endings to unix
-        dos2unix "$inputfile"
+        dos2unix "${inputfile}"
     fi
 }
 
@@ -117,22 +117,22 @@ sanitize_variable()
 
 install_files()
 {
-  file_to_read="$1"
-  echo "Adding files & folders listed in /bootfs/config/$file_to_read"
-  sanitize_inputfile "/bootfs/config/$file_to_read"
+  file_to_read="${1}"
+  echo "Adding files & folders listed in /bootfs/config/${file_to_read}"
+  sanitize_inputfile "/bootfs/config/${file_to_read}"
   grep -v "^[[:space:]]*#\|^[[:space:]]*$" "/bootfs/config/${file_to_read}" | while read -r line; do
-    owner=$(echo "$line" | awk '{ print $1 }')
-    perms=$(echo "$line" | awk '{ print $2 }')
-    file=$(echo  "$line" | awk '{ print $3 }')
-    echo "    $file"
-    if [ ! -d "/bootfs/config/files$file" ]; then
-      mkdir -p "/rootfs$(dirname "$file")"
-      cp "/bootfs/config/files$file" "/rootfs$file"
+    owner=$(echo "${line}" | awk '{ print ${1} }')
+    perms=$(echo "${line}" | awk '{ print ${2} }')
+    file=$(echo  "${line}" | awk '{ print ${3} }')
+    echo "    ${file}"
+    if [ ! -d "/bootfs/config/files${file}" ]; then
+      mkdir -p "/rootfs$(dirname "${file}")"
+      cp "/bootfs/config/files${file}" "/rootfs${file}"
     else
-      mkdir -p "/rootfs/$file"
+      mkdir -p "/rootfs/${file}"
     fi
-    chmod "$perms" "/rootfs$file"
-    chroot /rootfs chown "$owner" "$file"
+    chmod "${perms}" "/rootfs${file}"
+    chroot /rootfs chown "${owner}" "${file}"
   done
   echo
 }
@@ -200,7 +200,7 @@ fi
 # Detect boot device
 echo
 echo "Searching for boot device..."
-until [ -n "$bootdev" ]; do
+until [ -n "${bootdev}" ]; do
     if [ -e "/dev/mmcblk0p1" ]; then
         echo "SD card detected."
         mount /dev/mmcblk0p1 /boot
@@ -222,7 +222,7 @@ until [ -n "$bootdev" ]; do
             umount /boot
         fi
     fi
-    if [ -z "$bootdev" ]; then sleep 1s; fi
+    if [ -z "${bootdev}" ]; then sleep 1s; fi
 done
 
 # Check if there's an alternative rcS file and excute it
@@ -230,7 +230,7 @@ done
 # alternative script already
 if [ -z "${am_subscript}" ]; then
     mkdir -p /boot
-    mount $bootpartition /boot
+    mount "${bootpartition}" /boot
     if [ -e "/boot/config/installer/rcS" ]; then
         cp /boot/config/installer/rcS /rcS
         umount /boot
@@ -254,37 +254,37 @@ fi
 
 # redirect stdout and stderr also to logfile
 # http://stackoverflow.com/questions/3173131/redirect-copy-of-stdout-to-log-file-from-within-bash-script-itself/6635197#6635197
-mkfifo ${LOGFILE}.pipe
-tee < ${LOGFILE}.pipe $LOGFILE &
-exec &> ${LOGFILE}.pipe
-rm ${LOGFILE}.pipe
+mkfifo "${LOGFILE}.pipe"
+tee < "${LOGFILE}.pipe" "${LOGFILE}" &
+exec &> "${LOGFILE}.pipe"
+rm "${LOGFILE}.pipe"
 
 # detecting model based on http://elinux.org/RPi_HardwareHistory
-rpi_hardware=$(grep Revision /proc/cpuinfo | cut -d " " -f 2 | sed 's/^1000//')
-case $rpi_hardware in
-    0002) rpi_hardware_version="B" ;;
-    0003) rpi_hardware_version="B" ;;
-    0004) rpi_hardware_version="B" ;;
-    0005) rpi_hardware_version="B" ;;
-    0006) rpi_hardware_version="B" ;;
-    0007) rpi_hardware_version="A" ;;
-    0008) rpi_hardware_version="A" ;;
-    0009) rpi_hardware_version="A" ;;
-    000d) rpi_hardware_version="B" ;;
-    000e) rpi_hardware_version="B" ;;
-    000f) rpi_hardware_version="B" ;;
-    0010) rpi_hardware_version="B+" ;;
-    0012) rpi_hardware_version="A+" ;;
-    0013) rpi_hardware_version="B+" ;;
-    0015) rpi_hardware_version="A+" ;;
-    a01040) rpi_hardware_version="2 Model B" ;;
-    a01041) rpi_hardware_version="2 Model B" ;;
-    a21041) rpi_hardware_version="2 Model B" ;;
-    a22042) rpi_hardware_version="2 Model B+" ;;
-    900092) rpi_hardware_version="Zero" ;;
-    900093) rpi_hardware_version="Zero" ;;
-    a02082) rpi_hardware_version="3 Model B" ;;
-    a22082) rpi_hardware_version="3 Model B" ;;
+rpi_hardware="$(grep Revision /proc/cpuinfo | cut -d " " -f 2 | sed 's/^1000//')"
+case "${rpi_hardware}" in
+    "0002") rpi_hardware_version="B" ;;
+    "0003") rpi_hardware_version="B" ;;
+    "0004") rpi_hardware_version="B" ;;
+    "0005") rpi_hardware_version="B" ;;
+    "0006") rpi_hardware_version="B" ;;
+    "0007") rpi_hardware_version="A" ;;
+    "0008") rpi_hardware_version="A" ;;
+    "0009") rpi_hardware_version="A" ;;
+    "000d") rpi_hardware_version="B" ;;
+    "000e") rpi_hardware_version="B" ;;
+    "000f") rpi_hardware_version="B" ;;
+    "0010") rpi_hardware_version="B+" ;;
+    "0012") rpi_hardware_version="A+" ;;
+    "0013") rpi_hardware_version="B+" ;;
+    "0015") rpi_hardware_version="A+" ;;
+    "a01040") rpi_hardware_version="2 Model B" ;;
+    "a01041") rpi_hardware_version="2 Model B" ;;
+    "a21041") rpi_hardware_version="2 Model B" ;;
+    "a22042") rpi_hardware_version="2 Model B+" ;;
+    "900092") rpi_hardware_version="Zero" ;;
+    "900093") rpi_hardware_version="Zero" ;;
+    "a02082") rpi_hardware_version="3 Model B" ;;
+    "a22082") rpi_hardware_version="3 Model B" ;;
     *) rpi_hardware_version="unknown (${rpi_hardware})" ;;
 esac
 
@@ -308,7 +308,7 @@ fi
 
 echo -n "Copying boot files... "
 # copy boot data to safety
-mount $bootpartition /boot || fail
+mount "${bootpartition}" /boot || fail
 
 if [ -e "/boot/kernel-reinstall.img" ] && [ -e "/boot/kernel7-reinstall.img" ] ; then
     echo -e "\n"
@@ -336,31 +336,31 @@ if [ -e "/bootfs/installer-config.txt" ]; then
     echo "=================================================="
 fi
 
-if [ -e "$wlan_configfile" ]; then
-    sanitize_inputfile "$wlan_configfile"
+if [ -e "${wlan_configfile}" ]; then
+    sanitize_inputfile "${wlan_configfile}"
 fi
 
 echo
 echo "Network configuration:"
-echo "  ip_addr = $ip_addr"
+echo "  ip_addr = ${ip_addr}"
 
-if [ "$ip_addr" != "dhcp" ]; then
-    echo "  ip_netmask = $ip_netmask"
-    echo "  ip_broadcast = $ip_broadcast"
-    echo "  ip_gateway = $ip_gateway"
-    echo "  ip_nameservers = $ip_nameservers"
+if [ "${ip_addr}" != "dhcp" ]; then
+    echo "  ip_netmask = ${ip_netmask}"
+    echo "  ip_broadcast = ${ip_broadcast}"
+    echo "  ip_gateway = ${ip_gateway}"
+    echo "  ip_nameservers = ${ip_nameservers}"
 fi
 
 if echo "${ifname}" | grep -q "wlan"; then
-    if [ -z "$drivers_to_load" ]; then
+    if [ -z "${drivers_to_load}" ]; then
         drivers_to_load="brcmfmac"
     else
-        drivers_to_load="$drivers_to_load,brcmfmac"
+        drivers_to_load="${drivers_to_load},brcmfmac"
     fi
-    if [ ! -e "$wlan_configfile" ]; then
+    if [ ! -e "${wlan_configfile}" ]; then
         wlan_configfile=/tmp/wpa_supplicant.conf
-        echo "  wlan_ssid = $wlan_ssid"
-        echo "  wlan_psk = $wlan_psk"
+        echo "  wlan_ssid = ${wlan_ssid}"
+        echo "  wlan_psk = ${wlan_psk}"
         {
             echo "network={"
             echo "    ssid=\"${wlan_ssid}\""
@@ -370,72 +370,72 @@ if echo "${ifname}" | grep -q "wlan"; then
     fi
 fi
 
-echo "  online_config = $online_config"
+echo "  online_config = ${online_config}"
 echo
 
 # depmod needs to update modules.dep before using modprobe
 depmod -a
-if [ -n "$drivers_to_load" ]; then
+if [ -n "${drivers_to_load}" ]; then
    echo "Loading additional drivers."
    drivers_to_load="$(echo ${drivers_to_load} | tr ',' ' ')"
-   for driver in $drivers_to_load
+   for driver in ${drivers_to_load}
    do
-      echo -n "  Loading driver '$driver'... "
-      modprobe "$driver" || fail
+      echo -n "  Loading driver '${driver}'... "
+      modprobe "${driver}" || fail
       echo "OK"
    done
    echo "Finished loading additional drivers"
    echo
 fi
 
-echo -n "Waiting for $ifname... "
+echo -n "Waiting for ${ifname}... "
 for i in $(seq 1 10); do
     if ifconfig "${ifname}" &>/dev/null; then
         break
     fi
-    if [ "$i" -eq 10 ]; then
+    if [ "${i}" -eq 10 ]; then
         echo "FAILED"
         fail
     fi
     sleep 1
-    echo -n "$i.. "
+    echo -n "${i}.. "
 done
 echo "OK"
 
-if [ "$ifname" != "eth0" ]; then
+if [ "${ifname}" != "eth0" ]; then
     # Replace eth0 as udhcpc dns interface
     sed -i "s/PEERDNS_IF=.*/PEERDNS_IF=${ifname}/g" /etc/udhcpc/default.script
     # wlan* is a wireless interface and wpa_supplicant must connect to wlan
     if echo "${ifname}" | grep -q "wlan"; then
         echo -n "Starting wpa_supplicant... "
-        if [ -e "$wlan_configfile" ]; then
-            if wpa_supplicant -B -Dnl80211 -c"${wlan_configfile}" -i$ifname; then
+        if [ -e "${wlan_configfile}" ]; then
+            if wpa_supplicant -B -Dnl80211 -c"${wlan_configfile}" -i"${ifname}"; then
                 echo "OK"
             else
                 echo "nl80211 driver didn't work. Trying generic driver (wext)..."
-                wpa_supplicant -B -Dwext -c"$wlan_configfile" -i$ifname || fail
+                wpa_supplicant -B -Dwext -c"${wlan_configfile}" -i"${ifname}" || fail
                 echo "OK"
             fi
         fi
     fi
 fi
 
-if [ "$ip_addr" = "dhcp" ]; then
-    echo -n "Configuring $ifname with DHCP... "
+if [ "${ip_addr}" = "dhcp" ]; then
+    echo -n "Configuring ${ifname} with DHCP... "
 
-    if udhcpc -i ${ifname} &>/dev/null; then
-        ifconfig ${ifname} | fgrep addr: | awk '{print $2}' | cut -d: -f2
+    if udhcpc -i "${ifname}" &>/dev/null; then
+        ifconfig "${ifname}" | fgrep addr: | awk '{print $2}' | cut -d: -f2
     else
         echo "FAILED"
         fail
     fi
 else
-    echo -n "Configuring $ifname with static ip $ip_addr... "
-    ifconfig $ifname up inet $ip_addr netmask $ip_netmask broadcast $ip_broadcast || fail
-    route add default gw $ip_gateway || fail
+    echo -n "Configuring ${ifname} with static ip ${ip_addr}... "
+    ifconfig "${ifname}" up inet "${ip_addr}" netmask "${ip_netmask}" broadcast "${ip_broadcast}" || fail
+    route add default gw "${ip_gateway}" || fail
     echo -n > /etc/resolv.conf
-    for i in $ip_nameservers; do
-        echo "nameserver $i" >> /etc/resolv.conf
+    for i in ${ip_nameservers}; do
+        echo "nameserver ${i}" >> /etc/resolv.conf
     done
     echo "OK"
 fi
@@ -444,7 +444,7 @@ fi
 PRE_NETWORK_DURATION=$(date +%s)
 
 date_set=false
-if [ "$date_set" = "false" ]; then
+if [ "${date_set}" = "false" ]; then
     # set time with ntpdate
     echo -n "Set time using ntpdate... "
     if ntpdate-debian -b &>/dev/null; then
@@ -452,7 +452,7 @@ if [ "$date_set" = "false" ]; then
         date_set=true
     fi
 
-    if [ "$date_set" = "false" ]; then
+    if [ "${date_set}" = "false" ]; then
         echo "Failed to set time via ntpdate. Switched to rdate."
         # failed to set time with ntpdate, fall back to rdate
         # time server addresses taken from http://tf.nist.gov/tf-cgi/servers.cgi
@@ -466,9 +466,9 @@ if [ "$date_set" = "false" ]; then
         timeservers="${timeservers} ntp-nist.ldsbc.edu utcnist2.colorado.edu"
         timeservers="${timeservers} nist1-ny2.ustiming.org wwv.nist.gov"
         echo -n "Set time using timeserver "
-        for ts in $timeservers; do
-            echo -n "'$ts'... "
-            if rdate "$ts" &>/dev/null; then
+        for ts in ${timeservers}; do
+            echo -n "'${ts}'... "
+            if rdate "${ts}" &>/dev/null; then
                 echo "OK"
                 date_set=true
                 break
@@ -476,7 +476,7 @@ if [ "$date_set" = "false" ]; then
         done
     fi
 
-    if [ "$date_set" = "false" ]; then
+    if [ "${date_set}" = "false" ]; then
         echo "Failed to set time via rdate. Switched to HTTP."
         # Try to set time via http to work behind proxies.
         # Timeserver has to return the time in the format: YYYY-MM-DD HH:MM:SS.
@@ -484,10 +484,10 @@ if [ "$date_set" = "false" ]; then
         timeservers_http="${timeservers_http} http://chronic.herokuapp.com/utc/now?format=%25F+%25T"
         timeservers_http="${timeservers_http} http://www.timeapi.org/utc/now?format=%25F+%25T"
         echo -n "Set time using HTTP timeserver "
-        for ts_http in $timeservers_http; do
-            echo -n "'$ts_http'... "
+        for ts_http in ${timeservers_http}; do
+            echo -n "'${ts_http}'... "
             http_time="$(wget -q -O - "${ts_http}")"
-            if date -u -s "$http_time"; then
+            if date -u -s "${http_time}"; then
                 echo "OK"
                 date_set=true
                 break
@@ -510,12 +510,12 @@ STARTTIME=$(date +%s)
 # REAL starting time.
 REAL_STARTTIME=$((STARTTIME - PRE_NETWORK_DURATION))
 echo
-echo "Installation started at $(date --date="@$REAL_STARTTIME" --utc)."
+echo "Installation started at $(date --date="@${REAL_STARTTIME}" --utc)."
 echo
 
 if [ -n "${online_config}" ]; then
-    echo -n "Downloading online config from $online_config... "
-    wget -q -O /online-config.txt $online_config &>/dev/null || fail
+    echo -n "Downloading online config from ${online_config}... "
+    wget -q -O /online-config.txt "${online_config}" &>/dev/null || fail
     echo "OK"
 
     echo "================================================="
@@ -528,27 +528,27 @@ fi
 
 # prepare rootfs mount options
 case "${rootfstype}" in
-  "btrfs")
-    kernel_module=true
-    rootfs_mkfs_options=${rootfs_mkfs_options:-'-f'}
-    rootfs_install_mount_options=${rootfs_install_mount_options:-'noatime'}
-    rootfs_mount_options=${rootfs_mount_options:-'noatime'}
+    "btrfs")
+        kernel_module=true
+        rootfs_mkfs_options=${rootfs_mkfs_options:-'-f'}
+        rootfs_install_mount_options=${rootfs_install_mount_options:-'noatime'}
+        rootfs_mount_options=${rootfs_mount_options:-'noatime'}
     ;;
-  "ext4")
-    kernel_module=true
-    rootfs_mkfs_options=${rootfs_mkfs_options:-''}
-    rootfs_install_mount_options=${rootfs_install_mount_options:-'noatime,data=writeback,nobarrier,noinit_itable'}
-    rootfs_mount_options=${rootfs_mount_options:-'errors=remount-ro,noatime'}
+    "ext4")
+        kernel_module=true
+        rootfs_mkfs_options=${rootfs_mkfs_options:-''}
+        rootfs_install_mount_options=${rootfs_install_mount_options:-'noatime,data=writeback,nobarrier,noinit_itable'}
+        rootfs_mount_options=${rootfs_mount_options:-'errors=remount-ro,noatime'}
     ;;
-  "f2fs")
-    kernel_module=true
-    rootfs_mkfs_options=${rootfs_mkfs_options:-''}
-    rootfs_install_mount_options=${rootfs_install_mount_options:-'noatime'}
-    rootfs_mount_options=${rootfs_mount_options:-'noatime'}
+    "f2fs")
+        kernel_module=true
+        rootfs_mkfs_options=${rootfs_mkfs_options:-''}
+        rootfs_install_mount_options=${rootfs_install_mount_options:-'noatime'}
+        rootfs_mount_options=${rootfs_mount_options:-'noatime'}
     ;;
-  *)
-    echo "Unknown filesystem specified: $rootfstype"
-    fail
+    *)
+        echo "Unknown filesystem specified: ${rootfstype}"
+        fail
     ;;
 esac
 
@@ -571,13 +571,13 @@ if [ "${user_is_admin}" = "1" ]; then
 fi
 
 # configure different kinds of presets
-if [ -z "$cdebootstrap_cmdline" ]; then
+if [ -z "${cdebootstrap_cmdline}" ]; then
 
     # from small to large: base, minimal, server
     # not very logical that minimal > base, but that's how it was historically defined
 
     init_system=""
-    if [ "${release}" = "{jessie}" ]; then
+    if [ "${release}" = "jessie" ]; then
         init_system="systemd"
     fi
 
@@ -628,12 +628,12 @@ if [ -z "$cdebootstrap_cmdline" ]; then
     sanitize_variable minimal_packages_postinstall
     sanitize_variable server_packages
     sanitize_variable server_packages_postinstall
-    case $preset in
-        base)
+    case "${preset}" in
+        "base")
             cdebootstrap_cmdline="--flavour=minimal --include=${base_packages}"
             packages_postinstall="${base_packages_postinstall}"
             ;;
-        minimal)
+        "minimal")
             cdebootstrap_cmdline="--flavour=minimal --include=${base_packages},${minimal_packages}"
             packages_postinstall="${minimal_packages_postinstall}"
             ;;
@@ -642,7 +642,7 @@ if [ -z "$cdebootstrap_cmdline" ]; then
             cdebootstrap_cmdline="--flavour=minimal --include=${base_packages},${minimal_packages},${server_packages}"
             packages_postinstall="${server_packages_postinstall}"
             if [ "${preset}" != "server" ]; then
-                echo "Unknown preset specified: $preset"
+                echo "Unknown preset specified: ${preset}"
                 echo "Using 'server' as fallback"
             fi
             ;;
@@ -650,12 +650,12 @@ if [ -z "$cdebootstrap_cmdline" ]; then
 
     dhcp_client_package="isc-dhcp-client"
     # add IPv4 DHCP client if needed
-    if [ "$ip_addr" = "dhcp" ]; then
+    if [ "${ip_addr}" = "dhcp" ]; then
         cdebootstrap_cmdline="${cdebootstrap_cmdline},${dhcp_client_package}"
     fi
 
     # add user defined syspackages
-    if [ -n "$syspackages" ]; then
+    if [ -n "${syspackages}" ]; then
         cdebootstrap_cmdline="${cdebootstrap_cmdline},${syspackages}"
     fi
 
@@ -663,7 +663,7 @@ else
     preset=none
 fi
 
-if [ "$usbboot" != "1" ]; then
+if [ "${usbboot}" != "1" ]; then
     bootdev=/dev/mmcblk0
     bootpartition=/dev/mmcblk0p1
 else
@@ -704,7 +704,7 @@ else
     usbroot=1
 fi
 
-if [ "$usbroot" = "1" ]; then
+if [ "${usbroot}" = "1" ]; then
     rootdev=/dev/sda
     echo -n "Loading USB modules... "
     modprobe sd_mod &> /dev/null || fail
@@ -712,9 +712,9 @@ if [ "$usbroot" = "1" ]; then
     echo "OK"
 fi
 
-if [ -z "$rootpartition" ]; then
-    if [ "$rootdev" = "/dev/sda" ]; then
-        if [ "$usbboot" != "1" ]; then
+if [ -z "${rootpartition}" ]; then
+    if [ "${rootdev}" = "/dev/sda" ]; then
+        if [ "${usbboot}" != "1" ]; then
             rootpartition=/dev/sda1
         else
             rootpartition=/dev/sda2
@@ -738,51 +738,51 @@ fi
 # show resulting variables
 echo
 echo "Installer configuration:"
-echo "  preset = $preset"
-echo "  packages = $packages"
-echo "  firmware_packages = $firmware_packages"
-echo "  mirror = $mirror"
-echo "  release = $release"
-echo "  hostname = $hostname"
-echo "  domainname = $domainname"
-echo "  rootpw = $rootpw"
-echo "  root_ssh_pubkey = $root_ssh_pubkey"
-echo "  root_ssh_allow = $root_ssh_allow"
-echo "  username = $username"
-echo "  userpw = $userpw"
-echo "  usergpio = $usergpio"
-echo "  usergpu = $usergpu"
-echo "  usergroups = $usergroups"
-echo "  usersysgroups = $usersysgroups"
-echo "  user_ssh_pubkey = $user_ssh_pubkey"
-echo "  user_is_admin = $user_is_admin"
-echo "  cdebootstrap_cmdline = $cdebootstrap_cmdline"
-echo "  packages_postinstall = $packages_postinstall"
-echo "  boot_volume_label = $boot_volume_label"
-echo "  bootsize = $bootsize"
-echo "  bootoffset = $bootoffset"
-echo "  rootsize = $rootsize"
-echo "  timeserver = $timeserver"
-echo "  timezone = $timezone"
-echo "  keyboard_layout = $keyboard_layout"
-echo "  locales = $locales"
-echo "  system_default_locale = $system_default_locale"
-echo "  cmdline = $cmdline"
-echo "  drivers_to_load = $drivers_to_load"
-echo "  usbroot = $usbroot"
-echo "  usbboot = $usbboot"
-echo "  rootdev = $rootdev"
-echo "  rootpartition = $rootpartition"
-echo "  rootfstype = $rootfstype"
-echo "  rootfs_mkfs_options = $rootfs_mkfs_options"
-echo "  rootfs_install_mount_options = $rootfs_install_mount_options"
-echo "  rootfs_mount_options = $rootfs_mount_options"
-echo "  final_action = $final_action"
-echo "  gpu_mem = $gpu_mem"
-echo "  quiet_boot = $quiet_boot"
-echo "  sound_enable = $sound_enable"
-echo "  camera_enable = $camera_enable"
-echo "  camera_disable_led = $camera_disable_led"
+echo "  preset = ${preset}"
+echo "  packages = ${packages}"
+echo "  firmware_packages = ${firmware_packages}"
+echo "  mirror = ${mirror}"
+echo "  release = ${release}"
+echo "  hostname = ${hostname}"
+echo "  domainname = ${domainname}"
+echo "  rootpw = ${rootpw}"
+echo "  root_ssh_pubkey = ${root_ssh_pubkey}"
+echo "  root_ssh_allow = ${root_ssh_allow}"
+echo "  username = ${username}"
+echo "  userpw = ${userpw}"
+echo "  usergpio = ${usergpio}"
+echo "  usergpu = ${usergpu}"
+echo "  usergroups = ${usergroups}"
+echo "  usersysgroups = ${usersysgroups}"
+echo "  user_ssh_pubkey = ${user_ssh_pubkey}"
+echo "  user_is_admin = ${user_is_admin}"
+echo "  cdebootstrap_cmdline = ${cdebootstrap_cmdline}"
+echo "  packages_postinstall = ${packages_postinstall}"
+echo "  boot_volume_label = ${boot_volume_label}"
+echo "  bootsize = ${bootsize}"
+echo "  bootoffset = ${bootoffset}"
+echo "  rootsize = ${rootsize}"
+echo "  timeserver = ${timeserver}"
+echo "  timezone = ${timezone}"
+echo "  keyboard_layout = ${keyboard_layout}"
+echo "  locales = ${locales}"
+echo "  system_default_locale = ${system_default_locale}"
+echo "  cmdline = ${cmdline}"
+echo "  drivers_to_load = ${drivers_to_load}"
+echo "  usbroot = ${usbroot}"
+echo "  usbboot = ${usbboot}"
+echo "  rootdev = ${rootdev}"
+echo "  rootpartition = ${rootpartition}"
+echo "  rootfstype = ${rootfstype}"
+echo "  rootfs_mkfs_options = ${rootfs_mkfs_options}"
+echo "  rootfs_install_mount_options = ${rootfs_install_mount_options}"
+echo "  rootfs_mount_options = ${rootfs_mount_options}"
+echo "  final_action = ${final_action}"
+echo "  gpu_mem = ${gpu_mem}"
+echo "  quiet_boot = ${quiet_boot}"
+echo "  sound_enable = ${sound_enable}"
+echo "  camera_enable = ${camera_enable}"
+echo "  camera_disable_led = ${camera_disable_led}"
 echo
 echo "OTP dump:"
 vcgencmd otp_dump | grep -v "..:00000000\|..:ffffffff" | sed 's/^/  /'
@@ -796,7 +796,7 @@ done
 echo
 
 # fdisk's boot offset is 2048, so only handle $bootoffset is it's larger then that
-if [ -n "$bootoffset" ] && [ "$bootoffset" -gt 2048 ]; then
+if [ -n "${bootoffset}" ] && [ "${bootoffset}" -gt 2048 ]; then
     emptyspaceend=$((bootoffset - 1))
 else
     emptyspaceend=
@@ -804,9 +804,9 @@ fi
 
 # Create a file for partitioning sd card only
 FDISK_SCHEME_SD_ONLY=/etc/raspberrypi-ua-netinst/fdisk-sd-only.config
-touch $FDISK_SCHEME_SD_ONLY
+touch "${FDISK_SCHEME_SD_ONLY}"
 {
-    if [ -n "$emptyspaceend" ]; then
+    if [ -n "${emptyspaceend}" ]; then
         # we have a custom bootoffset, so first create a temporary
         # partition occupying the space before it.
         # We'll remove it before committing the changes again.
@@ -814,15 +814,15 @@ touch $FDISK_SCHEME_SD_ONLY
         echo "p"
         echo "4"
         echo ""
-        echo "$emptyspaceend"
+        echo "${emptyspaceend}"
     fi
     echo "n"
     echo "p"
     echo "1"
     echo ""
-    echo "$bootsize"
+    echo "${bootsize}"
     echo "t"
-    if [ -n "$emptyspaceend" ]; then
+    if [ -n "${emptyspaceend}" ]; then
         # because we now have more then 1 partition
         # we need to select the one to operate on
         echo "1"
@@ -832,8 +832,8 @@ touch $FDISK_SCHEME_SD_ONLY
     echo "p"
     echo "2"
     echo ""
-    echo "$rootsize"
-    if [ -n "$emptyspaceend" ]; then
+    echo "${rootsize}"
+    if [ -n "${emptyspaceend}" ]; then
         # now remove the temporary partition again
         echo "d"
         echo "4"
@@ -843,9 +843,9 @@ touch $FDISK_SCHEME_SD_ONLY
 
 # Create a file for partitioning when only /boot/ is on sd card
 FDISK_SCHEME_SD_BOOT=/etc/raspberrypi-ua-netinst/fdisk-sd-boot.config
-touch $FDISK_SCHEME_SD_BOOT
+touch "${FDISK_SCHEME_SD_BOOT}"
 {
-    if [ -n "$emptyspaceend" ]; then
+    if [ -n "${emptyspaceend}" ]; then
         # we have a custom bootoffset, so first create a temporary
         # partition occupying the space before it.
         # We'll remove it before committing the changes again.
@@ -853,21 +853,21 @@ touch $FDISK_SCHEME_SD_BOOT
         echo "p"
         echo "4"
         echo ""
-        echo "$emptyspaceend"
+        echo "${emptyspaceend}"
     fi
     echo "n"
     echo "p"
     echo "1"
     echo ""
-    echo "$bootsize"
+    echo "${bootsize}"
     echo "t"
-    if [ -n "$emptyspaceend" ]; then
+    if [ -n "${emptyspaceend}" ]; then
         # because we now have more then 1 partition
         # we need to select the one to operate on
         echo "1"
     fi
     echo "b"
-    if [ -n "$emptyspaceend" ]; then
+    if [ -n "${emptyspaceend}" ]; then
         # now remove the temporary partition again
         echo "d"
         echo "4"
@@ -877,13 +877,13 @@ touch $FDISK_SCHEME_SD_BOOT
 
 # Create a file for partitioning when / is on usb
 FDISK_SCHEME_USB_ROOT=/etc/raspberrypi-ua-netinst/fdisk-usb-root.config
-touch $FDISK_SCHEME_USB_ROOT
+touch "${FDISK_SCHEME_USB_ROOT}"
 {
     echo "n"
     echo "p"
     echo "1"
     echo ""
-    echo "$rootsize"
+    echo "${rootsize}"
     echo "w"
 } >> ${FDISK_SCHEME_USB_ROOT}
 
@@ -895,30 +895,30 @@ for i in $(seq 1 10); do
         break
     fi
 
-    if [ "$i" -eq 10 ]; then
+    if [ "${i}" -eq 10 ]; then
         echo "FAILED"
         fail
     fi
 
     sleep 1
 
-    echo -n "$i.. "
+    echo -n "${i}.. "
 done
 
-if [ "$rootdev" = "$bootdev" ]; then
+if [ "${rootdev}" = "${bootdev}" ]; then
     echo -n "Applying new partition table... "
-    dd if=/dev/zero of=$bootdev bs=512 count=1 &>/dev/null
-    fdisk $bootdev &>/dev/null < ${FDISK_SCHEME_SD_ONLY}
+    dd if=/dev/zero of="${bootdev}" bs=512 count=1 &>/dev/null
+    fdisk "${bootdev}" &>/dev/null < "${FDISK_SCHEME_SD_ONLY}"
     echo "OK"
 else
-    echo -n "Applying new partition table for $bootdev... "
-    dd if=/dev/zero of=$bootdev bs=512 count=1 &>/dev/null
-    fdisk $bootdev &>/dev/null < ${FDISK_SCHEME_SD_BOOT}
+    echo -n "Applying new partition table for ${bootdev}... "
+    dd if=/dev/zero of="${bootdev}" bs=512 count=1 &>/dev/null
+    fdisk "${bootdev}" &>/dev/null < "${FDISK_SCHEME_SD_BOOT}"
     echo "OK"
 
-    echo -n "Applying new partition table for $rootdev... "
-    dd if=/dev/zero of=$rootdev bs=512 count=1 &>/dev/null
-    fdisk $rootdev &>/dev/null < ${FDISK_SCHEME_USB_ROOT}
+    echo -n "Applying new partition table for ${rootdev}... "
+    dd if=/dev/zero of="${rootdev}" bs=512 count=1 &>/dev/null
+    fdisk "${rootdev}" &>/dev/null < "${FDISK_SCHEME_USB_ROOT}"
     echo "OK"
 fi
 
@@ -926,42 +926,42 @@ fi
 mdev -s
 
 echo -n "Initializing /boot as vfat... "
-if [ -z "$boot_volume_label" ]; then
-  mkfs.vfat $bootpartition &>/dev/null || fail
+if [ -z "${boot_volume_label}" ]; then
+  mkfs.vfat "${bootpartition}" &>/dev/null || fail
 else
-  mkfs.vfat -n $boot_volume_label $bootpartition &>/dev/null || fail
+  mkfs.vfat -n "${boot_volume_label}" "${bootpartition}" &>/dev/null || fail
 fi
 echo "OK"
 
 echo -n "Copying /boot files in... "
-mount $bootpartition /boot || fail
+mount "${bootpartition}" /boot || fail
 cp -r -- /bootfs/* /boot || fail
 sync
 umount /boot || fail
 echo "OK"
 
-if [ "$kernel_module" = true ]; then
-  if [ "$rootfstype" != "ext4" ]; then
-    echo -n "Loading $rootfstype module... "
-    modprobe $rootfstype &> /dev/null || fail
+if [ "${kernel_module}" = true ]; then
+  if [ "${rootfstype}" != "ext4" ]; then
+    echo -n "Loading ${rootfstype} module... "
+    modprobe "${rootfstype}" &> /dev/null || fail
     echo "OK"
   fi
 fi
 
-echo -n "Initializing / as $rootfstype... "
+echo -n "Initializing / as ${rootfstype}... "
 eval mkfs."${rootfstype}" "${rootfs_mkfs_options}" "${rootpartition}" &> /dev/null || fail
 echo "OK"
 
 echo -n "Mounting new filesystems... "
-mount $rootpartition /rootfs -o "${rootfs_install_mount_options}" || fail
+mount "${rootpartition}" /rootfs -o "${rootfs_install_mount_options}" || fail
 mkdir /rootfs/boot || fail
-mount $bootpartition /rootfs/boot || fail
+mount "${bootpartition}" /rootfs/boot || fail
 echo "OK"
 
-if [ "$kernel_module" = true ]; then
-  if [ "$rootfstype" != "ext4" ]; then
+if [ "${kernel_module}" = true ]; then
+  if [ "${rootfstype}" != "ext4" ]; then
     mkdir -p /rootfs/etc/initramfs-tools
-    echo $rootfstype >> /rootfs/etc/initramfs-tools/modules
+    echo "${rootfstype}" >> /rootfs/etc/initramfs-tools/modules
   fi
 fi
 
@@ -971,13 +971,13 @@ eval cdebootstrap-static --arch=armhf "${cdebootstrap_cmdline}" "${release}" /ro
 echo ""
 echo "Configuring installed system:"
 # configure root login
-if [ -n "$rootpw" ]; then
+if [ -n "${rootpw}" ]; then
     echo -n "  Setting root password... "
-    echo -n "root:$rootpw" | chroot /rootfs /usr/sbin/chpasswd || fail
+    echo -n "root:${rootpw}" | chroot /rootfs /usr/sbin/chpasswd || fail
     echo "OK"
 fi
 # add SSH key for root (if provided)
-if [ -n "$root_ssh_pubkey" ]; then
+if [ -n "${root_ssh_pubkey}" ]; then
     echo -n "  Setting root SSH key... "
     if mkdir -p /rootfs/root/.ssh && chmod 700 /rootfs/root/.ssh; then
         echo "${root_ssh_pubkey}" > /rootfs/root/.ssh/authorized_keys
@@ -990,8 +990,8 @@ if [ -n "$root_ssh_pubkey" ]; then
     echo "OK"
 fi
 # openssh-server in jessie doesn't allow root to login with a password
-if [ "$root_ssh_allow" = "1" ]; then
-    if [ "$release" = "jessie" ] && [ -f /rootfs/etc/ssh/sshd_config ]; then
+if [ "${root_ssh_allow}" = "1" ]; then
+    if [ "${release}" = "jessie" ] && [ -f /rootfs/etc/ssh/sshd_config ]; then
         echo -n "  Allowing root to login with password on jessie... "
         sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /rootfs/etc/ssh/sshd_config || fail
         echo "OK"
@@ -1010,7 +1010,7 @@ if [ -n "${username}" ]; then
     fi
     echo "  OK"
     # add SSH key for user (if provided)
-    if [ -n "$user_ssh_pubkey" ]; then
+    if [ -n "${user_ssh_pubkey}" ]; then
         echo -n "  Setting SSH key for ${username}... "
         ssh_dir="/rootfs/home/${username}/.ssh"
         if mkdir -p "${ssh_dir}" && chmod 700 "${ssh_dir}"; then
@@ -1023,7 +1023,7 @@ if [ -n "${username}" ]; then
         chroot /rootfs /bin/chown -R "${username}:${username}" "/home/${username}/.ssh" || fail
         echo "OK"
         echo -n "  Setting permissions on ${username} SSH authorized_keys... "
-        chmod 600 "$ssh_dir/authorized_keys" || fail
+        chmod 600 "${ssh_dir}/authorized_keys" || fail
         echo "OK"
     fi
     if [ -n "${userpw}" ]; then
@@ -1031,13 +1031,13 @@ if [ -n "${username}" ]; then
         echo -n "${username}:${userpw}" | chroot /rootfs /usr/sbin/chpasswd || fail
         echo "OK"
     fi
-    if [ "$usergpio" = "1" ]; then
-        usersysgroups="$usersysgroups,gpio"
+    if [ "${usergpio}" = "1" ]; then
+        usersysgroups="${usersysgroups},gpio"
     fi
-    if [ "$usergpu" = "1" ]; then
-        usersysgroups="$usersysgroups,video"
+    if [ "${usergpu}" = "1" ]; then
+        usersysgroups="${usersysgroups},video"
     fi
-    if [ -n "$usersysgroups" ]; then
+    if [ -n "${usersysgroups}" ]; then
         echo -n "  Adding ${username} to system groups: "
         usersysgroups="$(echo ${usersysgroups} | tr ',' ' ')"
         for sysgroup in ${usersysgroups}; do
@@ -1047,7 +1047,7 @@ if [ -n "${username}" ]; then
         done
         echo "OK"
     fi
-    if [ -n "$usergroups" ]; then
+    if [ -n "${usergroups}" ]; then
         echo -n "  Adding ${username} to groups: "
         usergroups="$(echo ${usergroups} | tr ',' ' ')"
         for usergroup in ${usergroups}; do
@@ -1057,7 +1057,7 @@ if [ -n "${username}" ]; then
         done
         echo "OK"
     fi
-    if [ "$user_is_admin" = "1" ]; then
+    if [ "${user_is_admin}" = "1" ]; then
         echo -n "  Adding ${username} to sudo group... "
         chroot /rootfs /usr/sbin/usermod -aG sudo "${username}" || fail
         echo "OK"
@@ -1073,13 +1073,13 @@ fi
 echo -n "  Configuring /etc/fstab... "
 touch /rootfs/etc/fstab || fail
 {
-    echo "$bootpartition /boot vfat defaults 0 2"
-    if [ "$rootfstype" = "f2fs" ]; then
-        echo "$rootpartition / $rootfstype $rootfs_mount_options 0 0"
-    elif [ "$rootfstype" = "btrfs" ]; then
-        echo "$rootpartition / $rootfstype $rootfs_mount_options 0 0"
+    echo "${bootpartition} /boot vfat defaults 0 2"
+    if [ "${rootfstype}" = "f2fs" ]; then
+        echo "${rootpartition} / ${rootfstype} ${rootfs_mount_options} 0 0"
+    elif [ "${rootfstype}" = "btrfs" ]; then
+        echo "${rootpartition} / ${rootfstype} ${rootfs_mount_options} 0 0"
     else
-        echo "$rootpartition / $rootfstype $rootfs_mount_options 0 1"
+        echo "${rootpartition} / ${rootfstype} ${rootfs_mount_options} 0 1"
     fi
     # also specify /tmp on tmpfs in /etc/fstab so it works across init systems
     echo "tmpfs /tmp tmpfs defaults,nodev,nosuid 0 0"
@@ -1088,7 +1088,7 @@ echo "OK"
 
 # default hostname
 echo -n "  Configuring hostname... "
-echo $hostname > /rootfs/etc/hostname || fail
+echo "${hostname}" > /rootfs/etc/hostname || fail
 echo "OK"
 
 echo -n "  Configuring hosts... "
@@ -1101,7 +1101,7 @@ fi
 # Remove any existing 127.0.1.1 entries
 sed -i 's/^.*127\.0\.1\.1.*$//' /rootfs/etc/hosts
 # Create the 127.0.1.1 entry
-if [ -z "$domainname" ]; then
+if [ -z "${domainname}" ]; then
     echo -n "adding ${hostname}... "
     echo "127.0.1.1 ${hostname}" >> /rootfs/etc/hosts || fail
 else
@@ -1121,24 +1121,24 @@ fi
 
 # configured interface
 echo "" >> /rootfs/etc/network/interfaces
-echo "allow-hotplug $ifname" >> /rootfs/etc/network/interfaces
-if [ "$ip_addr" = "dhcp" ]; then
-    echo "iface $ifname inet dhcp" >> /rootfs/etc/network/interfaces
+echo "allow-hotplug ${ifname}" >> /rootfs/etc/network/interfaces
+if [ "${ip_addr}" = "dhcp" ]; then
+    echo "iface ${ifname} inet dhcp" >> /rootfs/etc/network/interfaces
 else
     {
-        echo "iface $ifname inet static"
-        echo "    address $ip_addr"
-        echo "    netmask $ip_netmask"
-        echo "    broadcast $ip_broadcast"
-        echo "    gateway $ip_gateway"
+        echo "iface ${ifname} inet static"
+        echo "    address ${ip_addr}"
+        echo "    netmask ${ip_netmask}"
+        echo "    broadcast ${ip_broadcast}"
+        echo "    gateway ${ip_gateway}"
     } >> /rootfs/etc/network/interfaces
 fi
 
 # wlan config
 if echo "${ifname}" | grep -q "wlan"; then
-    if [ -e "$wlan_configfile" ]; then
+    if [ -e "${wlan_configfile}" ]; then
         # copy the installer version of `wpa_supplicant.conf`
-        cp "$wlan_configfile" /rootfs/etc/wpa_supplicant/
+        cp "${wlan_configfile}" /rootfs/etc/wpa_supplicant/
         chmod 600 /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
         echo "    wpa-conf /etc/wpa_supplicant/wpa_supplicant.conf" >> /rootfs/etc/network/interfaces
     fi
@@ -1156,15 +1156,15 @@ if [ "${disable_predictable_nin}" = "1" ]; then
     ln -s /dev/null /rootfs/etc/udev/rules.d/75-persistent-net-generator.rules
 fi
 
-if [ "$ip_addr" != "dhcp" ]; then
+if [ "${ip_addr}" != "dhcp" ]; then
     cp /etc/resolv.conf /rootfs/etc/ || fail
 fi
 
 echo "OK"
 
 # set timezone and reconfigure tzdata package
-echo -n "  Configuring tzdata, setting timezone to $timezone... "
-echo "$timezone" > /rootfs/etc/timezone
+echo -n "  Configuring tzdata, setting timezone to ${timezone}... "
+echo "${timezone}" > /rootfs/etc/timezone
 if chroot /rootfs /usr/sbin/dpkg-reconfigure -f noninteractive tzdata &> /dev/null; then
     echo "OK"
 else
@@ -1276,8 +1276,8 @@ echo "Configuring apt:"
 echo -n "  Copying raspbian repo to sources.list... "
 cp /rootfs/boot/config/apt/sources.list /rootfs/etc/apt/sources.list || fail
 echo "OK"
-echo -n "  Replacing __RELEASE__ with $release... "
-sed -i "s/__RELEASE__/$release/" /rootfs/etc/apt/sources.list
+echo -n "  Replacing __RELEASE__ with ${release}... "
+sed -i "s/__RELEASE__/${release}/" /rootfs/etc/apt/sources.list
 # if __RELEASE__ is still present, something went wrong
 if grep -l '__RELEASE__' /rootfs/etc/apt/sources.list >/dev/null ; then
     echo "FAILED"
@@ -1295,9 +1295,9 @@ cd /rootfs/boot/config/apt/ || fail
 # iterate through all the *.list files and add them to /etc/apt/sources.list.d
 for listfile in ./*.list
 do
-    if [ "$listfile" != "./sources.list" ] && [ -e "$listfile" ]; then
-        echo -n "  Copying $listfile to /etc/apt/sources.list.d/... "
-        sed "s/__RELEASE__/$release/g" "$listfile" > "/rootfs/etc/apt/sources.list.d/$listfile" || fail
+    if [ "${listfile}" != "./sources.list" ] && [ -e "${listfile}" ]; then
+        echo -n "  Copying ${listfile} to /etc/apt/sources.list.d/... "
+        sed "s/__RELEASE__/${release}/g" "${listfile}" > "/rootfs/etc/apt/sources.list.d/${listfile}" || fail
         echo "OK"
     fi
 done
@@ -1305,9 +1305,9 @@ done
 # iterate through all the *.pref files and add them to /etc/apt/preferences.d
 for preffile in ./*.pref
 do
-    if [ -e "$preffile" ]; then
-        echo -n "  Copying $preffile to /etc/apt/preferences.d/... "
-        sed "s/__RELEASE__/$release/g" "$preffile" > "/rootfs/etc/apt/preferences.d/$preffile" || fail
+    if [ -e "${preffile}" ]; then
+        echo -n "  Copying ${preffile} to /etc/apt/preferences.d/... "
+        sed "s/__RELEASE__/${release}/g" "${preffile}" > "/rootfs/etc/apt/preferences.d/${preffile}" || fail
         echo "OK"
     fi
 done
@@ -1315,9 +1315,9 @@ done
 # iterate through all the *.key files and add them to apt-key
 for keyfile in ./*.key
 do
-    if [ -e "$keyfile" ]; then
-        echo -n "  Adding key $keyfile to apt."
-        (chroot /rootfs /usr/bin/apt-key add -) < "$keyfile" || fail
+    if [ -e "${keyfile}" ]; then
+        echo -n "  Adding key ${keyfile} to apt."
+        (chroot /rootfs /usr/bin/apt-key add -) < "${keyfile}" || fail
         echo "OK"
     fi
 done
@@ -1325,15 +1325,15 @@ done
 # iterate through all the *.gpg files and add them to /etc/apt/trusted.gpg.d
 for keyring in ./*.gpg
 do
-    if [ -e "$keyring" ]; then
-        echo -n "  Copying $keyring to /etc/apt/trusted.gpg.d/... "
-        cp "$keyring" "/rootfs/etc/apt/trusted.gpg.d/$keyring" || fail
+    if [ -e "${keyring}" ]; then
+        echo -n "  Copying ${keyring} to /etc/apt/trusted.gpg.d/... "
+        cp "${keyring}" "/rootfs/etc/apt/trusted.gpg.d/${keyring}" || fail
         echo "OK"
     fi
 done
 
 # return to the old location for the rest of the processing
-cd "$old_dir" || fail
+cd "${old_dir}" || fail
 
 echo
 echo -n "Updating package lists... "
@@ -1341,7 +1341,7 @@ chroot /rootfs /usr/bin/apt-get update &>/dev/null
 echo "OK"
 
 # kernel and firmware package can't be installed during cdebootstrap phase, so do so now
-if [ "$kernel_module" = true ]; then
+if [ "${kernel_module}" = true ]; then
     echo
     echo "Installing kernel, bootloader (=firmware) and user packages..."
     if [ -n "${packages_postinstall}" ]; then
@@ -1373,16 +1373,16 @@ if [ -z "$(tail -c1 /rootfs/boot/config.txt)" ]; then
 fi
 
 # extend device initialization time when booting from usb
-if [ "$usbboot" = "1" ]; then
+if [ "${usbboot}" = "1" ]; then
     touch /rootfs/boot/TIMEOUT
 fi
 
 # default cmdline.txt
 echo -n "Creating default cmdline.txt... "
-if [ "$quiet_boot" = "1" ]; then
-    echo "$cmdline root=$rootpartition rootfstype=$rootfstype rootwait quiet logo.nologo" > /rootfs/boot/cmdline.txt
+if [ "${quiet_boot}" = "1" ]; then
+    echo "${cmdline} root=${rootpartition} rootfstype=${rootfstype} rootwait quiet logo.nologo" > /rootfs/boot/cmdline.txt
 else
-    echo "$cmdline root=$rootpartition rootfstype=$rootfstype rootwait loglevel=3" > /rootfs/boot/cmdline.txt
+    echo "${cmdline} root=${rootpartition} rootfstype=${rootfstype} rootwait loglevel=3" > /rootfs/boot/cmdline.txt
 fi
 echo "OK"
 
@@ -1440,12 +1440,12 @@ date +"%Y-%m-%d %H:%M:%S" > /rootfs/etc/fake-hwclock.data
 
 ENDTIME=$(date +%s)
 DURATION=$((ENDTIME - REAL_STARTTIME))
-echo -n "Installation finished at $(date --date="@$ENDTIME" --utc)"
-echo " and took $((DURATION/60)) min $((DURATION%60)) sec ($DURATION seconds)"
+echo -n "Installation finished at $(date --date="@${ENDTIME}" --utc)"
+echo " and took $((DURATION/60)) min $((DURATION%60)) sec (${DURATION} seconds)"
 
 # copy logfile to standard log directory
 sleep 1
-cp -- $LOGFILE /rootfs/var/log/raspberrypi-ua-netinst.log
+cp -- "${LOGFILE}" /rootfs/var/log/raspberrypi-ua-netinst.log
 chmod 0640 /rootfs/var/log/raspberrypi-ua-netinst.log
 
 echo -n "Unmounting filesystems... "
@@ -1469,7 +1469,7 @@ esac
 for i in $(seq 5 -1 1); do
     sleep 1
 
-    echo -n "$i.. "
+    echo -n "${i}.. "
 done
 echo " now"
 ${final_action}
