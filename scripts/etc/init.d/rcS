@@ -137,6 +137,24 @@ install_files()
     echo
 }
 
+output_filter()
+{
+    local filterstring
+    filterstring="^$"
+    filterstring+="|^dpkg: warning: ignoring pre-dependency problem"'!'"$"
+    filterstring+="|^dpkg: regarding \.\.\.\/\S.* containing \S.*, pre-dependency problem:$"
+    filterstring+="|^ \S.* pre-depends on \S.*$"
+    filterstring+="|^  \S.* is unpacked, but has never been configured\.$"
+    filterstring+="|^  \S.* provides \S.* but is unpacked but not configured\.$"
+    filterstring+="|^debconf: delaying package configuration, since apt-utils is not installed$"
+    filterstring+="|^\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*$"
+    filterstring+="|^All rc\.d operations denied by policy$"
+    filterstring+="|^E: Can not write log \(Is \/dev\/pts mounted\?\) - posix_openpt \(2: No such file or directory\)$"
+    filterstring+="|^update-rc\.d: warning: start and stop actions are no longer supported; falling back to defaults$"
+    filterstring+="|^invoke-rc\.d: policy-rc\.d denied execution of start\.$"
+    grep -Ev "${filterstring}"
+}
+
 # set screen blank period to an hour
 # hopefully the install should be done by then
 echo -en '\033[9;60]'
@@ -965,7 +983,7 @@ fi
 
 echo
 echo "Starting install process..."
-eval cdebootstrap-static --arch=armhf "${cdebootstrap_cmdline}" "${release}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg 2>&1 | sed 's/^/  /'
+eval cdebootstrap-static --arch=armhf "${cdebootstrap_cmdline}" "${release}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg 2>&1 | output_filter | sed 's/^/  /'
 if [ "${PIPESTATUS[0]}" -ne 0 ]; then
     fail
 fi
@@ -1350,7 +1368,10 @@ if [ "${kernel_module}" = true ]; then
         packages_postinstall="$(echo "${packages_postinstall}" | tr ',' ' ')"
     fi
 
-    eval chroot /rootfs /usr/bin/apt-get -y install "${packages_postinstall}" 2>&1 | sed 's/^/  /'
+    DEBIAN_FRONTEND=noninteractive
+    export DEBIAN_FRONTEND
+    eval chroot /rootfs /usr/bin/apt-get -y install "${packages_postinstall}" 2>&1 | output_filter | sed 's/^/  /'
+    unset DEBIAN_FRONTEND
     if [ "${PIPESTATUS[0]}" -eq 0 ]; then
         echo "OK"
     else
