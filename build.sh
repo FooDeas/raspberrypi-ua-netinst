@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1091
 
 set -e
 
@@ -8,17 +9,17 @@ INSTALL_MODULES="$INSTALL_MODULES kernel/drivers/scsi/sg.ko"
 # defines array with kernel versions
 function get_kernels {
     local moduleconf
-    moduleconf="$(find tmp/lib/modules/ -type f -name "modules.builtin")"
+    moduleconf=($(find tmp/lib/modules/ -type f -name "modules.builtin"))
     kernels=()
-    for i in ${moduleconf[@]}; do
-        kernels+=("$(dirname ${i/tmp\/lib\/modules\//})")
+    for i in "${moduleconf[@]}"; do
+        kernels+=("$(dirname "${i/tmp\/lib\/modules\//}")")
     done
 }
 
 # copies files replacing "kernel*" with kernel versions in path
 function cp_kernelfiles {
-    for kernel in ${kernels[@]}; do
-        eval cp -r "$(echo "$1" | sed 's/kernel\*/${kernel}/')" "$(echo "$2" | sed 's/kernel\*/${kernel}/')"
+    for kernel in "${kernels[@]}"; do
+        eval cp -r "${1//kernel\*/${kernel}}" "${2//kernel\*/${kernel}}"
     done
 }
 
@@ -26,7 +27,7 @@ function cp_kernelfiles {
 #   use: contains_element "search_for" "${some_array[@]}" || do_if_not_found
 function contains_element {
     local elem
-    for elem in "${@:2}"; do [[ "${elem}" == "$1" ]] && return 0; done
+    for elem in "${@:2}"; do [[ "${elem}" == "${1}" ]] && return 0; done
     return 1
 }
 
@@ -46,11 +47,11 @@ function check_dependencies {
     local mod
     local dep
     # iterate over the passed modules
-    for mod in ${mods[@]}; do
+    for mod in "${mods[@]}"; do
         # find the modules dependencies, convert into array
-        deps=($(cat "${depmod_file}" | grep "^${mod}" | cut -d':' -f2))
+        deps=($(grep "^${mod}" "${depmod_file}" | cut -d':' -f2))
         # iterate over the found dependencies
-        for dep in ${deps[@]}; do
+        for dep in "${deps[@]}"; do
             # check if the dependency is in $modules, if not, add to temp array
             contains_element "${dep}" "${modules[@]}" || new_found[${#new_found[@]}]="${dep}"
         done
@@ -72,7 +73,8 @@ function touch_tempfile {
 #   the function checks for different commands and uses the appropriate one
 #   it will fallback to creating a file in /tmp
 function create_tempfile {
-    local tmp_ptrn="/tmp/$(basename "${0}").${$}"
+    local tmp_ptrn
+    tmp_ptrn="/tmp/$(basename "${0}").${$}"
     if type mktemp &> /dev/null; then
         mktemp 2> /dev/null || \
             mktemp -t raspberrypi-ua-netinst 2> /dev/null || \
@@ -112,18 +114,18 @@ function create_cpio {
     mkdir -p rootfs/var/log/
     mkdir -p rootfs/var/run/
 
-    moduleconf="$(find tmp/lib/modules/ -type f -name "modules.order" -o -name "modules.builtin")"
-    for i in ${moduleconf[@]}; do
+    moduleconf=($(find tmp/lib/modules/ -type f -name "modules.order" -o -name "modules.builtin"))
+    for i in "${moduleconf[@]}"; do
         i="${i/tmp\/}"
         # Copy modules file
-        mkdir -p "rootfs/$(dirname ${i})"
+        mkdir -p "rootfs/$(dirname "${i}")"
         cp "tmp/${i}" "rootfs/${i}"
     done
 
     # calculate module dependencies
     depmod_file=$(create_tempfile)
-    for kernel in ${kernels[@]}; do
-        /sbin/depmod -nb tmp ${kernel} > ${depmod_file}
+    for kernel in "${kernels[@]}"; do
+        /sbin/depmod -nb tmp "${kernel}" > "${depmod_file}"
     done
 
     modules=(${INSTALL_MODULES})
@@ -134,18 +136,18 @@ function create_cpio {
     # of finding nested dependencies)
     until [ "${new_count}" == 0 ]; do
         # check the dependencies for the modules in the last $new_count elements
-        check_dependencies "${modules[@]:$((${#modules[@]}-${new_count}))}"
+        check_dependencies "${modules[@]:$((${#modules[@]}-new_count))}"
     done
 
     # do some cleanup
-    rm -f ${depmod_file}
+    rm -f "${depmod_file}"
 
     # copy the needed kernel modules to the rootfs (create directories as needed)
-    for module in ${modules[@]}; do
+    for module in "${modules[@]}"; do
         # calculate the target dir, just so the following line of code is shorter :)
-        for kernel in ${kernels[@]}; do
+        for kernel in "${kernels[@]}"; do
             if [ -e "tmp/lib/modules/${kernel}/${module}" ]; then
-                dstdir="rootfs/lib/modules/${kernel}/$(dirname ${module})"
+                dstdir="rootfs/lib/modules/${kernel}/$(dirname "${module}")"
                 # check if destination dir exist, create it otherwise
                 [ -d "${dstdir}" ] || mkdir -p "${dstdir}"
                 cp -a "tmp/lib/modules/${kernel}/${module}" "${dstdir}"
@@ -154,9 +156,9 @@ function create_cpio {
     done
 
     # copy network drivers
-    for kernel in ${kernels[@]}; do
-        mkdir -p rootfs/lib/modules/${kernel}/kernel/drivers/net
-        mkdir -p rootfs/lib/modules/${kernel}/kernel/net
+    for kernel in "${kernels[@]}"; do
+        mkdir -p "rootfs/lib/modules/${kernel}/kernel/drivers/net"
+        mkdir -p "rootfs/lib/modules/${kernel}/kernel/net"
     done
     cp_kernelfiles tmp/lib/modules/kernel*/kernel/net/mac80211 rootfs/lib/modules/kernel*/kernel/net/
     cp_kernelfiles tmp/lib/modules/kernel*/kernel/net/rfkill rootfs/lib/modules/kernel*/kernel/net/
@@ -167,8 +169,8 @@ function create_cpio {
     cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/net/wireless rootfs/lib/modules/kernel*/kernel/drivers/net/
 
     # create dependency lists
-    for kernel in ${kernels[@]}; do
-        /sbin/depmod -b rootfs ${kernel}
+    for kernel in "${kernels[@]}"; do
+        /sbin/depmod -b rootfs "${kernel}"
     done
 
     # install scripts
@@ -176,7 +178,7 @@ function create_cpio {
 
     # update version and date
     version_tag="$(git describe --exact-match --tags HEAD 2> /dev/null || true)"
-    version_commit="$(git rev-parse --short @{0} 2> /dev/null || true)"
+    version_commit="$(git rev-parse --short "@{0}" 2> /dev/null || true)"
     if [ -n "${version_tag}" ]; then
         version_info="${version_tag} (${version_commit})"
     elif [ -n "${version_commit}" ]; then
@@ -186,7 +188,7 @@ function create_cpio {
     fi
 
     sed -i "s/__VERSION__/${version_info}/" rootfs/etc/init.d/rcS
-    sed -i "s/__DATE__/`date`/" rootfs/etc/init.d/rcS
+    sed -i "s/__DATE__/$(date)/" rootfs/etc/init.d/rcS
 
 
     # btrfs-tools components
@@ -614,7 +616,7 @@ mkdir tmp
 
 # extract debs
 for i in packages/*.deb; do
-    cd tmp && ar x ../$i && tar -xf data.tar.*; rm data.tar.*; cd ..
+    cd tmp && ar x "../${i}" && tar -xf data.tar.*; rm data.tar.*; cd ..
 done
 
 # get kernel versions
@@ -634,14 +636,16 @@ fi
 create_cpio
 cp installer.cpio.gz bootfs/
 
-echo "[all]" >> bootfs/config.txt
-echo "initramfs installer.cpio.gz" >> bootfs/config.txt
-echo "[pi3]" >> bootfs/config.txt
-echo "enable_uart=1" >> bootfs/config.txt
-echo >> bootfs/config.txt
-echo "# Only for RPi model 3: The following line enables the ability to boot from USB." >> bootfs/config.txt
-echo "# Notice: This flag will be written to OTP and is permanent." >> bootfs/config.txt
-echo "#program_usb_boot_mode=1" >> bootfs/config.txt
+{
+    echo "[all]"
+    echo "initramfs installer.cpio.gz"
+    echo "[pi3]"
+    echo "enable_uart=1"
+    echo ""
+    echo "# Only for RPi model 3: The following line enables the ability to boot from USB."
+    echo "# Notice: This flag will be written to OTP and is permanent."
+    echo "#program_usb_boot_mode=1"
+} >> bootfs/config.txt
 
 # clean up
 rm -rf tmp
@@ -665,7 +669,7 @@ if [ -d config ] ; then
 fi
 
 version_tag="$(git describe --exact-match --tags HEAD 2> /dev/null || true)"
-version_commit="$(git rev-parse --short @{0} 2> /dev/null || true)"
+version_commit="$(git rev-parse --short "@{0}" 2> /dev/null || true)"
 if [ -n "${version_tag}" ]; then
     ZIPFILE="raspberrypi-ua-netinst-${version_tag}.zip"
 elif [ -n "${version_commit}" ]; then
@@ -673,6 +677,6 @@ elif [ -n "${version_commit}" ]; then
 else
     ZIPFILE="raspberrypi-ua-netinst-$(date +%Y%m%d).zip"
 fi
-rm -f $ZIPFILE
+rm -f "${ZIPFILE}"
 
-cd bootfs && zip -r -9 ../$ZIPFILE *; cd ..
+cd bootfs && zip -r -9 "../${ZIPFILE}" ./*; cd ..
