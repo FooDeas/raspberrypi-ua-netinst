@@ -117,24 +117,24 @@ sanitize_variable()
 
 install_files()
 {
-  file_to_read="${1}"
-  echo "Adding files & folders listed in /bootfs/config/${file_to_read}"
-  sanitize_inputfile "/bootfs/config/${file_to_read}"
-  grep -v "^[[:space:]]*#\|^[[:space:]]*$" "/bootfs/config/${file_to_read}" | while read -r line; do
-    owner=$(echo "${line}" | awk '{ print ${1} }')
-    perms=$(echo "${line}" | awk '{ print ${2} }')
-    file=$(echo  "${line}" | awk '{ print ${3} }')
-    echo "    ${file}"
-    if [ ! -d "/bootfs/config/files${file}" ]; then
-      mkdir -p "/rootfs$(dirname "${file}")"
-      cp "/bootfs/config/files${file}" "/rootfs${file}"
-    else
-      mkdir -p "/rootfs/${file}"
-    fi
-    chmod "${perms}" "/rootfs${file}"
-    chroot /rootfs chown "${owner}" "${file}"
-  done
-  echo
+    file_to_read="${1}"
+    echo "Adding files & folders listed in /bootfs/config/${file_to_read}"
+    sanitize_inputfile "/bootfs/config/${file_to_read}"
+    grep -v "^[[:space:]]*#\|^[[:space:]]*$" "/bootfs/config/${file_to_read}" | while read -r line; do
+        owner=$(echo "${line}" | awk '{ print ${1} }')
+        perms=$(echo "${line}" | awk '{ print ${2} }')
+        file=$(echo  "${line}" | awk '{ print ${3} }')
+        echo "    ${file}"
+        if [ ! -d "/bootfs/config/files${file}" ]; then
+            mkdir -p "/rootfs$(dirname "${file}")"
+            cp "/bootfs/config/files${file}" "/rootfs${file}"
+        else
+            mkdir -p "/rootfs/${file}"
+        fi
+        chmod "${perms}" "/rootfs${file}"
+        chroot /rootfs chown "${owner}" "${file}"
+    done
+    echo
 }
 
 # set screen blank period to an hour
@@ -497,7 +497,7 @@ if [ "${date_set}" = "false" ]; then
     fi
 fi
 if [ "${date_set}" != "true" ]; then
-    echo ""
+    echo
     echo "FAILED to set the time, so things are likely to fail now..."
     echo "Check your connection or firewall."
 fi
@@ -811,13 +811,13 @@ touch "${FDISK_SCHEME_SD_ONLY}"
         echo "n"
         echo "p"
         echo "4"
-        echo ""
+        echo
         echo "${emptyspaceend}"
     fi
     echo "n"
     echo "p"
     echo "1"
-    echo ""
+    echo
     echo "${bootsize}"
     echo "t"
     if [ -n "${emptyspaceend}" ]; then
@@ -829,7 +829,7 @@ touch "${FDISK_SCHEME_SD_ONLY}"
     echo "n"
     echo "p"
     echo "2"
-    echo ""
+    echo
     echo "${rootsize}"
     if [ -n "${emptyspaceend}" ]; then
         # now remove the temporary partition again
@@ -850,13 +850,13 @@ touch "${FDISK_SCHEME_SD_BOOT}"
         echo "n"
         echo "p"
         echo "4"
-        echo ""
+        echo
         echo "${emptyspaceend}"
     fi
     echo "n"
     echo "p"
     echo "1"
-    echo ""
+    echo
     echo "${bootsize}"
     echo "t"
     if [ -n "${emptyspaceend}" ]; then
@@ -880,7 +880,7 @@ touch "${FDISK_SCHEME_USB_ROOT}"
     echo "n"
     echo "p"
     echo "1"
-    echo ""
+    echo
     echo "${rootsize}"
     echo "w"
 } >> ${FDISK_SCHEME_USB_ROOT}
@@ -970,7 +970,7 @@ if [ "${PIPESTATUS[0]}" -ne 0 ]; then
     fail
 fi
 
-echo ""
+echo
 echo "Configuring installed system:"
 # configure root login
 if [ -n "${rootpw}" ]; then
@@ -1122,7 +1122,7 @@ if ! grep -q "auto lo" /rootfs/etc/network/interfaces; then
 fi
 
 # configured interface
-echo "" >> /rootfs/etc/network/interfaces
+echo >> /rootfs/etc/network/interfaces
 echo "allow-hotplug ${ifname}" >> /rootfs/etc/network/interfaces
 if [ "${ip_addr}" = "dhcp" ]; then
     echo "iface ${ifname} inet dhcp" >> /rootfs/etc/network/interfaces
@@ -1145,7 +1145,7 @@ if echo "${ifname}" | grep -q "wlan"; then
         echo "    wpa-conf /etc/wpa_supplicant/wpa_supplicant.conf" >> /rootfs/etc/network/interfaces
     fi
     {
-        echo ""
+        echo
         echo "allow-hotplug eth0"
         echo "iface eth0 inet dhcp"
     } >> /rootfs/etc/network/interfaces
@@ -1262,7 +1262,7 @@ if [ -n "${keyboard_layout}" ]; then
     done
 fi
 
-echo ""
+echo
 
 # there is no hw clock on rpi
 if grep -q "#HWCLOCKACCESS=yes" /rootfs/etc/default/hwclock; then
