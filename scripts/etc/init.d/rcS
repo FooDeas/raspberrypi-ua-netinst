@@ -141,10 +141,14 @@ output_filter()
 {
     local filterstring
     filterstring="^$"
+    filterstring+="|^Setcap failed on \S.*, falling back to setuid$"
     filterstring+="|^dpkg: warning: ignoring pre-dependency problem"'!'"$"
     filterstring+="|^dpkg: regarding \.\.\.\/\S.* containing \S.*, pre-dependency problem:$"
+    filterstring+="|^dpkg: \S.*: dependency problems, but configuring anyway as you requested:$"
     filterstring+="|^ \S.* pre-depends on \S.*$"
+    filterstring+="|^ \S.* depends on \S.*; however:$"
     filterstring+="|^  \S.* is unpacked, but has never been configured\.$"
+    filterstring+="|^  (Package )?\S.* is not installed\.$"
     filterstring+="|^  \S.* provides \S.* but is unpacked but not configured\.$"
     filterstring+="|^debconf: delaying package configuration, since apt-utils is not installed$"
     filterstring+="|^\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*$"
@@ -152,6 +156,9 @@ output_filter()
     filterstring+="|^E: Can not write log \(Is \/dev\/pts mounted\?\) - posix_openpt \(2: No such file or directory\)$"
     filterstring+="|^update-rc\.d: warning: start and stop actions are no longer supported; falling back to defaults$"
     filterstring+="|^invoke-rc\.d: policy-rc\.d denied execution of start\.$"
+    filterstring+="|^Failed to set capabilities on file \`\S.*' \(Invalid argument\)$"
+    filterstring+="|^The value of the capability argument is not permitted for a file\. Or the file is not a regular \(non-symlink\) file$"
+    filterstring+="|^Failed to read \S.*\. Ignoring: No such file or directory$"
     grep -Ev "${filterstring}"
 }
 
