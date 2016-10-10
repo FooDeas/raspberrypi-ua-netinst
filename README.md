@@ -55,7 +55,7 @@ Other presets include _minimal_ which has even less packages (no logging, no tex
 
 ## Writing the installer to the SD card
 ### Obtaining installer files on Windows and Mac
-Installer archive is around **27MB** and contains all firmware files and the installer.
+Installer archive contains all firmware files and the installer.
 
 Go to [our latest release page](https://github.com/FooDeas/raspberrypi-ua-netinst/releases/latest) and download the .zip file.
 
@@ -64,7 +64,7 @@ Format your SD card as **FAT32** (MS-DOS on _Mac OS X_) and extract the installe
 Try formatting the SD card with [this tool](https://www.sdcard.org/downloads/formatter_4/). 
 
 ### Alternative method for Mac, writing image to SD card
-Prebuilt image is around **27MB** bzip2 compressed and **64MB** uncompressed. It contains the same files as the .zip but is more convenient for Mac users.
+Prebuilt image is bzip2 compressed and contains the same files as the .zip but is more convenient for Mac users.
 
 Go to [the latest release page](https://github.com/FooDeas/raspberrypi-ua-netinst/releases/latest) and download the `.img.bz2` file.
 
@@ -80,7 +80,7 @@ To flash your SD card on Mac:
 _Note the **r** in the of=/dev/rdiskX part on the dd line which should speed up writing the image considerably._
 
 ### SD card image for Linux
-Prebuilt image is around **23MB** xz compressed and **64MB** uncompressed. It contains the same files as the .zip but is more convenient for Linux users.
+Prebuilt image is xz compressed and contains the same files as the .zip but is more convenient for Linux users.
 
 Go to [our latest release page](https://github.com/FooDeas/raspberrypi-ua-netinst/releases/latest) and download the `.img.xz` file.
 
