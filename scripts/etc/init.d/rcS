@@ -991,7 +991,10 @@ fi
 echo
 echo "Starting install process..."
 eval cdebootstrap-static --arch=armhf "${cdebootstrap_cmdline}" "${release}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg 2>&1 | output_filter | sed 's/^/  /'
-if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+cdebootstrap_exitcode="${PIPESTATUS[0]}"
+if [ "${cdebootstrap_exitcode}" -ne 0 ]; then
+    echo
+    echo "  ERROR: ${cdebootstrap_exitcode}"
     fail
 fi
 
@@ -1364,8 +1367,20 @@ cd "${old_dir}" || fail
 
 echo
 echo -n "Updating package lists... "
-chroot /rootfs /usr/bin/apt-get update &>/dev/null
-echo "OK"
+for i in $(seq 1 3); do
+    if chroot /rootfs /usr/bin/apt-get update &>/dev/null ; then
+        echo "OK"
+        break
+    else
+        update_exitcode="${?}"
+        if [ "${i}" -eq 3 ]; then
+            echo "ERROR: ${update_exitcode}, FAILED !"
+            fail
+        else
+            echo -n "ERROR: ${update_exitcode}, trying again ($((i+1))/3)... "
+        fi
+    fi
+done
 
 # kernel and firmware package can't be installed during cdebootstrap phase, so do so now
 if [ "${kernel_module}" = true ]; then
