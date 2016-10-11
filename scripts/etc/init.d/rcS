@@ -1378,12 +1378,12 @@ if [ "${kernel_module}" = true ]; then
     DEBIAN_FRONTEND=noninteractive
     export DEBIAN_FRONTEND
     eval chroot /rootfs /usr/bin/apt-get -y install "${packages_postinstall}" 2>&1 | output_filter | sed 's/^/  /'
-    unset DEBIAN_FRONTEND
     if [ "${PIPESTATUS[0]}" -eq 0 ]; then
         echo "OK"
     else
         echo "FAILED !"
     fi
+    unset DEBIAN_FRONTEND
 fi
 
 # (conditionaly) enable hardware watchdog and set up systemd to use it
