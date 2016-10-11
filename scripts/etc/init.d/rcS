@@ -1413,7 +1413,7 @@ cp /bootfs/kernel.img /rootfs/boot/kernel-reinstall.img
 cp /bootfs/kernel7.img /rootfs/boot/kernel7-reinstall.img
 echo "Configuring bootloader to start the installed system..."
 cp /bootfs/config/boot/config.txt /rootfs/boot/config.txt
-if [ -z "$(tail -c1 /rootfs/boot/config.txt)" ]; then
+if [ -n "$(tail -c1 /rootfs/boot/config.txt)" ]; then
     echo >> /rootfs/boot/config.txt
 fi
 
