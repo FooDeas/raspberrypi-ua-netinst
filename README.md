@@ -101,131 +101,41 @@ If you have a serial cable connected, installer ouput can be followed there, too
 **Note:** During the installation you'll see various warning messages, like "Warning: cannot read table of mounted file systems" and "dpkg: warning: ignoring pre-dependency problem!". Those are expected and harmless.
 
 ## Installer customization
-You can use the installer _as is_ and get a minimal system installed which you can then use and customize to your needs.  
+You can use the installer _as is_ and get a minimal system installed which you can then use and customize to your needs.
+
 But you can also customize the installation process and the primary way to do that is through a file named _installer-config.txt_. When you've written the installer to a SD card, you'll see a file named _cmdline.txt_ and you create the _installer-config.txt_ file alongside that file.
-The defaults for _installer-config.txt_ are displayed below. If you want one of those settings changed for your installation, you should **only** place that changed setting in the _installer-config.txt_ file. So if you want to have vim and aptitude installed by default, create a _installer-config.txt_ file with the following contents:
+If you want settings changed for your installation, you should **only** place that changed setting in the _installer-config.txt_ file. So if you want to have vim and aptitude installed by default, create a _installer-config.txt_ file with the following contents:
 ```
 packages=vim,aptitude
 ```
-and that's it! While most settings stand on their own, some settings influence each other. For example `rootfstype` is tightly linked to the other settings that start with `rootfs_`.  
-So don't copy and paste the defaults from below!
+That's it!
+
+Here is another example for a _installer-config.txt_ file:
+
+```
+packages=nano,logrotate
+firmware_packages=1
+
+timezone=America/New_York
+keyboard_layout=us
+system_default_locale=en_US
+
+username=pi
+userpw=login
+user_is_admin=1
+usergpu=1
+
+rootpw=raspbian
+root_ssh_allow=0
+
+gpu_mem=32
+```
+
+All possible parameters and their description, are documented in [doc/INSTALL_CUSTOM.md](https://github.com/FooDeas/raspberrypi-ua-netinst/doc/INSTALL_CUSTOM.md).
 
 The _installer-config.txt_ is read in at the beginning of the installation process, shortly followed by the file pointed to with `online_config`, if specified.
 There is also another configuration file you can provide, _post&#8209;install.txt_, and you place that in the same directory as _installer-config.txt_.
-The _post&#8209;install.txt_ is executed at the very end of the installation process and you can use it to tweak and finalize your automatic installation.  
-The configuration files are read in as  shell scripts, so you can abuse that fact if you so want to.
-
-The format of the _installer-config.txt_ file and the current defaults:
-
-    # Package options
-    preset=server
-    packages=                 # Install this additional packages (comma separated and quoted).
-                              #   (e.g. "pi-bluetooth,cifs-utils,curl")
-    firmware_packages=0       # Set to "1" to install common firmware packages (Atheros, Broadcom, Libertas, Ralink
-                              #   and Realtek)
-    mirror=http://mirrordirector.raspbian.org/raspbian/
-    release=jessie
-
-    # Device / peripheral options
-    gpu_mem=                  # Specifies the amount of RAM in MB that should be reserved for the GPU.
-                              #   To allow the VideoCore GPU kernel driver to be loaded correctly, you should
-                              #   use at least "32". If not defined, the bootloader sets it to 64MB. The
-                              #   minimum value is "16".
-    spi_enable=0              # Set to "1" to enable the SPI interface.
-    i2c_enable=0              # Set to "1" to enable the I²C (I2C) interface.
-    sound_enable=0            # Set to "1" to enable the onboard audio.
-    camera_enable=0           # Set to "1" to enable the camera module. This sets all needed parameters in config.txt.
-    camera_disable_led=0      # Disables the camera led. The option `camera_enable=1` has to be set to take effect.
-
-    # Root options
-    rootpw=raspbian           # Sets password for root. To disable root, also set root_ssh_pubkey empty.
-    root_ssh_pubkey=          # Sets public SSH key for root login. The public SSH key must be on a single
-                              #   line, enclosed in quotes.
-    root_ssh_allow=1          # Set to 0 to disable ssh password login for root.
-
-    # User options
-    username=                 # username of the user to create
-    userpw=                   # password to use for created user
-    usergpio=                 # Set to 1 to give created user permissions to access GPIO pins. A new system group
-                              #   'gpio' will be created automatically.
-    usergpu=                  # Set to 1 to give created user GPU access permissions (e.g. to run vcgencmd
-                              #   without using sudo).
-    usergroups=               # Add created user to this additional groups (comma separated and quoted). Non-existent
-                              #   groups will be created. (e.g. 'usergroups=family,friends')
-    usersysgroups=            # Add created user to this additional groups (comma separated and quoted). Non-existent
-                              #   groups will be created as system groups. (e.g. 'usersysgroups=video,www-data')
-    user_ssh_pubkey=          # public SSH key for created user; the public SSH key must be on a single line, enclosed
-                              #   in quotes
-    user_is_admin=            # set to 1 to install sudo and make the user a sudo user
-
-    # Network options
-    hostname=pi
-    domainname=
-    ifname=eth0               # Change to 'wlan0' to use onboard WiFi. Use the 'wlan_*' options below or provide a
-                              #   'wpa_supplicant.conf' with WiFi login data in the directory `/config`.
-    wlan_ssid=                # Sets SSID for WiFi authentication if no 'wpa_supplicant.conf' is provided.
-    wlan_psk=                 # Sets PSK for Wifi authentication if no 'wpa_supplicant.conf' is provided.
-    ip_addr=dhcp
-    ip_netmask=0.0.0.0
-    ip_broadcast=0.0.0.0
-    ip_gateway=0.0.0.0
-    ip_nameservers=
-
-    # Localization options
-    timezone=Etc/UTC          # Set to desired timezone (e.g. Europe/Ljubljana)
-    keyboard_layout=us        # Set default keyboard layout. (e.g. "de")
-    locales=                  # Generate locales from this list (comma separated and quoted). UTF-8 is chosen
-                              #   preferentially if no encoding is specified. (e.g. "en_US.UTF-8,nl_NL,sl_SI.UTF-8")
-    system_default_locale=    # Set default system locale (using the LANG environment variable). UTF-8 is chosen
-                              #   preferentially if no encoding is specified. (e.g. "nl_NL" or "sl_SI.UTF-8") 
-
-    # Partitioning / Filesystem options
-    usbroot=                  # Set to 1 to install to first USB disk.
-    rootfstype=f2fs           # Sets the file system of the root partition.
-                              #   Possible values are "ext4", "f2fs" or "btrfs".
-    boot_volume_label=        # Sets the volume name of the boot partition. The volume name can be up to 11 characters
-                              #   long. The label is used by most OSes (Windows, Mac OSX and Linux) to identify the
-                              #   SD-card on the desktop and can be useful when using multiple SD-cards.
-    bootsize=+128M            # /boot partition size in megabytes, provide it in the form '+<number>M' (without quotes)
-    bootoffset=8192           # position in sectors where the boot partition should start. Valid values are > 2048.
-                              #   a bootoffset of 8192 is equal to 4MB and that should make for proper alignment
-
-    # Advanced options
-    quiet_boot=0              # Disables most log messages on boot.
-    cmdline="dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 elevator=deadline fsck.repair=yes"
-    rootfs_install_mount_options='noatime,data=writeback,nobarrier,noinit_itable'
-    rootfs_mount_options='errors=remount-ro,noatime'
-    final_action=reboot       # what to do at the end of install, one of poweroff / halt / reboot
-    hwrng_support=1           # install support for the ARM hardware random number generator. The default is
-                              #   enabled (1) on all presets. Users requiring a `base` install are advised that
-                              #   `hwrng_support=0` must be added in `installer-config.txt` if HWRNG support is
-                              #   undesirable.
-    enable_watchdog=0         # loads up the hardware watchdog module and configures systemd to use it. Set to
-                              #   "1" to enable this functionality.
-    cdebootstrap_cmdline=
-    rootfs_mkfs_options=
-    rootsize=                 # / partition size in megabytes, provide it in the form '+<number>M' (without quotes),
-                              #   leave empty to use all free space
-    timeserver=time.nist.gov
-    timeserver_http=          # URL that returns the time in the format: YYYY-MM-DD HH:MM:SS.
-    disable_predictable_nin=1 # Disable Predictable Network Interface Names. Set to 0 if you want to use predictable
-                              #   network interface names, which means if you use the same SD card on a different
-                              #   RPi board, your network device might be named differently. This will result in the
-                              #   board having no network connectivity.
-    drivers_to_load=          # Loads additional kernel modules at installation (comma separated and quoted).
-    online_config=            # URL to extra config that will be executed after installer-config.txt
-
-The timeserver parameter is only used during installation for _rdate_ which is used as fallback when setting the time with `ntpdate` fails.  
-
-Available presets are _server_, _minimal_ and _base_. The current packages that are installed by default are listed below.
-
-preset  |  packages
---------|----------
-base    | _\<essential\>,apt,cpufrequtils,kmod,raspbian-archive-keyring_
-minimal | _\<base\>,fake-hwclock,ifupdown,net-tools,ntp,openssh-server,dosfstools,raspberrypi-sys-mods_
-server  | _\<minimal\>,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,less,man-db,bash-completion,console-setup,apt-utils,libraspberrypi-bin,raspi-copies-and-fills_
-
-(If you build your own installer, which most won't need to, and the configuration files exist in the same directory as this `README.md`, it will be include in the installer image automatically.)
+The _post&#8209;install.txt_ is executed at the very end of the installation process and you can use it to tweak and finalize your automatic installation.
 
 ### Bring your own files
 You can have the installer place your custom configuration files (or any other file you wish to add) on the installed system during the installation. For this, you need to provide the necessary files in the `/config/files/` directory of your SD card (you may need to create this directory if it doesn't exist). The `/config/files/` directory is the root-point. It must have the same structure as inside the installed system. So, a file that you place on the SD card in `/config/files/etc/wpa_supplicant/wpa_supplicant.conf` will end up on the installed system as `/etc/wpa_supplicant/wpa_supplicant.conf`.
