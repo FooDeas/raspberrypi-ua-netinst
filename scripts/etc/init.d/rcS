@@ -1388,20 +1388,40 @@ done
 
 # kernel and firmware package can't be installed during cdebootstrap phase, so do so now
 if [ "${kernel_module}" = true ]; then
-    echo
-    echo "Installing kernel, bootloader (=firmware) and user packages..."
     if [ -n "${packages_postinstall}" ]; then
         packages_postinstall="$(echo "${packages_postinstall}" | tr ',' ' ')"
     fi
 
     DEBIAN_FRONTEND=noninteractive
     export DEBIAN_FRONTEND
+
+    echo
+    echo "Downloading packages..."
+    for i in $(seq 1 3); do
+        eval chroot /rootfs /usr/bin/apt-get -y -d install "${packages_postinstall}" 2>&1 | output_filter | sed 's/^/  /'
+        download_exitcode="${PIPESTATUS[0]}"
+        if [ "${download_exitcode}" -eq 0 ]; then
+            echo "OK"
+            break
+        else
+            if [ "${i}" -eq 3 ]; then
+                echo "ERROR: ${download_exitcode}, FAILED !"
+                fail
+            else
+                echo -n "ERROR: ${download_exitcode}, trying again ($((i+1))/3)... "
+            fi
+        fi
+    done
+
+    echo
+    echo "Installing kernel, bootloader (=firmware) and user packages..."
     eval chroot /rootfs /usr/bin/apt-get -y install "${packages_postinstall}" 2>&1 | output_filter | sed 's/^/  /'
     if [ "${PIPESTATUS[0]}" -eq 0 ]; then
         echo "OK"
     else
         echo "FAILED !"
     fi
+    
     unset DEBIAN_FRONTEND
 fi
 
