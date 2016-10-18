@@ -53,6 +53,8 @@ hwrng_support=1
 enable_watchdog=0
 gpu_mem=
 quiet_boot=0
+spi_enable=0
+i2c_enable=0
 sound_enable=0
 camera_enable=0
 camera_disable_led=0
@@ -803,6 +805,8 @@ echo "  rootfs_mount_options = ${rootfs_mount_options}"
 echo "  final_action = ${final_action}"
 echo "  gpu_mem = ${gpu_mem}"
 echo "  quiet_boot = ${quiet_boot}"
+echo "  spi_enable = ${spi_enable}"
+echo "  i2c_enable = ${i2c_enable}"
 echo "  sound_enable = ${sound_enable}"
 echo "  camera_enable = ${camera_enable}"
 echo "  camera_disable_led = ${camera_disable_led}"
@@ -1430,6 +1434,16 @@ else
     echo "${cmdline} root=${rootpartition} rootfstype=${rootfstype} rootwait loglevel=3" > /rootfs/boot/cmdline.txt
 fi
 echo "OK"
+
+# enable spi if specified in the configuration file
+if [ "${spi_enable}" = "1" ]; then
+    sed -i "s/^#\(dtparam=spi=on\)/\1/" /rootfs/boot/config.txt
+fi
+
+# enable i2c if specified in the configuration file
+if [ "${i2c_enable}" = "1" ]; then
+    sed -i "s/^#\(dtparam=i2c_arm=on\)/\1/" /rootfs/boot/config.txt
+fi
 
 # enable sound if specified in the configuration file
 if [ "${sound_enable}" = "1" ]; then
