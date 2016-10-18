@@ -1458,16 +1458,28 @@ echo "OK"
 # enable spi if specified in the configuration file
 if [ "${spi_enable}" = "1" ]; then
     sed -i "s/^#\(dtparam=spi=on\)/\1/" /rootfs/boot/config.txt
+    if [ "$(grep -c "^dtparam=spi=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
+        sed -i "s/^\(dtparam=spi=.*\)/#\1/" /rootfs/boot/config.txt
+        echo "dtparam=spi=on" >> /rootfs/boot/config.txt
+    fi
 fi
 
 # enable i2c if specified in the configuration file
 if [ "${i2c_enable}" = "1" ]; then
     sed -i "s/^#\(dtparam=i2c_arm=on\)/\1/" /rootfs/boot/config.txt
+    if [ "$(grep -c "^dtparam=i2c_arm=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
+        sed -i "s/^\(dtparam=i2c_arm=.*\)/#\1/" /rootfs/boot/config.txt
+        echo "dtparam=i2c_arm=on" >> /rootfs/boot/config.txt
+    fi
 fi
 
 # enable sound if specified in the configuration file
 if [ "${sound_enable}" = "1" ]; then
     sed -i "s/^#\(dtparam=audio=on\)/\1/" /rootfs/boot/config.txt
+    if [ "$(grep -c "^dtparam=audio=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
+        sed -i "s/^\(dtparam=audio=.*\)/#\1/" /rootfs/boot/config.txt
+        echo "dtparam=audio=on" >> /rootfs/boot/config.txt
+    fi
 fi
 
 # enable camera if specified in the configuration file
@@ -1475,17 +1487,30 @@ if [ "${camera_enable}" = "1" ]; then
     if [ "0${gpu_mem}" -lt "128" ]; then
         gpu_mem=128
     fi
-    echo "start_x=1" >> /rootfs/boot/config.txt
-    if [ "${camera_disable_led}" = "1" ]; then
-        echo "disable_camera_led=1" >> /rootfs/boot/config.txt
+    sed -i "s/^#\(start_x=1\)/\1/" /rootfs/boot/config.txt
+    if [ "$(grep -c "^start_x=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
+        sed -i "s/^\(start_x=.*\)/#\1/" /rootfs/boot/config.txt
+        echo "start_x=1" >> /rootfs/boot/config.txt
         echo >> /rootfs/boot/config.txt
+    fi
+    if [ "${camera_disable_led}" = "1" ]; then
+        sed -i "s/^#\(disable_camera_led=1\)/\1/" /rootfs/boot/config.txt
+        if [ "$(grep -c "^disable_camera_led=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
+            sed -i "s/^\(disable_camera_led=.*\)/#\1/" /rootfs/boot/config.txt
+            echo "disable_camera_led=1" >> /rootfs/boot/config.txt
+            echo >> /rootfs/boot/config.txt
+        fi
     fi
 fi
 
 # set gpu_mem if specified in the configuration file
 if [ -n "${gpu_mem}" ]; then
-    echo "gpu_mem=${gpu_mem}" >> /rootfs/boot/config.txt
-    echo >> /rootfs/boot/config.txt
+    sed -i "s/^#\(gpu_mem=${gpu_mem}\)/\1/" /rootfs/boot/config.txt
+    if [ "$(grep -c "^gpu_mem=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
+        sed -i "s/^\(gpu_mem=.*\)/#\1/" /rootfs/boot/config.txt
+        echo "gpu_mem=${gpu_mem}" >> /rootfs/boot/config.txt
+        echo >> /rootfs/boot/config.txt
+    fi
 fi
 
 # run post install script if exists
