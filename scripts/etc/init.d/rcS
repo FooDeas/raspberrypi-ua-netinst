@@ -1491,14 +1491,12 @@ if [ "${camera_enable}" = "1" ]; then
     if [ "$(grep -c "^start_x=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
         sed -i "s/^\(start_x=.*\)/#\1/" /rootfs/boot/config.txt
         echo "start_x=1" >> /rootfs/boot/config.txt
-        echo >> /rootfs/boot/config.txt
     fi
     if [ "${camera_disable_led}" = "1" ]; then
         sed -i "s/^#\(disable_camera_led=1\)/\1/" /rootfs/boot/config.txt
         if [ "$(grep -c "^disable_camera_led=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
             sed -i "s/^\(disable_camera_led=.*\)/#\1/" /rootfs/boot/config.txt
             echo "disable_camera_led=1" >> /rootfs/boot/config.txt
-            echo >> /rootfs/boot/config.txt
         fi
     fi
 fi
@@ -1509,7 +1507,6 @@ if [ -n "${gpu_mem}" ]; then
     if [ "$(grep -c "^gpu_mem=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
         sed -i "s/^\(gpu_mem=.*\)/#\1/" /rootfs/boot/config.txt
         echo "gpu_mem=${gpu_mem}" >> /rootfs/boot/config.txt
-        echo >> /rootfs/boot/config.txt
     fi
 fi
 
