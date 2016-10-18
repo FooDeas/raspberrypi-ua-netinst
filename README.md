@@ -181,7 +181,8 @@ The format of the _installer-config.txt_ file and the current defaults:
 
     # Partitioning / Filesystem options
     usbroot=                  # Set to 1 to install to first USB disk.
-    rootfstype=ext4
+    rootfstype=f2fs           # Sets the file system of the root partition.
+                              #   Possible values are "ext4", "f2fs" or "btrfs".
     boot_volume_label=        # Sets the volume name of the boot partition. The volume name can be up to 11 characters
                               #   long. The label is used by most OSes (Windows, Mac OSX and Linux) to identify the
                               #   SD-card on the desktop and can be useful when using multiple SD-cards.
