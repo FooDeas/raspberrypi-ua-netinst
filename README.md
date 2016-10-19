@@ -105,7 +105,7 @@ That's it!
 Here is another example for a _installer-config.txt_ file:
 
 ```
-packages=nano,logrotate
+packages=nano
 firmware_packages=1
 
 timezone=America/New_York

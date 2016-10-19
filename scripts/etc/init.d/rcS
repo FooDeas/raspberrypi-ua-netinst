@@ -642,7 +642,7 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
     fi
 
     # server
-    server_packages="vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,less,man-db,bash-completion,console-setup,apt-utils"
+    server_packages="vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,less,man-db,logrotate,bash-completion,console-setup,apt-utils"
     server_packages_postinstall="libraspberrypi-bin,raspi-copies-and-fills"
     server_packages_postinstall="${minimal_packages_postinstall},${server_packages_postinstall}"
 
