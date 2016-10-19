@@ -1,4 +1,15 @@
-## Package options
+# `installer-config.txt` options
+
+- [Package](#package)
+- [Device / peripheral](#device--peripheral)
+- [Root](#root)
+- [User](#user)
+- [Network](#network)
+- [Localization](#localization)
+- [Partitioning / Filesystem](#partitioning--filesystem)
+- [Advanced](#advanced)
+
+## Package
 | Parameter         | Default | Options                   | Description                                                                                          |
 |-------------------|---------|---------------------------|------------------------------------------------------------------------------------------------------|
 | `preset` | `server` | `base`/  `minimal`/  `server` | The current packages that are installed by default are listed below. |
@@ -7,14 +18,14 @@
 | `mirror` | `http://mirrordirector.raspbian.org/raspbian/` |  |  |
 | `release` | `jessie` |  |  |
 
-### Presets
+### Description: Presets
 | Preset | Packages |
 |---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `base` | _\<essential\>,apt,cpufrequtils,kmod,raspbian-archive-keyring_ |
 | `minimal` | _\<base\>,fake-hwclock,ifupdown,net-tools,ntp,openssh-server,dosfstools,raspberrypi-sys-mods_ |
 | `server` | _\<minimal\>,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,less,man-db,bash-completion,console-setup,apt-utils,libraspberrypi-bin,raspi-copies-and-fills_ |
 
-## Device / peripheral options
+## Device / peripheral
 | Parameter          | Default | Options | Description                                                                                                                                                                                                                                      |
 |--------------------|---------|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `gpu_mem` |  |  | Specifies the amount of RAM in MB that should be reserved for the GPU. To allow the VideoCore GPU kernel driver to be loaded correctly, you should use at least "32". If not defined, the bootloader sets it to 64MB. The minimum value is "16". |
@@ -24,14 +35,14 @@
 | `camera_enable` | `0` | `0`/`1` | Set to "1" to enable the camera module. This sets all needed parameters in config.txt. |
 | `camera_disable_led` | `0` | `0`/`1` | Disables the camera led. The option `camera_enable=1` has to be set to take effect. |
 
-## Root options
+## Root
 | Parameter       | Default | Options | Description                                                                                          |
 |-----------------|---------|---------|------------------------------------------------------------------------------------------------------|
 | `rootpw` | raspbian |  | Sets password for root. To disable root, also set root_ssh_pubkey empty. |
 | `root_ssh_pubkey` |  |  | Sets public SSH key for root login. The public SSH key must be on a single line, enclosed in quotes. |
 | `root_ssh_allow` | `1` | `0`/`1` | Set to 0 to disable ssh password login for root. |
 
-## User options
+## User
 | Parameter       | Default | Options | Description                                                                                                                                                          |
 |-----------------|---------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `username` |  |  | Username of the user to create |
@@ -43,7 +54,7 @@
 | `user_ssh_pubkey` |  |  | public SSH key for created user; the public SSH key must be on a single line, enclosed in quotes |
 | `user_is_admin` |  | `0`/`1` | set to 1 to install sudo and make the user a sudo user |
 
-## Network options
+## Network
 | Parameter      | Default | Options | Description                                                                                                                                               |
 |----------------|---------|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `hostname` | `pi` |  |  |
@@ -57,15 +68,15 @@
 | `ip_gateway` | `0.0.0.0` |  |  |
 | `ip_nameservers` |  |  |  |
 
-## Localization options
+## Localization
 | Parameter             | Default | Options | Description                                                                                                                                                      |
 |-----------------------|---------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `timezone` | `Etc/UTC` | [ref: doc/timezone.txt](https://github.com/FooDeas/raspberrypi-ua-netinst/doc/timezone.txt) | Set to desired timezone (e.g. Europe/Ljubljana) |
-| `keyboard_layout` | `us` | [ref: doc/keyboard_layout.txt](https://github.com/FooDeas/raspberrypi-ua-netinst/doc/keyboard_layout.txt) | Set default keyboard layout. (e.g. "de") |
-| `locales` |  | [ref: doc/locales.txt](https://github.com/FooDeas/raspberrypi-ua-netinst/doc/locales.txt) | Generate locales from this list (comma separated and quoted). UTF-8 is chosen preferentially if no encoding is specified. (e.g. "en_US.UTF-8,nl_NL,sl_SI.UTF-8") |
-| `system_default_locale` |  | [ref: doc/locales.txt](https://github.com/FooDeas/raspberrypi-ua-netinst/doc/locales.txt) | Set default system locale (using the LANG environment variable). UTF-8 is chosen preferentially if no encoding is specified. (e.g. "nl_NL" or "sl_SI.UTF-8") |
+| `timezone` | `Etc/UTC` | [ref: doc/timezone.txt](/doc/timezone.txt) | Set to desired timezone (e.g. Europe/Ljubljana) |
+| `keyboard_layout` | `us` | [ref: doc/keyboard_layout.txt](/doc/keyboard_layout.txt) | Set default keyboard layout. (e.g. "de") |
+| `locales` |  | [ref: doc/locales.txt](/doc/locales.txt) | Generate locales from this list (comma separated and quoted). UTF-8 is chosen preferentially if no encoding is specified. (e.g. "en_US.UTF-8,nl_NL,sl_SI.UTF-8") |
+| `system_default_locale` |  | [ref: doc/locales.txt](/doc/locales.txt) | Set default system locale (using the LANG environment variable). UTF-8 is chosen preferentially if no encoding is specified. (e.g. "nl_NL" or "sl_SI.UTF-8") |
 
-## Partitioning / Filesystem options
+## Partitioning / Filesystem
 | Parameter         | Default | Options               | Description                                                                                                                                                                                                                                     |
 |-------------------|---------|-----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `usbroot` |  |  | Set to 1 to install to first USB disk. |
@@ -74,7 +85,7 @@
 | `bootsize` | `+128M` |  | /boot partition size in megabytes, provide it in the form '+<number>M' (without quotes) |
 | `bootoffset` | `8192` |  | position in sectors where the boot partition should start. Valid values are > 2048. a bootoffset of 8192 is equal to 4MB and that should make for proper alignment |
 
-## Advanced options
+## Advanced
 | Parameter | Default | Options | Description |
 |------------------------------|---------|----------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `quiet_boot` | `0` | `0`/`1` | Disables most log messages on boot. |
@@ -89,6 +100,6 @@
 | `rootsize` |  |  | / partition size in megabytes, provide it in the form '+<number>M' (without quotes), leave empty to use all free space |
 | `timeserver` | `time.nist.gov` |  |  |
 | `timeserver_http` |  |  | URL that returns the time in the format: YYYY-MM-DD HH:MM:SS. |
-| `disable_predictable_nin` | `1` |  | Disable Predictable Network Interface Names. Set to 0 if you want to use predictable network interface names, which means if you use the same SD card on a different RPi board, your network device might be named differently. This will result in the board having no network connectivity. |
+| `disable_predictable_nin` | `1` | `0`/`1` | Disable Predictable Network Interface Names. Set to 0 if you want to use predictable network interface names, which means if you use the same SD card on a different RPi board, your network device might be named differently. This will result in the board having no network connectivity. |
 | `drivers_to_load` |  |  | Loads additional kernel modules at installation (comma separated and quoted). |
 | `online_config` |  |  | URL to extra config that will be executed after installer-config.txt |
