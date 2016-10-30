@@ -55,6 +55,7 @@ gpu_mem=
 quiet_boot=0
 spi_enable=0
 i2c_enable=0
+i2c_baudrate=
 sound_enable=0
 camera_enable=0
 camera_disable_led=0
@@ -808,6 +809,7 @@ echo "  gpu_mem = ${gpu_mem}"
 echo "  quiet_boot = ${quiet_boot}"
 echo "  spi_enable = ${spi_enable}"
 echo "  i2c_enable = ${i2c_enable}"
+echo "  i2c_baudrate = ${i2c_baudrate}"
 echo "  sound_enable = ${sound_enable}"
 echo "  camera_enable = ${camera_enable}"
 echo "  camera_disable_led = ${camera_disable_led}"
@@ -1495,6 +1497,20 @@ if [ "${i2c_enable}" = "1" ]; then
     if [ "$(grep -c "^dtparam=i2c_arm=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
         sed -i "s/^\(dtparam=i2c_arm=.*\)/#\1/" /rootfs/boot/config.txt
         echo "dtparam=i2c_arm=on" >> /rootfs/boot/config.txt
+    fi
+    echo "i2c-dev" >> /rootfs/etc/modules
+    if [ -n "${i2c_baudrate}" ]; then
+        if grep -q "i2c_baudrate=" /rootfs/boot/config.txt; then
+            sed -i "s/\(.*i2c_baudrate=.*\)/#\1/" /rootfs/boot/config.txt
+        fi
+        if grep -q "i2c_arm_baudrate=" /rootfs/boot/config.txt; then
+            sed -i "s/\(.*i2c_arm_baudrate=.*\)/#\1/" /rootfs/boot/config.txt
+        fi
+        sed -i "s/^#\(dtparam=i2c_arm_baudrate=${i2c_baudrate}\)/\1/" /rootfs/boot/config.txt
+        if [ "$(grep -c "^dtparam=i2c_arm_baudrate=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
+            sed -i "s/^\(dtparam=i2c_arm_baudrate=.*\)/#\1/" /rootfs/boot/config.txt
+            echo "dtparam=i2c_arm_baudrate=${i2c_baudrate}" >> /rootfs/boot/config.txt
+        fi
     fi
 fi
 
