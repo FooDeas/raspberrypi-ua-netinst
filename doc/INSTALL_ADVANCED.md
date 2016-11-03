@@ -1,7 +1,7 @@
 # Advanced installation
 Less important information are listed here. They are structured just as the main readme.
 
-## Installing
+## Writing the installer to the SD card
 
 ### Alternative method for Mac
 Prebuilt image is bzip2 compressed and contains the same files as the `.zip`.
