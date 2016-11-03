@@ -35,6 +35,7 @@ locales=
 system_default_locale=
 disable_predictable_nin=1
 ifname=eth0
+wlan_country=
 wlan_ssid=
 wlan_psk=
 ip_addr=dhcp
@@ -97,6 +98,10 @@ sanitize_inputfile()
         inputfile=${1}
         # convert line endings to unix
         dos2unix "${inputfile}"
+        # add line feed at the end
+        if [ -n "$(tail -c1 ${inputfile})" ]; then
+            echo >> ${inputfile}
+        fi
     fi
 }
 
@@ -397,6 +402,9 @@ if echo "${ifname}" | grep -q "wlan"; then
             echo "    psk=\"${wlan_psk}\""
             echo "}"
         } > ${wlan_configfile}
+    fi
+    if [ -n "${wlan_country}" ] && if ! grep -q "country=" ${wlan_configfile}; then
+        echo "country=${wlan_country}" >> ${wlan_configfile}
     fi
 fi
 
@@ -794,6 +802,7 @@ echo "  timezone = ${timezone}"
 echo "  keyboard_layout = ${keyboard_layout}"
 echo "  locales = ${locales}"
 echo "  system_default_locale = ${system_default_locale}"
+echo "  wlan_country = ${wlan_country}"
 echo "  cmdline = ${cmdline}"
 echo "  drivers_to_load = ${drivers_to_load}"
 echo "  usbroot = ${usbroot}"
@@ -1549,6 +1558,12 @@ if [ -n "${gpu_mem}" ]; then
         sed -i "s/^\(gpu_mem=.*\)/#\1/" /rootfs/boot/config.txt
         echo "gpu_mem=${gpu_mem}" >> /rootfs/boot/config.txt
     fi
+fi
+
+# set wlan country code
+if [ -n "${wlan_country}" ] && if ! grep -q "country=" /rootfs/etc/wpa_supplicant/wpa_supplicant.conf; then
+    sanitize_inputfile /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
+    echo "country=${wlan_country}" >> /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
 fi
 
 # iterate through all the file lists and call the install_files method for them

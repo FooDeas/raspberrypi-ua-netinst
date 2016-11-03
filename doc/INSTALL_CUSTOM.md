@@ -57,10 +57,11 @@
 
 ## Network
 | Parameter | Default | Options | Description |
-|----------------|---------|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
+|------------------|-----------|----------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `hostname` | `pi` |  |  |
 | `domainname` |  |  |  |
-| `ifname` | `eth0` |  | Change to 'wlan0' to use onboard WiFi. Use the 'wlan_*' options below or provide a 'wpa_supplicant.conf' with WiFi login data in the directory `/config`. |
+| `ifname` | `eth0` |  | Change to 'wlan0' to use onboard WiFi. Use the 'wlan_*' options below or provide a 'wpa_supplicant.conf' with WiFi login data in the directory `config`. |
+| `wlan_country` |  | [ref: doc/wlan_country.txt](/doc/wlan_country.txt) | Sets the country code for the WiFi interface. |
 | `wlan_ssid` |  |  | Sets SSID for WiFi authentication if no 'wpa_supplicant.conf' is provided. |
 | `wlan_psk` |  |  | Sets PSK for Wifi authentication if no 'wpa_supplicant.conf' is provided. |
 | `ip_addr` | `dhcp` |  |  |
