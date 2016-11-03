@@ -10,7 +10,7 @@
 - [Advanced](#advanced)
 
 ## Package
-| Parameter         | Default | Options                   | Description                                                                                          |
+| Parameter | Default | Options | Description |
 |-------------------|---------|---------------------------|------------------------------------------------------------------------------------------------------|
 | `preset` | `server` | `base`/  `minimal`/  `server` | The current packages that are installed by default are listed below. |
 | `packages` |  |  | Install this additional packages (comma separated and quoted). (e.g. "pi-bluetooth,cifs-utils,curl") |
@@ -26,8 +26,8 @@
 | `server` | _\<minimal\>,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,less,man-db,logrotate,bash-completion,console-setup,apt-utils,libraspberrypi-bin,raspi-copies-and-fills_ |
 
 ## Device / peripheral
-| Parameter          | Default | Options | Description                                                                                                                                                                                                                                      |
-|--------------------|---------|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Parameter | Default | Options | Description |
+|----------------------|---------|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `gpu_mem` |  |  | Specifies the amount of RAM in MB that should be reserved for the GPU. To allow the VideoCore GPU kernel driver to be loaded correctly, you should use at least "32". If not defined, the bootloader sets it to 64MB. The minimum value is "16". |
 | `spi_enable` | `0` | `0`/`1` | Set to "1" to enable the SPI interface. |
 | `i2c_enable` | `0` | `0`/`1` | Set to "1" to enable the I²C (I2C) interface. |
@@ -36,14 +36,14 @@
 | `camera_disable_led` | `0` | `0`/`1` | Disables the camera led. The option `camera_enable=1` has to be set to take effect. |
 
 ## Root
-| Parameter       | Default | Options | Description                                                                                          |
+| Parameter | Default | Options | Description |
 |-----------------|---------|---------|------------------------------------------------------------------------------------------------------|
 | `rootpw` | raspbian |  | Sets password for root. To disable root, also set root_ssh_pubkey empty. |
 | `root_ssh_pubkey` |  |  | Sets public SSH key for root login. The public SSH key must be on a single line, enclosed in quotes. |
 | `root_ssh_allow` | `1` | `0`/`1` | Set to 0 to disable ssh password login for root. |
 
 ## User
-| Parameter       | Default | Options | Description                                                                                                                                                          |
+| Parameter | Default | Options | Description |
 |-----------------|---------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `username` |  |  | Username of the user to create |
 | `userpw` |  |  | Password to use for created user |
@@ -55,7 +55,7 @@
 | `user_is_admin` |  | `0`/`1` | set to 1 to install sudo and make the user a sudo user |
 
 ## Network
-| Parameter      | Default | Options | Description                                                                                                                                               |
+| Parameter | Default | Options | Description |
 |----------------|---------|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `hostname` | `pi` |  |  |
 | `domainname` |  |  |  |
@@ -69,7 +69,7 @@
 | `ip_nameservers` |  |  |  |
 
 ## Localization
-| Parameter             | Default | Options | Description                                                                                                                                                      |
+| Parameter | Default | Options | Description |
 |-----------------------|---------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `timezone` | `Etc/UTC` | [ref: doc/timezone.txt](/doc/timezone.txt) | Set to desired timezone (e.g. Europe/Ljubljana) |
 | `keyboard_layout` | `us` | [ref: doc/keyboard_layout.txt](/doc/keyboard_layout.txt) | Set default keyboard layout. (e.g. "de") |
@@ -77,7 +77,7 @@
 | `system_default_locale` |  | [ref: doc/locales.txt](/doc/locales.txt) | Set default system locale (using the LANG environment variable). UTF-8 is chosen preferentially if no encoding is specified. (e.g. "nl_NL" or "sl_SI.UTF-8") |
 
 ## Partitioning / Filesystem
-| Parameter         | Default | Options               | Description                                                                                                                                                                                                                                     |
+| Parameter | Default | Options | Description |
 |-------------------|---------|-----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `usbroot` |  |  | Set to 1 to install to first USB disk. |
 | `rootfstype` | f2fs | `ext4`/  `f2fs`/  `btrfs` | Sets the file system of the root partition. |

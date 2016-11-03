@@ -187,8 +187,8 @@ function create_cpio {
         version_info="unknown"
     fi
 
-    sed -i "s/__VERSION__/${version_info}/" rootfs/etc/init.d/rcS
-    sed -i "s/__DATE__/$(date)/" rootfs/etc/init.d/rcS
+    sed -i "s/__VERSION__/${version_info}/" rootfs/opt/raspberrypi-ua-netinst/install.sh
+    sed -i "s/__DATE__/$(date)/" rootfs/opt/raspberrypi-ua-netinst/install.sh
 
 
     # btrfs-tools components
@@ -601,7 +601,11 @@ function create_cpio {
     mkdir -p rootfs/usr/bin
     cp tmp/usr/bin/xxd rootfs/usr/bin/
 
-    INITRAMFS="../installer.cpio.gz"
+    # install additional resources
+    mkdir -p rootfs/opt/raspberrypi-ua-netinst/res
+    cp -r res/initramfs/* rootfs/opt/raspberrypi-ua-netinst/res/
+
+    INITRAMFS="../raspberrypi-ua-netinst.cpio.gz"
     (cd rootfs && find . | cpio -H newc -ov | gzip --best > $INITRAMFS)
 
     rm -rf rootfs
@@ -634,11 +638,12 @@ if [ ! -f bootfs/config.txt ] ; then
 fi
 
 create_cpio
-cp installer.cpio.gz bootfs/
+mkdir -p bootfs/raspberrypi-ua-netinst
+cp raspberrypi-ua-netinst.cpio.gz bootfs/raspberrypi-ua-netinst/
 
 {
     echo "[all]"
-    echo "initramfs installer.cpio.gz"
+    echo "initramfs raspberrypi-ua-netinst/raspberrypi-ua-netinst.cpio.gz"
     echo "[pi3]"
     echo "enable_uart=1"
     echo ""
@@ -649,23 +654,17 @@ cp installer.cpio.gz bootfs/
 
 # clean up
 rm -rf tmp
-rm -f installer.cpio.gz
+rm -f raspberrypi-ua-netinst.cpio.gz
 
 echo "dwc_otg.lpm_enable=0 consoleblank=0 console=serial0,115200 console=tty1 elevator=deadline rootwait" > bootfs/cmdline.txt
 
-if [ -f installer-config.txt ]; then
-    cp installer-config.txt bootfs/
-fi
-
-if [ -f post-install.txt ]; then
-    cp post-install.txt bootfs/
-fi
-
+mkdir -p bootfs/raspberrypi-ua-netinst/config
+mkdir -p bootfs/raspberrypi-ua-netinst/config/apt
+mkdir -p bootfs/raspberrypi-ua-netinst/config/boot
+mkdir -p bootfs/raspberrypi-ua-netinst/config/files
+mkdir -p bootfs/raspberrypi-ua-netinst/config/files/root
 if [ -d config ] ; then
-    mkdir bootfs/config
-    cp -r config/* bootfs/config
-    mkdir bootfs/config/boot
-    cp files/config.txt bootfs/config/boot
+    cp -r config/* bootfs/raspberrypi-ua-netinst/config/
 fi
 
 version_tag="$(git describe --exact-match --tags HEAD 2> /dev/null || true)"

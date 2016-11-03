@@ -351,13 +351,14 @@ download_remote_file() {
     download_packages
 ) || exit $?
 
-# Download additional files
+# Download additional resources
 (
-    rm -rf files/
-    mkdir files
-    cd files || exit 1
+    cd res || exit 1
 
-    ## Download default config.txt and do default changes
+    ## Download default /boot/config.txt and do default changes
+    cd initramfs || exit 1
+    mkdir -p boot
+    cd boot || exit 1
     download_remote_file https://downloads.raspberrypi.org/raspbian/ "boot.tar.xz" xzcat ./config.txt
     sed -i "s/^\(dtparam=audio=on\)/#\1/" config.txt # disable audio
     {
@@ -367,4 +368,7 @@ download_remote_file() {
         echo -e "# Add other config parameters below this line."
     } >> config.txt
     chmod 644 config.txt
+    cd .. || exit 1
+
+    cd .. || exit 1
 ) || exit $?
