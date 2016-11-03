@@ -1184,6 +1184,7 @@ fi
 if echo "${ifname}" | grep -q "wlan"; then
     if [ -e "${wlan_configfile}" ]; then
         # copy the installer version of `wpa_supplicant.conf`
+        mkdir -p /rootfs/etc/wpa_supplicant
         cp "${wlan_configfile}" /rootfs/etc/wpa_supplicant/
         chmod 600 /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
         echo "    wpa-conf /etc/wpa_supplicant/wpa_supplicant.conf" >> /rootfs/etc/network/interfaces
@@ -1585,15 +1586,6 @@ if [ -e "/bootfs/raspberrypi-ua-netinst/config/post-install.txt" ]; then
     source /bootfs/raspberrypi-ua-netinst/config/post-install.txt
     echo "=== Finished executing post-install.txt. ==="
     echo "================================================="
-fi
-
-# modify installed network settings
-if [ -f /rootfs/etc/wpa_supplicant.conf ]; then
-    if [ "$(grep -c "iface" /rootfs/etc/network/interfaces | grep -v "lo\|eth0")" -ne 0 ]; then
-        if [ "$(grep -c "wpa[-_]" /rootfs/etc/network/interfaces)" -eq 0 ]; then
-            echo "wpa-conf /etc/wpa_supplicant.conf" >> /rootfs/etc/network/interfaces
-        fi
-    fi
 fi
 
 # remove cdebootstrap-helper-rc.d which prevents rc.d scripts from running
