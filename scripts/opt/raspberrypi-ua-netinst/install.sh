@@ -99,8 +99,8 @@ sanitize_inputfile()
         # convert line endings to unix
         dos2unix "${inputfile}"
         # add line feed at the end
-        if [ -n "$(tail -c1 ${inputfile})" ]; then
-            echo >> ${inputfile}
+        if [ -n "$(tail -c1 "${inputfile}")" ]; then
+            echo >> "${inputfile}"
         fi
     fi
 }
@@ -403,7 +403,7 @@ if echo "${ifname}" | grep -q "wlan"; then
             echo "}"
         } > ${wlan_configfile}
     fi
-    if [ -n "${wlan_country}" ] && if ! grep -q "country=" ${wlan_configfile}; then
+    if [ -n "${wlan_country}" ] && ! grep -q "country=" ${wlan_configfile}; then
         echo "country=${wlan_country}" >> ${wlan_configfile}
     fi
 fi
@@ -1561,7 +1561,7 @@ if [ -n "${gpu_mem}" ]; then
 fi
 
 # set wlan country code
-if [ -n "${wlan_country}" ] && if ! grep -q "country=" /rootfs/etc/wpa_supplicant/wpa_supplicant.conf; then
+if [ -n "${wlan_country}" ] && ! grep -q "country=" /rootfs/etc/wpa_supplicant/wpa_supplicant.conf; then
     sanitize_inputfile /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
     echo "country=${wlan_country}" >> /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
 fi
