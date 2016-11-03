@@ -587,12 +587,12 @@ case "${rootfstype}" in
     ;;
 esac
 
-# check if we need to install wpasupplicant package
+# check if we need to install wpasupplicant and crda package
 if [ "${ifname}" != "eth0" ]; then
     if [ -z "${syspackages}" ]; then
-        syspackages="wpasupplicant"
+        syspackages="wpasupplicant,crda"
     else
-        syspackages="${syspackages},wpasupplicant"
+        syspackages="${syspackages},wpasupplicant,crda"
     fi
 fi
 
