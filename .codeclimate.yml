@@ -1,0 +1,12 @@
+engines:
+  shellcheck:
+    enabled: true
+    checks:
+      SC1091:
+        enabled: false
+  markdownlint:
+    enabled: false
+ratings:
+   paths:
+   - "**.sh"
+   - "**.md"

@@ -1,4 +1,4 @@
-# raspberrypi-ua-netinst
+# raspberrypi-ua-netinst [![Issue Count](https://codeclimate.com/github/FooDeas/raspberrypi-ua-netinst/badges/issue_count.svg)](https://codeclimate.com/github/FooDeas/raspberrypi-ua-netinst) [![Code Climate](https://codeclimate.com/github/FooDeas/raspberrypi-ua-netinst/badges/gpa.svg)](https://codeclimate.com/github/FooDeas/raspberrypi-ua-netinst)
 
 - [Intro](#intro)
 - [Requirements](#requirements)
