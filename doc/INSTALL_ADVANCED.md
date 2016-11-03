@@ -30,9 +30,23 @@ Replace _/dev/sdX_ with the real path to your SD card.
 
 ## Installer customization
 
+### Configuration file locations
+Configuration files have to be placed as follows:
+
+| File(s) | Description |
+|-----------------------------------------------------------------|---------------------------------|
+| `/raspberrypi-ua-netinst/config/installer-config.txt` | General installer configuration |
+| `/raspberrypi-ua-netinst/config/post-install.txt` | Post installation script |
+| `/raspberrypi-ua-netinst/config/wpa_supplicant.conf` | WiFi configuration file |
+| `/raspberrypi-ua-netinst/config/files/<listname>.list` | List(s) of additional files |
+| `/raspberrypi-ua-netinst/config/files/root/[folder/][filename]` | Listed additional files |
+| `/raspberrypi-ua-netinst/rcS` | Custom installer script |
+
 ### Bring your own files
-If you want to provide files to the installed system during the installation, place them in the `files/root` directory. The folder `root` is the root-point. It must have the same structure as inside the installed system. So, a file that you place on the SD card in `root/etc/wpa_supplicant/wpa_supplicant.conf` will end up on the installed system as `/etc/wpa_supplicant/wpa_supplicant.conf`.
-Each file or directory that you wish to place on the target system must also be listed in a configuration file in the directory `files`. This allows you to specify the owner (and group) and the permissions of the file. An example file is provided with the installer (see `raspberrypi-ua-netinst/config/files/custom_files.txt` for more information). ONLY files listed there are copied over to the installed system.  
+If you want to provide files to the installed system during the installation, place them in the `files/root` directory. The folder `root` is the root-point. It must have the same structure as inside the installed system.  
+So, a file that you place on the SD card in `root/etc/my_folder/my_file.conf` will end up on the installed system as `/etc/my_folder/my_file.conf`.
+Each file or directory that you wish to place on the target system must also be listed in a configuration file in the directory `files`. This allows you to specify the owner (and group) and the permissions of the file. An example file is provided with the installer (see [ref: ../config/files/custom_files.txt](../config/files/custom_files.txt) for more information). ONLY files listed there are copied over to the installed system.
+
 Please be aware that some restrictions may apply to the sum of the file sizes. If you wish to supply large files in this manner you may need to adjust the value of the `bootsize` parameter.
 
 ### Post installer script
