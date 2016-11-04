@@ -10,6 +10,7 @@
 - [Advanced](#advanced)
 
 ## Package
+
 | Parameter | Default | Options | Description |
 |-------------------|---------|---------------------------|------------------------------------------------------------------------------------------------------|
 | `preset` | `server` | `base`/  `minimal`/  `server` | The current packages that are installed by default are listed below. |
@@ -19,6 +20,7 @@
 | `release` | `jessie` |  |  |
 
 ### Description: Presets
+
 | Preset | Packages |
 |---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `base` | _\<essential\>,apt,cpufrequtils,kmod,raspbian-archive-keyring_ |
@@ -26,6 +28,7 @@
 | `server` | _\<minimal\>,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,less,man-db,logrotate,bash-completion,console-setup,apt-utils,libraspberrypi-bin,raspi-copies-and-fills_ |
 
 ## Device / peripheral
+
 | Parameter | Default | Options | Description |
 |----------------------|---------|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `gpu_mem` |  |  | Specifies the amount of RAM in MB that should be reserved for the GPU. To allow the VideoCore GPU kernel driver to be loaded correctly, you should use at least "32". If not defined, the bootloader sets it to 64MB. The minimum value is "16". |
@@ -37,6 +40,7 @@
 | `camera_disable_led` | `0` | `0`/`1` | Disables the camera led. The option `camera_enable=1` has to be set to take effect. |
 
 ## Root
+
 | Parameter | Default | Options | Description |
 |-----------------|---------|---------|------------------------------------------------------------------------------------------------------|
 | `rootpw` | raspbian |  | Sets password for root. To disable root, also set root_ssh_pubkey empty. |
@@ -44,6 +48,7 @@
 | `root_ssh_allow` | `1` | `0`/`1` | Set to 0 to disable ssh password login for root. |
 
 ## User
+
 | Parameter | Default | Options | Description |
 |-----------------|---------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `username` |  |  | Username of the user to create |
@@ -56,6 +61,7 @@
 | `user_is_admin` |  | `0`/`1` | set to 1 to install sudo and make the user a sudo user |
 
 ## Network
+
 | Parameter | Default | Options | Description |
 |------------------|-----------|----------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `hostname` | `pi` |  |  |
@@ -71,6 +77,7 @@
 | `ip_nameservers` |  |  |  |
 
 ## Localization
+
 | Parameter | Default | Options | Description |
 |-----------------------|---------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `timezone` | `Etc/UTC` | [ref: doc/timezone.txt](/doc/timezone.txt) | Set to desired timezone (e.g. Europe/Ljubljana) |
@@ -79,15 +86,17 @@
 | `system_default_locale` |  | [ref: doc/locales.txt](/doc/locales.txt) | Set default system locale (using the LANG environment variable). UTF-8 is chosen preferentially if no encoding is specified. (e.g. "nl_NL" or "sl_SI.UTF-8") |
 
 ## Partitioning / Filesystem
+
 | Parameter | Default | Options | Description |
 |-------------------|---------|-----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `usbroot` |  |  | Set to 1 to install to first USB disk. |
 | `rootfstype` | f2fs | `ext4`/  `f2fs`/  `btrfs` | Sets the file system of the root partition. |
 | `boot_volume_label` |  |  | Sets the volume name of the boot partition. The volume name can be up to 11 characters long. The label is used by most OSes (Windows, Mac OSX and Linux) to identify the SD-card on the desktop and can be useful when using multiple SD-cards. |
-| `bootsize` | `+128M` |  | /boot partition size in megabytes, provide it in the form '+<number>M' (without quotes) |
+| `bootsize` | `+128M` |  | /boot partition size in megabytes, provide it in the form '+\<number\>M' (without quotes) |
 | `bootoffset` | `8192` |  | position in sectors where the boot partition should start. Valid values are > 2048. a bootoffset of 8192 is equal to 4MB and that should make for proper alignment |
 
 ## Advanced
+
 | Parameter | Default | Options | Description |
 |------------------------------|---------|----------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `quiet_boot` | `0` | `0`/`1` | Disables most log messages on boot. |
@@ -99,7 +108,7 @@
 | `enable_watchdog` | `0` | `0`/`1` | loads up the hardware watchdog module and configures systemd to use it. Set to "1" to enable this functionality. |
 | `cdebootstrap_cmdline` |  |  |  |
 | `rootfs_mkfs_options` |  |  |  |
-| `rootsize` |  |  | / partition size in megabytes, provide it in the form '+<number>M' (without quotes), leave empty to use all free space |
+| `rootsize` |  |  | / partition size in megabytes, provide it in the form '+\<number\>M' (without quotes), leave empty to use all free space |
 | `timeserver` | `time.nist.gov` |  |  |
 | `timeserver_http` |  |  | URL that returns the time in the format: YYYY-MM-DD HH:MM:SS. |
 | `disable_predictable_nin` | `1` | `0`/`1` | Disable Predictable Network Interface Names. Set to 0 if you want to use predictable network interface names, which means if you use the same SD card on a different RPi board, your network device might be named differently. This will result in the board having no network connectivity. |

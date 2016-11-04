@@ -5,7 +5,14 @@ engines:
       SC1091:
         enabled: false
   markdownlint:
-    enabled: false
+    enabled: true
+    checks:
+      MD009:
+        enabled: false
+      MD013:
+        enabled: false
+      MD036:
+        enabled: false
 ratings:
    paths:
    - "**.sh"
