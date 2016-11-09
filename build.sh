@@ -652,12 +652,13 @@ cp raspberrypi-ua-netinst.cpio.gz bootfs/raspberrypi-ua-netinst/
     echo "#program_usb_boot_mode=1"
 } >> bootfs/config.txt
 
+echo "dwc_otg.lpm_enable=0 consoleblank=0 console=serial0,115200 console=tty1 elevator=deadline rootwait" > bootfs/cmdline.txt
+
 # clean up
 rm -rf tmp
 rm -f raspberrypi-ua-netinst.cpio.gz
 
-echo "dwc_otg.lpm_enable=0 consoleblank=0 console=serial0,115200 console=tty1 elevator=deadline rootwait" > bootfs/cmdline.txt
-
+# prepare config content
 mkdir -p bootfs/raspberrypi-ua-netinst/config
 mkdir -p bootfs/raspberrypi-ua-netinst/config/apt
 mkdir -p bootfs/raspberrypi-ua-netinst/config/boot
@@ -667,6 +668,7 @@ if [ -d config ] ; then
     cp -r config/* bootfs/raspberrypi-ua-netinst/config/
 fi
 
+# create zip file
 version_tag="$(git describe --exact-match --tags HEAD 2> /dev/null || true)"
 version_commit="$(git rev-parse --short "@{0}" 2> /dev/null || true)"
 if [ -n "${version_tag}" ]; then
@@ -677,5 +679,4 @@ else
     ZIPFILE="raspberrypi-ua-netinst-$(date +%Y%m%d).zip"
 fi
 rm -f "${ZIPFILE}"
-
 cd bootfs && zip -r -9 "../${ZIPFILE}" ./*; cd ..
