@@ -24,9 +24,9 @@ Some of the main differences are:
 - ability to install via onboard wireless lan
 - better compatibility with accessory
 
-This project provides [Raspbian][1] power users the possibility to install a minimal base system unattended using latest Raspbian packages regardless when the installer was built.
+This project gives [Raspbian][1] power users the ability to install a minimal base system unattended using the latest Raspbian packages, regardless when the installer was built.
 
-The installer with default settings configures eth0 with DHCP to get internet connectivity and completely wipes the SD card from any previous installation.
+The installer with the default settings configures eth0 with DHCP to get internet connectivity and completely wipes the SD card from any previous installation.
 
 ### Features
 
@@ -37,23 +37,23 @@ The installer with default settings configures eth0 with DHCP to get internet co
 - extra configuration over HTTP possible - gives unlimited flexibility
 - installation takes about **20 minutes** with fast internet from power on to sshd running
 - can fit on a 512MB SD card, but 1GB is more reasonable
-- default install includes `fake-hwclock` to save time on shutdown
-- default install includes NTP to keep time
+- default installation includes `fake-hwclock` to save time on shutdown
+- default installation includes NTP to keep time
 - `/tmp` is mounted as tmpfs to improve speed
 - no clutter included, you only get the bare essential packages
-- option to install root to USB drive
+- option to install root to a USB drive
 
 ## Requirements
 
-- a Raspberry Pi from model 1B up to 3B or Zero
-- SD card of at least 1GB or at least 128MB for USB root install (without customization)
-- working ethernet or wireless LAN with internet connectivity
+- a Raspberry Pi (from model 1B up to 3B or Zero)
+- SD card with at least 1GB, or at least 128MB for USB root install (without customization)
+- ethernet or wireless LAN with a working internet connection
 
 ## Install instructions
 
-1. write the installer to SD card
-1. provide unattended install settings (optional) or follow the first boot steps later
-1. power on the Raspberry Pi and wait until installation is done
+1. Write the installer to the SD card
+1. Provide unattended installation settings (optional) or follow the first boot steps later
+1. Power on the Raspberry Pi and wait until the installation is done
 
 ## Writing the installer to the SD card
 
@@ -68,9 +68,9 @@ Further methods are described in [doc/INSTALL_ADVANCED.md](/doc/INSTALL_ADVANCED
 
 ## Installing
 
-In normal circumstances, you can just power on your Pi and cross your fingers.
+Under normal circumstances, you can just power on your Pi and cross your fingers.
 
-If you don't have a display attached you can monitor the ethernet card LEDs to guess the activity status. When it finally reboots after installing everything you will see them illuminate on and off a few times when Raspbian configures on boot.
+If you don't have a display attached, you can monitor the ethernet card LEDs to guess the activity status. When it finally reboots after installing everything you will see them illuminate on and off a few times when Raspbian configures on boot.
 
 If you do have a display, you can follow the progress and catch any possible errors in the default configuration or your own modifications.  
 If you have a serial cable connected, installer output can be followed there, too. If 'console=tty1' at then end of the `cmdline.txt` file is removed, you have access to the console in case of problems.
@@ -84,7 +84,7 @@ This is the configuration directory of the installer.
 
 ### Unattended install settings
 
-The primary way to customize the installation process is done through a file named _installer-config.txt_. Create this file in the config folder on the SD card.
+The primary way to customize the installation process is done through a file named _installer-config.txt_. Create this file in the _config_ folder on the SD card.
 
 If you want settings changed for your installation, you should **only** place that changed setting in the _installer-config.txt_ file. So if you want to have vim and aptitude installed by default, create a _installer-config.txt_ file with the following contents:
 
