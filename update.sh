@@ -327,23 +327,21 @@ download_remote_file() {
 # Download packages
 (
 	rm -rf packages/
-	mkdir packages
-	cd packages || exit 1
+	mkdir packages && cd packages
 
 	## Download package list
-	download_package_lists raspberry $mirror_raspberrypi
-	download_package_lists raspbian $mirror_raspbian
+	download_package_lists raspberry ${mirror_raspberrypi}
+	download_package_lists raspbian ${mirror_raspbian}
 
 	## Select packages for download
 	packages_debs=()
 	packages_sha256=()
 
-	add_packages raspberry $mirror_raspberrypi
-	add_packages raspbian $mirror_raspbian
+	add_packages raspberry ${mirror_raspberrypi}
+	add_packages raspbian ${mirror_raspbian}
 	if ! allfound; then
 		echo "ERROR: Unable to find all required packages in package list!"
 		echo "Missing packages: ${packages[*]}"
-		cd ..
 		exit 1
 	fi
 
@@ -353,12 +351,11 @@ download_remote_file() {
 
 # Download additional resources
 (
-	cd res || exit 1
+	mkdir -p res && cd res
 
 	## Download default /boot/config.txt and do default changes
-	cd initramfs || exit 1
-	mkdir -p boot
-	cd boot || exit 1
+	mkdir -p initramfs/boot
+	cd initramfs/boot || exit 1
 	download_remote_file https://downloads.raspberrypi.org/raspbian/ "boot.tar.xz" xzcat ./config.txt
 	sed -i "s/^\(dtparam=audio=on\)/#\1/" config.txt # disable audio
 	{
@@ -368,7 +365,5 @@ download_remote_file() {
 		echo -e "# Add other config parameters below this line."
 	} >> config.txt
 	chmod 644 config.txt
-	cd .. || exit 1
-
-	cd .. || exit 1
+	cd ../.. || exit 1
 ) || exit $?

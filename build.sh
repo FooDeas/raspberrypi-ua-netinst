@@ -1,7 +1,25 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC1091
 
-set -e
+set -e # exit if any command fails
+
+build_dir=build_dir
+packages_dir=../packages
+resources_dir=../res
+
+# update version and date
+version_tag="$(git describe --exact-match --tags HEAD 2> /dev/null || true)"
+version_commit="$(git rev-parse --short "@{0}" 2> /dev/null || true)"
+if [ -n "${version_tag}" ]; then
+	version_info="${version_tag} (${version_commit})"
+	zipfile="raspberrypi-ua-netinst-${version_tag}.zip"
+elif [ -n "${version_commit}" ]; then
+	version_info="${version_commit}"
+	zipfile="raspberrypi-ua-netinst-git-${version_commit}.zip"
+else
+	version_info="unknown"
+	zipfile="raspberrypi-ua-netinst-$(date +%Y%m%d).zip"
+fi
 
 INSTALL_MODULES="kernel/fs/btrfs/btrfs.ko"
 INSTALL_MODULES="$INSTALL_MODULES kernel/drivers/scsi/sg.ko"
@@ -174,22 +192,9 @@ function create_cpio {
 	done
 
 	# install scripts
-	cp -r scripts/* rootfs/
-
-	# update version and date
-	version_tag="$(git describe --exact-match --tags HEAD 2> /dev/null || true)"
-	version_commit="$(git rev-parse --short "@{0}" 2> /dev/null || true)"
-	if [ -n "${version_tag}" ]; then
-		version_info="${version_tag} (${version_commit})"
-	elif [ -n "${version_commit}" ]; then
-		version_info="${version_commit}"
-	else
-		version_info="unknown"
-	fi
-
+	cp -r ../scripts/* rootfs/
 	sed -i "s/__VERSION__/${version_info}/" rootfs/opt/raspberrypi-ua-netinst/install.sh
 	sed -i "s/__DATE__/$(date)/" rootfs/opt/raspberrypi-ua-netinst/install.sh
-
 
 	# btrfs-tools components
 	cp tmp/sbin/mkfs.btrfs rootfs/sbin/
@@ -392,7 +397,7 @@ function create_cpio {
 	cp tmp/usr/sbin/ntpdate-debian rootfs/usr/sbin/
 
 	# raspberrypi.org GPG key
-	cp packages/raspberrypi.gpg.key rootfs/usr/share/keyrings/
+	cp ${packages_dir}/raspberrypi.gpg.key rootfs/usr/share/keyrings/
 
 	# raspbian-archive-keyring components
 	cp tmp/usr/share/keyrings/raspbian-archive-keyring.gpg rootfs/usr/share/keyrings/
@@ -603,7 +608,7 @@ function create_cpio {
 
 	# install additional resources
 	mkdir -p rootfs/opt/raspberrypi-ua-netinst/res
-	cp -r res/initramfs/* rootfs/opt/raspberrypi-ua-netinst/res/
+	cp -r ${resources_dir}/initramfs/* rootfs/opt/raspberrypi-ua-netinst/res/
 
 	INITRAMFS="../raspberrypi-ua-netinst.cpio.gz"
 	(cd rootfs && find . | cpio -H newc -ov | gzip --best > $INITRAMFS)
@@ -611,15 +616,18 @@ function create_cpio {
 	rm -rf rootfs
 }
 
+# Run update if never run
 if [ ! -d packages ]; then
 	. ./update.sh
 fi
 
-rm -rf tmp
-mkdir tmp
+# Prepare
+
+rm -rf tmp && mkdir -p ${build_dir} && cd ${build_dir}
+rm -rf tmp && mkdir tmp
 
 # extract debs
-for i in packages/*.deb; do
+for i in ../packages/*.deb; do
 	cd tmp && ar x "../${i}" && tar -xf data.tar.*; rm data.tar.*; cd ..
 done
 
@@ -639,7 +647,7 @@ fi
 
 create_cpio
 mkdir -p bootfs/raspberrypi-ua-netinst
-cp raspberrypi-ua-netinst.cpio.gz bootfs/raspberrypi-ua-netinst/
+mv raspberrypi-ua-netinst.cpio.gz bootfs/raspberrypi-ua-netinst/
 
 {
 	echo "[all]"
@@ -654,10 +662,6 @@ cp raspberrypi-ua-netinst.cpio.gz bootfs/raspberrypi-ua-netinst/
 
 echo "dwc_otg.lpm_enable=0 consoleblank=0 console=serial0,115200 console=tty1 elevator=deadline rootwait" > bootfs/cmdline.txt
 
-# clean up
-rm -rf tmp
-rm -f raspberrypi-ua-netinst.cpio.gz
-
 # prepare config content
 mkdir -p bootfs/raspberrypi-ua-netinst/config
 mkdir -p bootfs/raspberrypi-ua-netinst/config/apt
@@ -669,14 +673,9 @@ if [ -d config ] ; then
 fi
 
 # create zip file
-version_tag="$(git describe --exact-match --tags HEAD 2> /dev/null || true)"
-version_commit="$(git rev-parse --short "@{0}" 2> /dev/null || true)"
-if [ -n "${version_tag}" ]; then
-	ZIPFILE="raspberrypi-ua-netinst-${version_tag}.zip"
-elif [ -n "${version_commit}" ]; then
-	ZIPFILE="raspberrypi-ua-netinst-git-${version_commit}.zip"
-else
-	ZIPFILE="raspberrypi-ua-netinst-$(date +%Y%m%d).zip"
-fi
-rm -f "${ZIPFILE}"
-cd bootfs && zip -r -9 "../${ZIPFILE}" ./*; cd ..
+rm -f "${zipfile}"
+cd bootfs && zip -r -9 "../${zipfile}" ./*; cd ..
+mv "${zipfile}" ../
+
+# clean up
+rm -rf tmp
