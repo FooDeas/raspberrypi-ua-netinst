@@ -14,9 +14,11 @@ Find the _/dev/diskX_ device you want to write to using `diskutil list`. It will
 
 To flash your SD card on Mac:
 
-    diskutil unmountDisk /dev/diskX
-    sudo dd bs=1m if=/path/to/raspberrypi-ua-netinst-<latest-version-number>.img of=/dev/rdiskX
-    diskutil eject /dev/diskX
+```
+diskutil unmountDisk /dev/diskX
+sudo dd bs=1m if=/path/to/raspberrypi-ua-netinst-<latest-version-number>.img of=/dev/rdiskX
+diskutil eject /dev/diskX
+```
 
 _Note the **r** in the of=/dev/rdiskX part on the dd line which should speed up writing the image considerably._
 
@@ -27,7 +29,9 @@ Prebuilt image is xz compressed and contains the same files as the `.zip`.
 Go to [our latest release page](https://github.com/FooDeas/raspberrypi-ua-netinst/releases/latest) and download the `.img.xz` file.  
 To flash your SD card on Linux:
 
-    xzcat /path/to/raspberrypi-ua-netinst-<latest-version-number>.img.xz > /dev/sdX
+```
+xzcat /path/to/raspberrypi-ua-netinst-<latest-version-number>.img.xz > /dev/sdX
+```
 
 Replace _/dev/sdX_ with the real path to your SD card.
 

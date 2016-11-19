@@ -146,8 +146,10 @@ When an error occurs during install, the logfile is placed in the `raspberrypi-u
 
 If you want to reinstall with the same settings you did your first install you can just move the original _config.txt_ back and reboot.
 
-    mv /boot/raspberrypi-ua-netinst/reinstall/config.txt /boot/config.txt
-    reboot
+```
+mv /boot/raspberrypi-ua-netinst/reinstall/config.txt /boot/config.txt
+reboot
+```
 
 **Remember to backup all your data and original `config.txt` before doing this!**
 
@@ -157,4 +159,4 @@ We take no responsibility for ANY data loss. You will be reflashing your SD card
 
 See LICENSE for license information.
 
-  [1]: http://www.raspbian.org/ "Raspbian"
+[1]: http://www.raspbian.org/ "Raspbian"
