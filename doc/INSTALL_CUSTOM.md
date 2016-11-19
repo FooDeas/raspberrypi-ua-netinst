@@ -42,23 +42,24 @@
 ## Root
 
 | Parameter | Default | Options | Description |
-|-----------------|---------|---------|------------------------------------------------------------------------------------------------------|
+|--------------------|----------|---------|------------------------------------------------------------------------------------------------------|
 | `rootpw` | raspbian |  | Sets password for root. To disable root, also set root_ssh_pubkey empty. |
 | `root_ssh_pubkey` |  |  | Sets public SSH key for root login. The public SSH key must be on a single line, enclosed in quotes. |
-| `root_ssh_allow` | `1` | `0`/`1` | Set to 0 to disable ssh password login for root. |
+| `root_ssh_pwlogin` | `1` | `0`/`1` | Set to 0 to disable ssh password login for root. |
 
 ## User
 
 | Parameter | Default | Options | Description |
-|-----------------|---------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|--------------------|---------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `username` |  |  | Username of the user to create |
 | `userpw` |  |  | Password to use for created user |
 | `usergpio` |  | `0`/`1` | Set to 1 to give created user permissions to access GPIO pins. A new system group 'gpio' will be created automatically. |
 | `usergpu` |  | `0`/`1` | Set to 1 to give created user GPU access permissions (e.g. to run vcgencmd without using sudo). |
 | `usergroups` |  |  | Add created user to this additional groups (comma separated and quoted). Non-existent groups will be created. (e.g. 'usergroups=family,friends') |
 | `usersysgroups` |  |  | Add created user to this additional groups (comma separated and quoted). Non-existent groups will be created as system groups. (e.g. 'usersysgroups=video,www-data') |
-| `user_ssh_pubkey` |  |  | public SSH key for created user; the public SSH key must be on a single line, enclosed in quotes |
-| `user_is_admin` |  | `0`/`1` | set to 1 to install sudo and make the user a sudo user |
+| `user_ssh_pubkey` |  |  | Public SSH key for created user; the public SSH key must be on a single line, enclosed in quotes |
+| `user_ssh_pwlogin` |  | `0`/`1` | Set to 0 to disable ssh password login for all users. Root has a separate setting. |
+| `user_is_admin` |  | `0`/`1` | Set to 1 to install sudo and make the user a sudo user. |
 
 ## Network
 

@@ -14,7 +14,7 @@ boot_volume_label=
 domainname=
 rootpw=raspbian
 root_ssh_pubkey=
-root_ssh_allow=1
+root_ssh_pwlogin=1
 username=
 userpw=
 usergpio=
@@ -22,6 +22,7 @@ usergpu=
 usergroups=
 usersysgroups=
 user_ssh_pubkey=
+user_ssh_pwlogin=
 user_is_admin=
 cdebootstrap_cmdline=
 bootsize=+128M
@@ -782,7 +783,7 @@ echo "  hostname = ${hostname}"
 echo "  domainname = ${domainname}"
 echo "  rootpw = ${rootpw}"
 echo "  root_ssh_pubkey = ${root_ssh_pubkey}"
-echo "  root_ssh_allow = ${root_ssh_allow}"
+echo "  root_ssh_pwlogin = ${root_ssh_pwlogin}"
 echo "  username = ${username}"
 echo "  userpw = ${userpw}"
 echo "  usergpio = ${usergpio}"
@@ -790,6 +791,7 @@ echo "  usergpu = ${usergpu}"
 echo "  usergroups = ${usergroups}"
 echo "  usersysgroups = ${usersysgroups}"
 echo "  user_ssh_pubkey = ${user_ssh_pubkey}"
+echo "  user_ssh_pwlogin = ${user_ssh_pwlogin}"
 echo "  user_is_admin = ${user_is_admin}"
 echo "  cdebootstrap_cmdline = ${cdebootstrap_cmdline}"
 echo "  packages_postinstall = ${packages_postinstall}"
@@ -1036,10 +1038,18 @@ if [ -n "${root_ssh_pubkey}" ]; then
 	echo "OK"
 fi
 # openssh-server in jessie doesn't allow root to login with a password
-if [ "${root_ssh_allow}" = "1" ]; then
+if [ "${root_ssh_pwlogin}" = "1" ]; then
 	if [ "${release}" = "jessie" ] && [ -f /rootfs/etc/ssh/sshd_config ]; then
 		echo -n "  Allowing root to login with password on jessie... "
 		sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /rootfs/etc/ssh/sshd_config || fail
+		echo "OK"
+	fi
+fi
+# disable user password login if requested
+if [ "${user_ssh_pwlogin}" = "0" ]; then
+	if [ -f /rootfs/etc/ssh/sshd_config ]; then
+		echo -n "  Disabling SSH password login for users... "
+		sed -i "s/^\(#\)*\(PasswordAuthentication \)\S\+/\2no/" /rootfs/etc/ssh/sshd_config || fail
 		echo "OK"
 	fi
 fi
