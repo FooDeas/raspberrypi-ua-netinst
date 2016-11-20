@@ -765,9 +765,13 @@ sanitize_variable locales
 
 # modify variables
 # add $system_default_locale to $locales if not included
-if [ -n "${locales}" ]; then
+if [ -n "${system_default_locale}" ]; then
 	if ! echo "${locales}" | grep -q "${system_default_locale}"; then
-		locales="${system_default_locale},${locales}"
+		if [ -z "${locales}" ]; then
+			locales="${system_default_locale}"
+		else
+			locales="${system_default_locale},${locales}"
+		fi
 	fi
 fi
 
