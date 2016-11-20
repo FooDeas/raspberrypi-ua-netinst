@@ -22,7 +22,6 @@ usergpu=
 usergroups=
 usersysgroups=
 user_ssh_pubkey=
-user_ssh_pwlogin=
 user_is_admin=
 cdebootstrap_cmdline=
 bootsize=+128M
@@ -55,6 +54,7 @@ hwrng_support=1
 enable_watchdog=0
 gpu_mem=
 quiet_boot=0
+ssh_pwlogin=
 spi_enable=0
 i2c_enable=0
 i2c_baudrate=
@@ -791,7 +791,6 @@ echo "  usergpu = ${usergpu}"
 echo "  usergroups = ${usergroups}"
 echo "  usersysgroups = ${usersysgroups}"
 echo "  user_ssh_pubkey = ${user_ssh_pubkey}"
-echo "  user_ssh_pwlogin = ${user_ssh_pwlogin}"
 echo "  user_is_admin = ${user_is_admin}"
 echo "  cdebootstrap_cmdline = ${cdebootstrap_cmdline}"
 echo "  packages_postinstall = ${packages_postinstall}"
@@ -818,6 +817,7 @@ echo "  rootfs_mount_options = ${rootfs_mount_options}"
 echo "  final_action = ${final_action}"
 echo "  gpu_mem = ${gpu_mem}"
 echo "  quiet_boot = ${quiet_boot}"
+echo "  ssh_pwlogin = ${ssh_pwlogin}"
 echo "  spi_enable = ${spi_enable}"
 echo "  i2c_enable = ${i2c_enable}"
 echo "  i2c_baudrate = ${i2c_baudrate}"
@@ -1045,8 +1045,8 @@ if [ "${root_ssh_pwlogin}" = "1" ]; then
 		echo "OK"
 	fi
 fi
-# disable user password login if requested
-if [ "${user_ssh_pwlogin}" = "0" ]; then
+# disable global password login if requested
+if [ "${ssh_pwlogin}" = "0" ]; then
 	if [ -f /rootfs/etc/ssh/sshd_config ]; then
 		echo -n "  Disabling SSH password login for users... "
 		sed -i "s/^\(#\)*\(PasswordAuthentication \)\S\+/\2no/" /rootfs/etc/ssh/sshd_config || fail

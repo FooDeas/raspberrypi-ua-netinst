@@ -50,7 +50,7 @@
 ## User
 
 | Parameter | Default | Options | Description |
-|--------------------|---------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|-------------------|---------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `username` |  |  | Username of the user to create |
 | `userpw` |  |  | Password to use for created user |
 | `usergpio` |  | `0`/`1` | Set to 1 to give created user permissions to access GPIO pins. A new system group 'gpio' will be created automatically. |
@@ -58,7 +58,6 @@
 | `usergroups` |  |  | Add created user to this additional groups (comma separated and quoted). Non-existent groups will be created. (e.g. 'usergroups=family,friends') |
 | `usersysgroups` |  |  | Add created user to this additional groups (comma separated and quoted). Non-existent groups will be created as system groups. (e.g. 'usersysgroups=video,www-data') |
 | `user_ssh_pubkey` |  |  | Public SSH key for created user; the public SSH key must be on a single line, enclosed in quotes |
-| `user_ssh_pwlogin` |  | `0`/`1` | Set to 0 to disable ssh password login for all users. Root has a separate setting. |
 | `user_is_admin` |  | `0`/`1` | Set to 1 to install sudo and make the user a sudo user. |
 
 ## Network
@@ -99,8 +98,9 @@
 ## Advanced
 
 | Parameter | Default | Options | Description |
-|------------------------------|---------|----------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|--------------------------------|------------------------------------------------------------------------------------------------|--------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `quiet_boot` | `0` | `0`/`1` | Disables most log messages on boot. |
+| `ssh_pwlogin` |  | `0`/`1` | Set to 0 to disable ssh password login completely. |
 | `cmdline` | `"dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 elevator=deadline fsck.repair=yes"` |  |  |
 | `rootfs_install_mount_options` |  |  |  |
 | `rootfs_mount_options` |  |  |  |
