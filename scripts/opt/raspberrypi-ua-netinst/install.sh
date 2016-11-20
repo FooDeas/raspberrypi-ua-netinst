@@ -1063,15 +1063,14 @@ chroot /rootfs /usr/sbin/groupadd -fr gpio || fail
 
 # add user to system
 if [ -n "${username}" ]; then
-	echo "  Creating user ${username}... "
+	echo "  Configuring user '${username}':"
 	chroot /rootfs /usr/sbin/adduser "${username}" --gecos "" --disabled-password | sed 's/^/    /'
 	if [ "${PIPESTATUS[0]}" -ne 0 ]; then
 		fail
 	fi
-	echo "  OK"
 	# add SSH key for user (if provided)
 	if [ -n "${user_ssh_pubkey}" ]; then
-		echo -n "  Setting SSH key for ${username}... "
+		echo -n "  Setting SSH key for '${username}'... "
 		ssh_dir="/rootfs/home/${username}/.ssh"
 		if mkdir -p "${ssh_dir}" && chmod 700 "${ssh_dir}"; then
 			echo "${user_ssh_pubkey}" > "${ssh_dir}/authorized_keys"
@@ -1079,7 +1078,7 @@ if [ -n "${username}" ]; then
 			fail
 		fi
 		echo "OK"
-		echo -n "  Setting owner as ${username} on SSH directory... "
+		echo -n "  Setting owner as '${username}' on SSH directory... "
 		chroot /rootfs /bin/chown -R "${username}:${username}" "/home/${username}/.ssh" || fail
 		echo "OK"
 		echo -n "  Setting permissions on ${username} SSH authorized_keys... "
@@ -1087,7 +1086,7 @@ if [ -n "${username}" ]; then
 		echo "OK"
 	fi
 	if [ -n "${userpw}" ]; then
-		echo -n "  Setting password for ${username}... "
+		echo -n "  Setting password for '${username}'... "
 		echo -n "${username}:${userpw}" | chroot /rootfs /usr/sbin/chpasswd || fail
 		echo "OK"
 	fi
@@ -1098,17 +1097,17 @@ if [ -n "${username}" ]; then
 		usersysgroups="${usersysgroups},video"
 	fi
 	if [ -n "${usersysgroups}" ]; then
-		echo -n "  Adding ${username} to system groups: "
+		echo -n "  Adding '${username}' to system groups: "
 		usersysgroups="$(echo ${usersysgroups} | tr ',' ' ')"
 		for sysgroup in ${usersysgroups}; do
-			echo -n "${sysgroup} "
+			echo -n "${sysgroup}... "
 			chroot /rootfs /usr/sbin/groupadd -fr "${sysgroup}" || fail
 			chroot /rootfs /usr/sbin/usermod -aG "${sysgroup}" "${username}" || fail
 		done
 		echo "OK"
 	fi
 	if [ -n "${usergroups}" ]; then
-		echo -n "  Adding ${username} to groups: "
+		echo -n "  Adding '${username}' to groups: "
 		usergroups="$(echo ${usergroups} | tr ',' ' ')"
 		for usergroup in ${usergroups}; do
 			echo -n "${usergroup} "
@@ -1118,11 +1117,11 @@ if [ -n "${username}" ]; then
 		echo "OK"
 	fi
 	if [ "${user_is_admin}" = "1" ]; then
-		echo -n "  Adding ${username} to sudo group... "
+		echo -n "  Adding '${username}' to sudo group... "
 		chroot /rootfs /usr/sbin/usermod -aG sudo "${username}" || fail
 		echo "OK"
 		if [ -z "${userpw}" ]; then
-			echo -n "  Setting ${username} to sudo without a password... "
+			echo -n "  Setting '${username}' to sudo without a password... "
 			echo -n "${username} ALL = (ALL) NOPASSWD: ALL" > "/rootfs/etc/sudoers.d/${username}" || fail
 			echo "OK"
 		fi
@@ -1270,7 +1269,7 @@ fi
 # set system default locale
 if [ -n "${system_default_locale}" ]; then
 	if [ -x /rootfs/usr/sbin/update-locale ]; then
-		echo -n "  Setting system default locale: "
+		echo -n "  Setting system default locale "
 		system_default_locale_regex="${system_default_locale//./\.}" # escape dots
 		if [ -f /rootfs/etc/locale.gen ] && [ "$(grep -c "^${system_default_locale_regex}" /rootfs/etc/locale.gen)" -gt 0 ]; then
 			# Accept UTF-8 by using "xx_XX.UTF-8"
@@ -1288,7 +1287,7 @@ if [ -n "${system_default_locale}" ]; then
 			fi
 			if [ -n "${system_default_locale}" ]; then
 				system_default_locale="$(echo "${system_default_locale}" | grep -Eo "^\S+")" # trim to first space character
-				echo -n "${system_default_locale} "
+				echo -n "'${system_default_locale}'... "
 				if chroot /rootfs /usr/sbin/update-locale LANG="${system_default_locale}" &> /dev/null; then
 				    echo "OK"
 				else
@@ -1309,7 +1308,7 @@ keyboard_layouts=("af" "al" "am" "ara" "at" "az" "ba" "bd" "be" "bg" "br" "brai"
 	"kh" "kr" "kz" "la" "latam" "lk" "lt" "lv" "ma" "mao" "md" "me" "mk" "ml" "mm" "mn" "mt" "mv" "nec_vndr/jp" "ng" "nl" "no" "np" \
 	"ph" "pk" "pl" "pt" "ro" "rs" "ru" "se" "si" "sk" "sn" "sy" "th" "tj" "tm" "tr" "tw" "tz" "ua" "us" "uz" "vn" "za" "NA")
 if [ -n "${keyboard_layout}" ]; then
-	echo -n "  Setting default keyboard layout: ${keyboard_layout} "
+	echo -n "  Setting default keyboard layout '${keyboard_layout}'... "
 	for layout in "${keyboard_layouts[@]}"; do
 		if [ "${layout}" = "${keyboard_layout}" ]; then
 			sed -i "s/^\(XKBLAYOUT=\).*/\1\"${keyboard_layout}\"/" /rootfs/etc/default/keyboard
@@ -1376,7 +1375,7 @@ cd /rootfs/boot/raspberrypi-ua-netinst/config/apt/ || fail
 for listfile in ./*.list
 do
 	if [ "${listfile}" != "./sources.list" ] && [ "${listfile}" != "./raspberrypi.org.list" ] && [ -e "${listfile}" ]; then
-		echo -n "  Copying ${listfile} to /etc/apt/sources.list.d/... "
+		echo -n "  Copying '${listfile}' to /etc/apt/sources.list.d/... "
 		sed "s/__RELEASE__/${release}/g" "${listfile}" > "/rootfs/etc/apt/sources.list.d/${listfile}" || fail
 		echo "OK"
 	fi
@@ -1386,7 +1385,7 @@ done
 for preffile in ./*.pref
 do
 	if [ "${listfile}" != "./archive_raspberrypi_org.pref" ] && [ -e "${preffile}" ]; then
-		echo -n "  Copying ${preffile} to /etc/apt/preferences.d/... "
+		echo -n "  Copying '${preffile}' to /etc/apt/preferences.d/... "
 		sed "s/__RELEASE__/${release}/g" "${preffile}" > "/rootfs/etc/apt/preferences.d/${preffile}" || fail
 		echo "OK"
 	fi
@@ -1396,7 +1395,7 @@ done
 for keyfile in ./*.key
 do
 	if [ -e "${keyfile}" ]; then
-		echo -n "  Adding key ${keyfile} to apt."
+		echo -n "  Adding key '${keyfile}' to apt."
 		(chroot /rootfs /usr/bin/apt-key add -) < "${keyfile}" || fail
 		echo "OK"
 	fi
@@ -1406,7 +1405,7 @@ done
 for keyring in ./*.gpg
 do
 	if [ -e "${keyring}" ]; then
-		echo -n "  Copying ${keyring} to /etc/apt/trusted.gpg.d/... "
+		echo -n "  Copying '${keyring}' to /etc/apt/trusted.gpg.d/... "
 		cp "${keyring}" "/rootfs/etc/apt/trusted.gpg.d/${keyring}" || fail
 		echo "OK"
 	fi
