@@ -6,6 +6,7 @@
 - [User](#user)
 - [Network](#network)
 - [Localization](#localization)
+- [Graphics / GPU](#graphics--gpu)
 - [Partitioning / Filesystem](#partitioning--filesystem)
 - [Advanced](#advanced)
 
@@ -30,8 +31,7 @@
 ## Device / peripheral
 
 | Parameter | Default | Options | Description |
-|----------------------|---------|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `gpu_mem` |  |  | Specifies the amount of RAM in MB that should be reserved for the GPU. To allow the VideoCore GPU kernel driver to be loaded correctly, you should use at least "32". If not defined, the bootloader sets it to 64MB. The minimum value is "16". |
+|----------------------|---------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `spi_enable` | `0` | `0`/`1` | Set to "1" to enable the SPI interface. |
 | `i2c_enable` | `0` | `0`/`1` | Set to "1" to enable the I²C (I2C) interface. |
 | `i2c_baudrate` |  |  | Specifies the I²C baudrate in bit/s. If not defined, the bootloader sets it to 100000 bit/s. The option `i2c_enable=1` has to be set to take effect. |
@@ -85,6 +85,15 @@
 | `keyboard_layout` | `us` | [ref: doc/keyboard_layout.txt](/doc/keyboard_layout.txt) | Set default keyboard layout. (e.g. "de") |
 | `locales` |  | [ref: doc/locales.txt](/doc/locales.txt) | Generate locales from this list (comma separated and quoted). UTF-8 is chosen preferentially if no encoding is specified. (e.g. "en_US.UTF-8,nl_NL,sl_SI.UTF-8") |
 | `system_default_locale` |  | [ref: doc/locales.txt](/doc/locales.txt) | Set default system locale (using the LANG environment variable). UTF-8 is chosen preferentially if no encoding is specified. (e.g. "nl_NL" or "sl_SI.UTF-8") |
+
+## Graphics / GPU
+
+| Parameter | Default | Options | Description |
+|--------------------|------------|--------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `gpu_mem` |  |  | Specifies the amount of RAM in MB that should be reserved for the GPU. To allow the VideoCore GPU kernel driver to be loaded correctly, you should use at least "32". If not defined, the bootloader sets it to 64MB. The minimum value is "16". |
+| `hdmi_type` |  | `tv`/  `monitor` | Forces HDMI mode and disables automatic display identification. Choose between TV or monitor  mode and specify the resolution with the options below. If not defined, the automatic display setting is used to determine the information sent by the display. |
+| `hdmi_tv_res` | `1080p` | `720p`/  `1080i`/  `1080p` | Specifies the display resolution if `hdmi_type` is set to TV mode. |
+| `hdmi_monitor_res` | `1024x768` | `640x480`/  `800x600`/  `1024x768`/  `1280x1024` | Specifies the display resolution if `hdmi_type` is set to monitor mode. |
 
 ## Partitioning / Filesystem
 
