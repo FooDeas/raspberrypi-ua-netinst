@@ -1599,6 +1599,11 @@ if [ "${hdmi_type}" = "tv" ] || [ "${hdmi_type}" = "monitor" ]; then
 		echo "hdmi_drive=2" >> /rootfs/boot/config.txt
 	fi
 	if [ "${hdmi_type}" = "tv" ]; then
+		sed -i "s/^#\(hdmi_group=1\)/\1/" /rootfs/boot/config.txt
+		if [ "$(grep -c "^hdmi_group=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
+			sed -i "s/^\(hdmi_group=.*\)/#\1/" /rootfs/boot/config.txt
+			echo "hdmi_group=1" >> /rootfs/boot/config.txt
+		fi
 		if [ "${hdmi_tv_res}" = "720p" ]; then
 			#hdmi_mode=4 720p@60Hz
 			sed -i "s/^#\(hdmi_mode=4\)/\1/" /rootfs/boot/config.txt
@@ -1622,6 +1627,11 @@ if [ "${hdmi_type}" = "tv" ] || [ "${hdmi_type}" = "monitor" ]; then
 			fi
 		fi
 	elif [ "${hdmi_type}" = "monitor" ]; then
+		sed -i "s/^#\(hdmi_group=2\)/\1/" /rootfs/boot/config.txt
+		if [ "$(grep -c "^hdmi_group=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
+			sed -i "s/^\(hdmi_group=.*\)/#\1/" /rootfs/boot/config.txt
+			echo "hdmi_group=2" >> /rootfs/boot/config.txt
+		fi
 		if [ "${hdmi_monitor_res}" = "640x480" ]; then
 			#hdmi_mode=4 640x480@60Hz
 			sed -i "s/^#\(hdmi_mode=4\)/\1/" /rootfs/boot/config.txt
