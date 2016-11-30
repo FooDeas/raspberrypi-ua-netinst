@@ -355,13 +355,10 @@ echo "OK"
 
 # Read installer-config.txt
 if [ -e "/bootfs/raspberrypi-ua-netinst/config/installer-config.txt" ]; then
-	echo
-	echo "=================================================="
-	echo "=== Start executing installer-config.txt. ========"
+	echo -n "Executing installer-config.txt... "
 	sanitize_inputfile /bootfs/raspberrypi-ua-netinst/config/installer-config.txt
 	source /bootfs/raspberrypi-ua-netinst/config/installer-config.txt
-	echo "=== Finished executing installer-config.txt. ====="
-	echo "=================================================="
+	echo "OK"
 fi
 
 preinstall_reboot=0
@@ -369,7 +366,6 @@ echo
 echo "Checking if config.txt needs to be modified before starting installation..."
 # Reinstallation
 if [ -e "/boot/raspberrypi-ua-netinst/reinstall/kernel.img" ] && [ -e "/boot/raspberrypi-ua-netinst/reinstall/kernel7.img" ] ; then
-	echo -e "\n"
 	echo "  =================================================="
 	echo "  == Reinstallation requested! Restoring files... =="
 	mv /boot/raspberrypi-ua-netinst/reinstall/kernel.img /boot/kernel.img
@@ -381,7 +377,6 @@ fi
 # HDMI settings
 if [ "${hdmi_system_only}" = "0" ]; then
 	if [ "${hdmi_type}" = "tv" ] || [ "${hdmi_type}" = "monitor" ]; then
-		echo -e "\n"
 		echo "  =================================================="
 		echo "  == Setting HDMI options... ======================="
 		if ! grep -q "^hdmi_ignore_edid=0xa5000080\>" /boot/config.txt; then echo -e "\nhdmi_ignore_edid=0xa5000080" >> /boot/config.txt; preinstall_reboot=1; fi
@@ -611,12 +606,10 @@ if [ -n "${online_config}" ]; then
 	wget -q -O /online-config.txt "${online_config}" &>/dev/null || fail
 	echo "OK"
 
-	echo "================================================="
-	echo "=== Start executing online-config.txt. ==="
+	echo -n "Executing online-config.txt... "
 	sanitize_inputfile /online-config.txt
 	source /online-config.txt
-	echo "=== Finished executing online-config.txt. ==="
-	echo "================================================="
+	echo "OK"
 fi
 
 # prepare rootfs mount options
