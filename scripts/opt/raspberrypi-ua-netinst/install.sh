@@ -1084,16 +1084,23 @@ if [ -n "${rootpw}" ]; then
 fi
 # add SSH key for root (if provided)
 if [ -n "${root_ssh_pubkey}" ]; then
-	echo -n "  Setting root SSH key... "
+	echo -n "  Setting root SSH key"
 	if mkdir -p /rootfs/root/.ssh && chmod 700 /rootfs/root/.ssh; then
-		echo "${root_ssh_pubkey}" > /rootfs/root/.ssh/authorized_keys
+		if [ -f "/bootfs/raspberrypi-ua-netinst/config/files/${root_ssh_pubkey}" ]; then
+			echo -n " from file '${root_ssh_pubkey}'... "
+			cp "/bootfs/raspberrypi-ua-netinst/config/files/${root_ssh_pubkey}" /rootfs/root/.ssh/authorized_keys | fail
+			echo "OK"
+		else
+			echo -n "... "
+			echo "${root_ssh_pubkey}" > /rootfs/root/.ssh/authorized_keys
+		fi
+		echo -n "  Setting permissions on root SSH authorized_keys... "
+		chmod 600 /rootfs/root/.ssh/authorized_keys || fail
+		echo "OK"
 	else
+		echo -n "... "
 		fail
 	fi
-	echo "OK"
-	echo -n "  Setting permissions on root SSH authorized_keys... "
-	chmod 600 /rootfs/root/.ssh/authorized_keys || fail
-	echo "OK"
 fi
 # openssh-server in jessie doesn't allow root to login with a password
 if [ "${root_ssh_pwlogin}" = "1" ]; then
@@ -1124,20 +1131,26 @@ if [ -n "${username}" ]; then
 	fi
 	# add SSH key for user (if provided)
 	if [ -n "${user_ssh_pubkey}" ]; then
-		echo -n "  Setting SSH key for '${username}'... "
-		ssh_dir="/rootfs/home/${username}/.ssh"
-		if mkdir -p "${ssh_dir}" && chmod 700 "${ssh_dir}"; then
-			echo "${user_ssh_pubkey}" > "${ssh_dir}/authorized_keys"
+		echo -n "  Setting SSH key for '${username}'"
+		if mkdir -p "/rootfs/home/${username}/.ssh" && chmod 700 "/rootfs/home/${username}/.ssh"; then
+			if [ -f "/bootfs/raspberrypi-ua-netinst/config/files/${user_ssh_pubkey}" ]; then
+				echo -n " from file '${user_ssh_pubkey}'... "
+				cp "/bootfs/raspberrypi-ua-netinst/config/files/${user_ssh_pubkey}" "/rootfs/home/${username}/.ssh/authorized_keys" | fail
+				echo "OK"
+			else
+				echo -n "... "
+				echo "${user_ssh_pubkey}" > "/rootfs/home/${username}/.ssh/authorized_keys"
+			fi
+			echo -n "  Setting owner as '${username}' on SSH directory... "
+			chroot /rootfs /bin/chown -R "${username}:${username}" "/home/${username}/.ssh" || fail
+			echo "OK"
+			echo -n "  Setting permissions on '${username}' SSH authorized_keys... "
+			chmod 600 "/rootfs/home/${username}/.ssh/authorized_keys" || fail
+			echo "OK"
 		else
+			echo -n "... "
 			fail
 		fi
-		echo "OK"
-		echo -n "  Setting owner as '${username}' on SSH directory... "
-		chroot /rootfs /bin/chown -R "${username}:${username}" "/home/${username}/.ssh" || fail
-		echo "OK"
-		echo -n "  Setting permissions on ${username} SSH authorized_keys... "
-		chmod 600 "${ssh_dir}/authorized_keys" || fail
-		echo "OK"
 	fi
 	if [ -n "${userpw}" ]; then
 		echo -n "  Setting password for '${username}'... "
