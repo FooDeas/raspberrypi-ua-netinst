@@ -49,6 +49,7 @@ gpu_mem=
 hdmi_type=
 hdmi_tv_res=1080p
 hdmi_monitor_res=1024x768
+hdmi_system_only=0
 usbroot=
 usbboot=
 cmdline="dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 elevator=deadline fsck.repair=yes"
@@ -347,6 +348,22 @@ echo -n "Mounting boot partition... "
 mount "${bootpartition}" /boot || fail
 echo "OK"
 
+# copy boot data to safety
+echo -n "Copying boot files... "
+cp -r -- /boot/* /bootfs/ || fail
+echo "OK"
+
+# Read installer-config.txt
+if [ -e "/bootfs/raspberrypi-ua-netinst/config/installer-config.txt" ]; then
+	echo
+	echo "=================================================="
+	echo "=== Start executing installer-config.txt. ========"
+	sanitize_inputfile /bootfs/raspberrypi-ua-netinst/config/installer-config.txt
+	source /bootfs/raspberrypi-ua-netinst/config/installer-config.txt
+	echo "=== Finished executing installer-config.txt. ====="
+	echo "=================================================="
+fi
+
 preinstall_reboot=0
 echo
 echo "Checking if config.txt needs to be modified before starting installation..."
@@ -361,6 +378,39 @@ if [ -e "/boot/raspberrypi-ua-netinst/reinstall/kernel.img" ] && [ -e "/boot/ras
 	echo "  =================================================="
 	preinstall_reboot=1
 fi
+# HDMI settings
+if [ "${hdmi_system_only}" = "0" ]; then
+	if [ "${hdmi_type}" = "tv" ] || [ "${hdmi_type}" = "monitor" ]; then
+		echo -e "\n"
+		echo "  =================================================="
+		echo "  == Setting HDMI options... ======================="
+		if ! grep -q "^hdmi_ignore_edid=0xa5000080\>" /boot/config.txt; then echo -e "\nhdmi_ignore_edid=0xa5000080" >> /boot/config.txt; preinstall_reboot=1; fi
+		if ! grep -q "^hdmi_drive=2\>" /boot/config.txt; then echo "hdmi_drive=2" >> /boot/config.txt; preinstall_reboot=1; fi
+		if [ "${hdmi_type}" = "tv" ]; then
+			if ! grep -q "^hdmi_group=1\>" /boot/config.txt; then echo "hdmi_group=1" >> /boot/config.txt; preinstall_reboot=1; fi
+			if [ "${hdmi_tv_res}" = "720p" ]; then
+				if ! grep -q "^hdmi_mode=4\>" /boot/config.txt; then echo "hdmi_mode=4" >> /boot/config.txt; preinstall_reboot=1; fi
+			elif [ "${hdmi_tv_res}" = "1080i" ]; then
+				if ! grep -q "^hdmi_mode=5\>" /boot/config.txt; then echo "hdmi_mode=5" >> /boot/config.txt; preinstall_reboot=1; fi
+			else
+				if ! grep -q "^hdmi_mode=16\>" /boot/config.txt; then echo "hdmi_mode=16" >> /boot/config.txt; preinstall_reboot=1; fi
+			fi
+		elif [ "${hdmi_type}" = "monitor" ]; then
+			if ! grep -q "^hdmi_group=2\>" /boot/config.txt; then echo "hdmi_group=2" >> /boot/config.txt; preinstall_reboot=1; fi
+			if [ "${hdmi_monitor_res}" = "640x480" ]; then
+				if ! grep -q "^hdmi_mode=4\>" /boot/config.txt; then echo "hdmi_mode=4" >> /boot/config.txt; preinstall_reboot=1; fi
+			elif [ "${hdmi_monitor_res}" = "800x600" ]; then
+				if ! grep -q "^hdmi_mode=9\>" /boot/config.txt; then echo "hdmi_mode=9" >> /boot/config.txt; preinstall_reboot=1; fi
+			elif [ "${hdmi_monitor_res}" = "1280x1024" ]; then
+				if ! grep -q "^hdmi_mode=35\>" /boot/config.txt; then echo "hdmi_mode=35" >> /boot/config.txt; preinstall_reboot=1; fi
+			else
+				if ! grep -q "^hdmi_mode=16\>" /boot/config.txt; then echo "hdmi_mode=16" >> /boot/config.txt; preinstall_reboot=1; fi
+			fi
+		fi
+		echo "  == Done. ========================================="
+		echo "  =================================================="
+	fi
+fi
 echo "OK"
 # Reboot if needed
 if [ "${preinstall_reboot}" = "1" ]; then
@@ -373,22 +423,10 @@ if [ "${preinstall_reboot}" = "1" ]; then
 fi
 unset preinstall_reboot
 
-# copy boot data to safety
-echo -n "Copying boot files... "
-cp -r -- /boot/* /bootfs/ || fail
-
+echo
+echo -n "Unmounting boot partition... "
 umount /boot || fail
 echo "OK"
-
-# Read installer-config.txt
-if [ -e "/bootfs/raspberrypi-ua-netinst/config/installer-config.txt" ]; then
-	echo "=================================================="
-	echo "=== Start executing installer-config.txt. ========"
-	sanitize_inputfile /bootfs/raspberrypi-ua-netinst/config/installer-config.txt
-	source /bootfs/raspberrypi-ua-netinst/config/installer-config.txt
-	echo "=== Finished executing installer-config.txt. ====="
-	echo "=================================================="
-fi
 
 if [ -e "${wlan_configfile}" ]; then
 	sanitize_inputfile "${wlan_configfile}"
@@ -833,6 +871,7 @@ echo "  gpu_mem = ${gpu_mem}"
 echo "  hdmi_type = ${hdmi_type}"
 echo "  hdmi_tv_res = ${hdmi_tv_res}"
 echo "  hdmi_monitor_res = ${hdmi_monitor_res}"
+echo "  hdmi_system_only = ${hdmi_system_only}"
 echo "  usbroot = ${usbroot}"
 echo "  usbboot = ${usbboot}"
 echo "  rootdev = ${rootdev}"
