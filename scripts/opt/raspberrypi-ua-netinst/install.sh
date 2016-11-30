@@ -343,22 +343,38 @@ else
 	echo "FAILED! (continuing to use the software RNG)"
 fi
 
-echo -n "Copying boot files... "
-# copy boot data to safety
+echo -n "Mounting boot partition... "
 mount "${bootpartition}" /boot || fail
+echo "OK"
 
+preinstall_reboot=0
+echo
+echo "Checking if config.txt needs to be modified before starting installation..."
+# Reinstallation
 if [ -e "/boot/raspberrypi-ua-netinst/reinstall/kernel.img" ] && [ -e "/boot/raspberrypi-ua-netinst/reinstall/kernel7.img" ] ; then
 	echo -e "\n"
-	echo "=================================================="
-	echo "== Reinstallation requested. Restoring files... =="
+	echo "  =================================================="
+	echo "  == Reinstallation requested! Restoring files... =="
 	mv /boot/raspberrypi-ua-netinst/reinstall/kernel.img /boot/kernel.img
 	mv /boot/raspberrypi-ua-netinst/reinstall/kernel7.img /boot/kernel7.img
-	echo "== Done. Rebooting to start installation... ======"
-	echo "=================================================="
+	echo "  == Done. ========================================="
+	echo "  =================================================="
+	preinstall_reboot=1
+fi
+echo "OK"
+# Reboot if needed
+if [ "${preinstall_reboot}" = "1" ]; then
+	echo -e "\n"
+	echo "============================="
+	echo "== Rebooting in 3 seconds! =="
+	echo "============================="
 	sleep 3s
 	reboot && exit
 fi
+unset preinstall_reboot
 
+# copy boot data to safety
+echo -n "Copying boot files... "
 cp -r -- /boot/* /bootfs/ || fail
 
 umount /boot || fail
