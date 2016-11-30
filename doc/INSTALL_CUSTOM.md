@@ -43,14 +43,15 @@
 
 | Parameter | Default | Options | Description |
 |--------------------|---------|---------|------------------------------------------------------------------------------------------------------|
-| `ssh_pwlogin` |  | `0`/`1` | Set to 0 to disable ssh password login completely. |
+| `user_ssh_pubkey` |  |  | Public SSH key for created user; the public SSH key must be on a single line, enclosed in quotes |
 | `root_ssh_pubkey` |  |  | Sets public SSH key for root login. The public SSH key must be on a single line, enclosed in quotes. |
 | `root_ssh_pwlogin` | `1` | `0`/`1` | Set to 0 to disable ssh password login for root. |
+| `ssh_pwlogin` |  | `0`/`1` | Set to 0 to disable ssh password login completely. |
 
 ## User
 
 | Parameter | Default | Options | Description |
-|-------------------|---------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|-------------------|----------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `username` |  |  | Username of the user to create |
 | `userpw` |  |  | Password to use for created user |
 | `usergpio` |  | `0`/`1` | Set to 1 to give created user permissions to access GPIO pins. A new system group 'gpio' will be created automatically. |
