@@ -1088,7 +1088,7 @@ if [ -n "${root_ssh_pubkey}" ]; then
 	if mkdir -p /rootfs/root/.ssh && chmod 700 /rootfs/root/.ssh; then
 		if [ -f "/bootfs/raspberrypi-ua-netinst/config/files/${root_ssh_pubkey}" ]; then
 			echo -n " from file '${root_ssh_pubkey}'... "
-			cp "/bootfs/raspberrypi-ua-netinst/config/files/${root_ssh_pubkey}" /rootfs/root/.ssh/authorized_keys | fail
+			cp "/bootfs/raspberrypi-ua-netinst/config/files/${root_ssh_pubkey}" /rootfs/root/.ssh/authorized_keys || fail
 			echo "OK"
 		else
 			echo -n "... "
@@ -1135,7 +1135,7 @@ if [ -n "${username}" ]; then
 		if mkdir -p "/rootfs/home/${username}/.ssh" && chmod 700 "/rootfs/home/${username}/.ssh"; then
 			if [ -f "/bootfs/raspberrypi-ua-netinst/config/files/${user_ssh_pubkey}" ]; then
 				echo -n " from file '${user_ssh_pubkey}'... "
-				cp "/bootfs/raspberrypi-ua-netinst/config/files/${user_ssh_pubkey}" "/rootfs/home/${username}/.ssh/authorized_keys" | fail
+				cp "/bootfs/raspberrypi-ua-netinst/config/files/${user_ssh_pubkey}" "/rootfs/home/${username}/.ssh/authorized_keys" || fail
 				echo "OK"
 			else
 				echo -n "... "
