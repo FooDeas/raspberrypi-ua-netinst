@@ -59,6 +59,8 @@ final_action=reboot
 hwrng_support=1
 enable_watchdog=0
 quiet_boot=0
+cleanup=0
+cleanup_logfiles=0
 spi_enable=0
 i2c_enable=0
 i2c_baudrate=
@@ -83,7 +85,7 @@ fail()
 		mount "${bootpartition}" /boot
 		fail_boot_mounted=true
 	fi
-	cp -- ${LOGFILE} /boot/raspberrypi-ua-netinst/error-"$(date +%Y%m%dT%H%M%S)".log
+	cp "${LOGFILE}" "/boot/raspberrypi-ua-netinst/error-$(date +%Y%m%dT%H%M%S).log"
 	sync
 
 	# if we mounted /boot in the fail command, unmount it.
@@ -350,7 +352,7 @@ echo "OK"
 
 # copy boot data to safety
 echo -n "Copying boot files... "
-cp -r -- /boot/* /bootfs/ || fail
+cp -r /boot/* /bootfs/ || fail
 echo "OK"
 
 # Read installer-config.txt
@@ -876,6 +878,8 @@ echo "  rootfs_install_mount_options = ${rootfs_install_mount_options}"
 echo "  rootfs_mount_options = ${rootfs_mount_options}"
 echo "  final_action = ${final_action}"
 echo "  quiet_boot = ${quiet_boot}"
+echo "  cleanup = ${cleanup}"
+echo "  cleanup_logfiles = ${cleanup_logfiles}"
 echo "  spi_enable = ${spi_enable}"
 echo "  i2c_enable = ${i2c_enable}"
 echo "  i2c_baudrate = ${i2c_baudrate}"
@@ -1034,7 +1038,7 @@ echo "OK"
 
 echo -n "Copying /boot files in... "
 mount "${bootpartition}" /boot || fail
-cp -r -- /bootfs/* /boot || fail
+cp -r /bootfs/* /boot || fail
 sync
 umount /boot || fail
 echo "OK"
@@ -1763,12 +1767,22 @@ echo -n "Installation finished at $(date --date="@${ENDTIME}" --utc)"
 echo " and took $((DURATION/60)) min $((DURATION%60)) sec (${DURATION} seconds)"
 
 # copy logfile to standard log directory
-sleep 1
-cp -- "${LOGFILE}" /rootfs/var/log/raspberrypi-ua-netinst.log
-chmod 0640 /rootfs/var/log/raspberrypi-ua-netinst.log
+if [ "${cleanup_logfiles}" = "1" ]; then
+	rm -f /rootfs/boot/raspberrypi-ua-netinst/error-*.log
+else
+	sleep 1
+	cp "${LOGFILE}" /rootfs/var/log/raspberrypi-ua-netinst.log
+	chmod 0640 /rootfs/var/log/raspberrypi-ua-netinst.log
+fi
+
+# Cleanup installer files
+if [ "${cleanup}" = "1" ]; then
+	echo -n "Removing installer files... "
+	rm -rf /rootfs/boot/raspberrypi-ua-netinst/
+	echo "OK"
+fi
 
 echo -n "Unmounting filesystems... "
-
 umount /rootfs/boot
 umount /rootfs
 echo "OK"

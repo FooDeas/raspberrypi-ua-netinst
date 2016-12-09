@@ -112,6 +112,8 @@
 | Parameter | Default | Options | Description |
 |--------------------------------|------------------------------------------------------------------------------------------------|--------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `quiet_boot` | `0` | `0`/`1` | Disables most log messages on boot. |
+| `cleanup` | `0` | `0`/`1` | Remove installer files after success. To also remove log files, note the option below. |
+| `cleanup_logfiles` | `0` | `0`/`1` | Removes installer log files after success. |
 | `cmdline` | `"dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 elevator=deadline fsck.repair=yes"` |  |  |
 | `rootfs_install_mount_options` |  |  |  |
 | `rootfs_mount_options` |  |  |  |
