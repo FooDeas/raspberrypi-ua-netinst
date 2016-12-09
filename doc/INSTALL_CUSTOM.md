@@ -51,14 +51,13 @@
 ## User
 
 | Parameter | Default | Options | Description |
-|-------------------|----------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|-----------------|----------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `username` |  |  | Username of the user to create |
 | `userpw` |  |  | Password to use for created user |
 | `usergpio` |  | `0`/`1` | Set to 1 to give created user permissions to access GPIO pins. A new system group 'gpio' will be created automatically. |
 | `usergpu` |  | `0`/`1` | Set to 1 to give created user GPU access permissions (e.g. to run vcgencmd without using sudo). |
 | `usergroups` |  |  | Add created user to this additional groups (comma separated and quoted). Non-existent groups will be created. (e.g. 'usergroups=family,friends') |
 | `usersysgroups` |  |  | Add created user to this additional groups (comma separated and quoted). Non-existent groups will be created as system groups. (e.g. 'usersysgroups=video,www-data') |
-| `user_ssh_pubkey` |  |  | Public SSH key for created user; the public SSH key must be on a single line, enclosed in quotes |
 | `user_is_admin` |  | `0`/`1` | Set to 1 to install sudo and make the user a sudo user. |
 | `rootpw` | raspbian |  | Sets password for root. To disable root completely, also set root_ssh_pubkey empty. |
 
