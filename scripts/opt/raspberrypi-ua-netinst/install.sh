@@ -1576,6 +1576,15 @@ else
 fi
 echo "OK"
 
+# Password warning
+echo -n "Fixing non-privileged SSH password warning... "
+if [ -f /rootfs/etc/profile.d/sshpasswd.sh ]; then
+	sed -i "s/service ssh status/\/usr\/sbin\/service ssh status/" /rootfs/etc/profile.d/sshpasswd.sh
+	echo "OK"
+else
+	echo "not possible!"
+fi
+
 # enable spi if specified in the configuration file
 if [ "${spi_enable}" = "1" ]; then
 	sed -i "s/^#\(dtparam=spi=on\)/\1/" /rootfs/boot/config.txt
