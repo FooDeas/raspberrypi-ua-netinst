@@ -109,14 +109,14 @@
 ## Advanced
 
 | Parameter | Default | Options | Description |
-|--------------------------------|------------------------------------------------------------------------------------------------|--------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|--------------------------------|------------------------------------------------------------------------------------------------|--------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `quiet_boot` | `0` | `0`/`1` | Disables most log messages on boot. |
 | `cleanup` | `0` | `0`/`1` | Remove installer files after success. To also remove log files, note the option below. |
 | `cleanup_logfiles` | `0` | `0`/`1` | Removes installer log files after success. |
 | `cmdline` | `"dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 elevator=deadline fsck.repair=yes"` |  |  |
 | `rootfs_install_mount_options` |  |  |  |
 | `rootfs_mount_options` |  |  |  |
-| `final_action` | `reboot` | `poweroff`/  `halt`/  `reboot` | Action at the end of install. |
+| `final_action` | `reboot` | `reboot`/  `poweroff`/  `halt`/  `console` | Action at the end of install. |
 | `hwrng_support` | `1` | `0`/`1` | Install support for the ARM hardware random number generator. The default is enabled (1) on all presets. Users requiring a `base` install are advised that `hwrng_support=0` must be added in `installer-config.txt` if HWRNG support is undesirable. |
 | `enable_watchdog` | `0` | `0`/`1` | loads up the hardware watchdog module and configures systemd to use it. Set to "1" to enable this functionality. |
 | `cdebootstrap_cmdline` |  |  |  |

@@ -1791,10 +1791,12 @@ if [ "${cleanup}" = "1" ]; then
 	echo "OK"
 fi
 
-echo -n "Unmounting filesystems... "
-umount /rootfs/boot
-umount /rootfs
-echo "OK"
+if [ "${final_action}" != "console" ]; then
+	echo -n "Unmounting filesystems... "
+	umount /rootfs/boot
+	umount /rootfs
+	echo "OK"
+fi
 
 case ${final_action} in
 	poweroff)
@@ -1803,15 +1805,19 @@ case ${final_action} in
 	halt)
 		echo -n "Finished! Halting in 5 seconds..."
 		;;
+	console)
+		echo -n "Finished!"
+		;;
 	*)
 		echo -n "Finished! Rebooting to installed system in 5 seconds..."
 		final_action=reboot
 esac
 
-for i in $(seq 5 -1 1); do
-	sleep 1
-
-	echo -n "${i}.. "
-done
-echo " now"
-${final_action}
+if [ "${final_action}" != "console" ]; then
+	for i in $(seq 5 -1 1); do
+		sleep 1
+		echo -n "${i}.. "
+	done
+	echo "0"
+	${final_action}
+fi
