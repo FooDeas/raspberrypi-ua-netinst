@@ -697,7 +697,10 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	fi
 	
 	# minimal
-	minimal_packages="fake-hwclock,ifupdown,net-tools,ntp,openssh-server,dosfstools"
+	minimal_packages="fake-hwclock,ifupdown,net-tools,openssh-server,dosfstools"
+	if [ "${init_system}" != "systemd" ]; then
+		minimal_packages="${minimal_packages},ntp"
+	fi
 	minimal_packages_postinstall=raspberrypi-sys-mods
 	minimal_packages_postinstall="${base_packages_postinstall},${minimal_packages_postinstall}"
 	if echo "${ifname}" | grep -q "wlan"; then
@@ -1402,6 +1405,11 @@ elif grep -q "HWCLOCKACCESS=yes" /rootfs/etc/default/hwclock; then
 	sed -i "s/^\(HWCLOCKACCESS=\)yes/\1no/m" /rootfs/etc/default/hwclock
 else
 	echo -e "HWCLOCKACCESS=no\n" >> /rootfs/etc/default/hwclock
+fi
+
+# enable NTP client on systemd releases
+if [ "${init_system}" = "systemd" ]; then
+	ln -s /usr/lib/systemd/system/systemd-timesyncd.service /rootfs/etc/systemd/system/multi-user.target.wants/systemd-timesyncd.service
 fi
 
 # copy apt's sources.list to the target system
