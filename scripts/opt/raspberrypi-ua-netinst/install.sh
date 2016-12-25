@@ -665,7 +665,7 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	# not very logical that minimal > base, but that's how it was historically defined
 
 	init_system=""
-	if [ "${release}" = "jessie" ]; then
+	if [ "${release}" = "jessie" ] || [ "${release}" = "stretch" ]; then
 		init_system="systemd"
 	fi
 
@@ -1106,12 +1106,14 @@ if [ -n "${root_ssh_pubkey}" ]; then
 		fail
 	fi
 fi
-# openssh-server in jessie doesn't allow root to login with a password
+# openssh-server in jessie and higher doesn't allow root to login with a password
 if [ "${root_ssh_pwlogin}" = "1" ]; then
-	if [ "${release}" = "jessie" ] && [ -f /rootfs/etc/ssh/sshd_config ]; then
-		echo -n "  Allowing root to login with password on jessie... "
-		sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /rootfs/etc/ssh/sshd_config || fail
-		echo "OK"
+	if [ "${release}" = "jessie" ] || [ "${release}" = "stretch" ]; then
+		if [ -f /rootfs/etc/ssh/sshd_config ]; then
+			echo -n "  Allowing root to login with password... "
+			sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /rootfs/etc/ssh/sshd_config || fail
+			echo "OK"
+		fi
 	fi
 fi
 # disable global password login if requested
