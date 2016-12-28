@@ -1544,7 +1544,7 @@ if [ "${kernel_module}" = true ]; then
 fi
 
 # (conditionaly) enable hardware watchdog and set up systemd to use it
-if [ "${enable_watchdog}" = "1" ]; then
+if [ "${init_system}" = "systemd" ] && [ "${enable_watchdog}" = "1" ]; then
 	echo "bcm2708_wdog" >> /rootfs/etc/modules
 	sed -i 's/^.*RuntimeWatchdogSec=.*$/RuntimeWatchdogSec=14s/' /rootfs/etc/systemd/system.conf
 fi

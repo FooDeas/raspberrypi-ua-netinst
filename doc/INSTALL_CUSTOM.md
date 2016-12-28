@@ -118,7 +118,7 @@
 | `rootfs_mount_options` |  |  |  |
 | `final_action` | `reboot` | `reboot`/  `poweroff`/  `halt`/  `console` | Action at the end of install. |
 | `hwrng_support` | `1` | `0`/`1` | Install support for the ARM hardware random number generator. The default is enabled (1) on all presets. Users requiring a `base` install are advised that `hwrng_support=0` must be added in `installer-config.txt` if HWRNG support is undesirable. |
-| `enable_watchdog` | `0` | `0`/`1` | loads up the hardware watchdog module and configures systemd to use it. Set to "1" to enable this functionality. |
+| `enable_watchdog` | `0` | `0`/`1` | Loads up the hardware watchdog module and configures systemd to use it (Debian Jessie only). Set to "1" to enable this functionality. |
 | `cdebootstrap_cmdline` |  |  |  |
 | `rootfs_mkfs_options` |  |  |  |
 | `rootsize` |  |  | / partition size in megabytes, provide it in the form '+\<number\>M' (without quotes), leave empty to use all free space |
