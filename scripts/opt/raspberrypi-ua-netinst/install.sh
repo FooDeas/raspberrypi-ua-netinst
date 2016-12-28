@@ -469,16 +469,16 @@ echo
 # depmod needs to update modules.dep before using modprobe
 depmod -a
 if [ -n "${drivers_to_load}" ]; then
-   echo "Loading additional drivers."
-   drivers_to_load="$(echo ${drivers_to_load} | tr ',' ' ')"
-   for driver in ${drivers_to_load}
-   do
-	  echo -n "  Loading driver '${driver}'... "
-	  modprobe "${driver}" || fail
-	  echo "OK"
-   done
-   echo "Finished loading additional drivers"
-   echo
+	echo "Loading additional drivers."
+	drivers_to_load="$(echo ${drivers_to_load} | tr ',' ' ')"
+	for driver in ${drivers_to_load}
+	do
+		echo -n "  Loading driver '${driver}'... "
+		modprobe "${driver}" || fail
+		echo "OK"
+	done
+	echo "Finished loading additional drivers"
+	echo
 fi
 
 echo -n "Waiting for ${ifname}... "
