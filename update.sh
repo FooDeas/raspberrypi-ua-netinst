@@ -314,7 +314,6 @@ download_remote_file() {
 	else
 		echo -e "\nDownloading ${2}..."
 	fi
-	
 	if ! wget -q --show-progress --no-cache -O "${2}_tmp" "${1}${2}"; then
 		echo -e "ERROR\nDownloading ${1}${2} failed! Exiting."
 		cd ..
