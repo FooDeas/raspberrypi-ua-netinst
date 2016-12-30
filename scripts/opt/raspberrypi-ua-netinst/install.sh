@@ -442,11 +442,6 @@ if [ "${ip_addr}" != "dhcp" ]; then
 fi
 
 if echo "${ifname}" | grep -q "wlan"; then
-	if [ -z "${drivers_to_load}" ]; then
-		drivers_to_load="brcmfmac"
-	else
-		drivers_to_load="${drivers_to_load},brcmfmac"
-	fi
 	if [ ! -e "${wlan_configfile}" ]; then
 		wlan_configfile=/tmp/wpa_supplicant.conf
 		echo "  wlan_ssid = ${wlan_ssid}"
@@ -468,6 +463,7 @@ echo
 
 # depmod needs to update modules.dep before using modprobe
 depmod -a
+find /sys/ -name modalias -print0 | xargs -0 sort -u | xargs modprobe -abq
 if [ -n "${drivers_to_load}" ]; then
 	echo "Loading additional kernel modules:"
 	drivers_to_load="$(echo ${drivers_to_load} | tr ',' ' ')"
@@ -796,10 +792,6 @@ fi
 
 if [ "${usbroot}" = "1" ]; then
 	rootdev=/dev/sda
-	echo -n "Loading USB modules... "
-	modprobe sd_mod &> /dev/null || fail
-	modprobe usb-storage &> /dev/null || fail
-	echo "OK"
 fi
 
 if [ -z "${rootpartition}" ]; then
