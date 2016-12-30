@@ -128,7 +128,7 @@ setup_archive_keys() {
 	echo ""
 
 	echo "Downloading ${RASPBIAN_ARCHIVE_KEY_FILE_NAME}."
-	curl -# -O ${RASPBIAN_ARCHIVE_KEY_URL}
+	curl -L -H 'Cache-Control: no-cache' -H 'Cache-Control: max-age=0' -# -O ${RASPBIAN_ARCHIVE_KEY_URL}
 	if check_key "${RASPBIAN_ARCHIVE_KEY_FILE_NAME}" "${RASPBIAN_ARCHIVE_KEY_FINGERPRINT}"; then
 		# GPG key checks out, thus import it into our own keyring
 		echo -n "Importing '${RASPBIAN_ARCHIVE_KEY_FILE_NAME}' into keyring... "
@@ -145,7 +145,7 @@ setup_archive_keys() {
 	echo ""
 
 	echo "Downloading ${RASPBERRYPI_ARCHIVE_KEY_FILE_NAME}."
-	curl -# -O ${RASPBERRYPI_ARCHIVE_KEY_URL}
+	curl -L -H 'Cache-Control: no-cache' -H 'Cache-Control: max-age=0' -# -O ${RASPBERRYPI_ARCHIVE_KEY_URL}
 	if check_key "${RASPBERRYPI_ARCHIVE_KEY_FILE_NAME}" "${RASPBERRYPI_ARCHIVE_KEY_FINGERPRINT}"; then
 		# GPG key checks out, thus import it into our own keyring
 		echo -n "Importing '${RASPBERRYPI_ARCHIVE_KEY_FILE_NAME}' into keyring..."
@@ -198,7 +198,7 @@ download_package_list() {
 
 			# Download Packages file
 			echo -e "\nDownloading ${package_section} package list..."
-			curl -# -o "tmp${extension}" "${2}/dists/$release/$package_section/binary-armhf/Packages${extension}"
+			curl -L -H 'Cache-Control: no-cache' -H 'Cache-Control: max-age=0' -# -o "tmp${extension}" "${2}/dists/$release/$package_section/binary-armhf/Packages${extension}"
 
 			# Verify the checksum of the Packages file, assuming that the last checksums in the Release file are SHA256 sums
 			echo -n "Verifying ${package_section} package list... "
@@ -236,8 +236,8 @@ download_package_lists() {
 	fi
 
 	echo -e "\nDownloading Release file and its signature..."
-	curl -# -o "${1}_Release" "${2}/dists/$release/Release"
-	curl -# -o "${1}_Release.gpg" "${2}/dists/$release/Release.gpg"
+	curl -L -H 'Cache-Control: no-cache' -H 'Cache-Control: max-age=0' -# -o "${1}_Release" "${2}/dists/$release/Release"
+	curl -L -H 'Cache-Control: no-cache' -H 'Cache-Control: max-age=0' -# -o "${1}_Release.gpg" "${2}/dists/$release/Release.gpg"
 	echo -n "Verifying Release file... "
 	if gpg --homedir gnupg --verify "${1}_Release.gpg" "${1}_Release" &> /dev/null; then
 		echo "OK"
@@ -286,7 +286,7 @@ download_packages() {
 	echo -e "\nDownloading packages..."
 	for package in "${packages_debs[@]}"; do
 		echo -e "Downloading package: \"${package}\""
-		curl -# --remote-name ${package}
+		curl -L -H 'Cache-Control: no-cache' -H 'Cache-Control: max-age=0' -# --remote-name ${package}
 	done
 
 	echo -n "Verifying downloaded packages... "
@@ -307,7 +307,7 @@ download_remote_file() {
 		echo -e "\nDownloading ${2}..."
 	fi
 	
-	if ! curl -# -o "${2}_tmp" -L "${1}${2}"; then
+	if ! curl -L -H 'Cache-Control: no-cache' -H 'Cache-Control: max-age=0' -# -o "${2}_tmp" -L "${1}${2}"; then
 		echo -e "ERROR\nDownloading ${1} failed! Exiting."
 		cd ..
 		exit 1
