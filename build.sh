@@ -186,6 +186,18 @@ function create_cpio {
 	cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/net/usb rootfs/lib/modules/kernel*/kernel/drivers/net/
 	cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/net/wireless rootfs/lib/modules/kernel*/kernel/drivers/net/
 
+	# copy i2c drivers
+	for kernel in "${kernels[@]}"; do
+		mkdir -p "rootfs/lib/modules/${kernel}/kernel/drivers/i2c/busses"
+	done
+	cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/i2c/busses/i2c-bcm2708.ko rootfs/lib/modules/kernel*/kernel/drivers/i2c/busses/
+
+	# copy rtc drivers
+	for kernel in "${kernels[@]}"; do
+		mkdir -p "rootfs/lib/modules/${kernel}/kernel/drivers"
+	done
+	cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/rtc rootfs/lib/modules/kernel*/kernel/drivers/
+
 	# create dependency lists
 	for kernel in "${kernels[@]}"; do
 		/sbin/depmod -b rootfs "${kernel}"

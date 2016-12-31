@@ -31,13 +31,14 @@
 ## Device / peripheral
 
 | Parameter | Default | Options | Description |
-|----------------------|---------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------|
+|----------------------|---------|----------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `spi_enable` | `0` | `0`/`1` | Set to "1" to enable the SPI interface. |
 | `i2c_enable` | `0` | `0`/`1` | Set to "1" to enable the I²C (I2C) interface. |
 | `i2c_baudrate` |  |  | Specifies the I²C baudrate in bit/s. If not defined, the bootloader sets it to 100000 bit/s. The option `i2c_enable=1` has to be set to take effect. |
 | `sound_enable` | `0` | `0`/`1` | Set to "1" to enable the onboard audio. |
 | `camera_enable` | `0` | `0`/`1` | Set to "1" to enable the camera module. This sets all needed parameters in config.txt. |
 | `camera_disable_led` | `0` | `0`/`1` | Disables the camera led. The option `camera_enable=1` has to be set to take effect. |
+| `rtc` |  | `ds1307`/  `ds1339`/  `ds3231`/  `mcp7940x`/  `mcp7941x`/  `pcf2127`/  `pcf8523`/  `pcf8563` | Select an RTC if it is connected via I²C. |
 
 ## SSH
 

@@ -31,6 +31,7 @@ rootsize=
 timeserver=time.nist.gov
 timeserver_http=
 timezone=Etc/UTC
+rtc=
 keyboard_layout=
 locales=
 system_default_locale=
@@ -408,6 +409,17 @@ if [ "${hdmi_system_only}" = "0" ]; then
 		echo "  =================================================="
 	fi
 fi
+# RTC
+if [ -n "${rtc}" ] ; then
+	echo "  =================================================="
+	echo "  == Enabling RTC configuration... ================="
+	if ! grep -q "^dtoverlay=i2c-rtc,${rtc}\>" /boot/config.txt; then
+		echo -e "\ndtoverlay=i2c-rtc,${rtc}" >> /boot/config.txt
+		preinstall_reboot=1
+	fi
+	echo "  == Done. ========================================="
+	echo "  =================================================="
+fi
 echo "OK"
 # Reboot if needed
 if [ "${preinstall_reboot}" = "1" ]; then
@@ -692,9 +704,12 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	fi
 	
 	# minimal
-	minimal_packages="fake-hwclock,ifupdown,net-tools,openssh-server,dosfstools"
+	minimal_packages="ifupdown,net-tools,openssh-server,dosfstools"
 	if [ "${init_system}" != "systemd" ]; then
 		minimal_packages="${minimal_packages},ntp"
+	fi
+	if [ -z "${rtc}" ]; then
+		minimal_packages="${minimal_packages},fake-hwclock"
 	fi
 	minimal_packages_postinstall=raspberrypi-sys-mods
 	minimal_packages_postinstall="${base_packages_postinstall},${minimal_packages_postinstall}"
@@ -851,6 +866,7 @@ echo "  bootoffset = ${bootoffset}"
 echo "  rootsize = ${rootsize}"
 echo "  timeserver = ${timeserver}"
 echo "  timezone = ${timezone}"
+echo "  rtc = ${rtc}"
 echo "  keyboard_layout = ${keyboard_layout}"
 echo "  locales = ${locales}"
 echo "  system_default_locale = ${system_default_locale}"
@@ -1393,13 +1409,17 @@ fi
 
 echo
 
-# there is no hw clock on rpi
-if grep -q "#HWCLOCKACCESS=yes" /rootfs/etc/default/hwclock; then
-	sed -i "s/^#\(HWCLOCKACCESS=\)yes/\1no/" /rootfs/etc/default/hwclock
-elif grep -q "HWCLOCKACCESS=yes" /rootfs/etc/default/hwclock; then
-	sed -i "s/^\(HWCLOCKACCESS=\)yes/\1no/m" /rootfs/etc/default/hwclock
+# if there is no hw clock on rpi
+if [ -z "${rtc}" ]; then
+	if grep -q "#HWCLOCKACCESS=yes" /rootfs/etc/default/hwclock; then
+		sed -i "s/^#\(HWCLOCKACCESS=\)yes/\1no/" /rootfs/etc/default/hwclock
+	elif grep -q "HWCLOCKACCESS=yes" /rootfs/etc/default/hwclock; then
+		sed -i "s/^\(HWCLOCKACCESS=\)yes/\1no/m" /rootfs/etc/default/hwclock
+	else
+		echo -e "HWCLOCKACCESS=no\n" >> /rootfs/etc/default/hwclock
+	fi
 else
-	echo -e "HWCLOCKACCESS=no\n" >> /rootfs/etc/default/hwclock
+	sed -i "s/^\(exit 0\)/\/sbin\/hwclock --hctosys\n\1/" /rootfs/etc/rc.local
 fi
 
 # enable NTP client on systemd releases
@@ -1743,6 +1763,15 @@ if [ "${hdmi_type}" = "tv" ] || [ "${hdmi_type}" = "monitor" ]; then
 	fi
 fi
 
+# enable rtc if specified in the configuration file
+if [ -n "${rtc}" ]; then
+	sed -i "s/^#\(dtoverlay=i2c-rtc,${rtc}\)/\1/" /rootfs/boot/config.txt
+	if [ "$(grep -c "^dtoverlay=i2c-rtc,.*" /rootfs/boot/config.txt)" -ne 1 ]; then
+		sed -i "s/^\(dtoverlay=i2c-rtc,\)/#\1/" /rootfs/boot/config.txt
+		echo "dtoverlay=i2c-rtc,${rtc}" >> /rootfs/boot/config.txt
+	fi
+fi
+
 # iterate through all the file lists and call the install_files method for them
 old_dir=$(pwd)
 cd /rootfs/boot/raspberrypi-ua-netinst/config/files/ || fail
@@ -1769,10 +1798,17 @@ echo -n "Removing cdebootstrap-helper-rc.d... "
 chroot /rootfs /usr/bin/dpkg -r cdebootstrap-helper-rc.d &>/dev/null || fail
 echo "OK"
 
-# save current time if fake-hwclock
-echo "Saving current time for fake-hwclock..."
-sync # synchronize before saving time to make it "more accurate"
-date +"%Y-%m-%d %H:%M:%S" > /rootfs/etc/fake-hwclock.data
+# save current time
+if [ -z "${rtc}" ]; then
+	echo -n "Saving current time for fake-hwclock... "
+	sync # synchronize before saving time to make it "more accurate"
+	date +"%Y-%m-%d %H:%M:%S" > /rootfs/etc/fake-hwclock.data
+	echo "OK"
+else
+	echo -n "Saving current time to RTC... "
+	/opt/busybox/bin/hwclock --systohc || fail
+	echo "OK"
+fi
 
 ENDTIME=$(date +%s)
 DURATION=$((ENDTIME - REAL_STARTTIME))
