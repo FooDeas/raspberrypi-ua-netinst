@@ -1074,6 +1074,10 @@ fi
 
 echo
 echo "Configuring installed system:"
+# mount chroot system folders
+for sysfolder in /dev /dev/pts /proc /sys /run; do
+	mount --bind "${sysfolder}" "/rootfs${sysfolder}"
+done
 # configure root login
 if [ -n "${rootpw}" ]; then
 	echo -n "  Setting root password... "
@@ -1794,6 +1798,9 @@ fi
 
 if [ "${final_action}" != "console" ]; then
 	echo -n "Unmounting filesystems... "
+	for sysfolder in /dev /dev/pts /proc /sys /run; do
+		umount "/rootfs${sysfolder}"
+	done
 	umount /rootfs/boot
 	umount /rootfs
 	echo "OK"
