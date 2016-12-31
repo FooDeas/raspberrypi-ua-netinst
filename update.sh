@@ -10,7 +10,7 @@ RASPBERRYPI_ARCHIVE_KEY_FILE_NAME="raspberrypi.gpg.key"
 RASPBERRYPI_ARCHIVE_KEY_URL="${RASPBERRYPI_ARCHIVE_KEY_DIRECTORY}/${RASPBERRYPI_ARCHIVE_KEY_FILE_NAME}"
 RASPBERRYPI_ARCHIVE_KEY_FINGERPRINT="CF8A1AF502A2AA2D763BAE7E82B129927FA3303E"
 
-mirror_raspbian=http://archive.raspbian.org/raspbian/
+mirror_raspbian=http://mirrordirector.raspbian.org/raspbian/
 mirror_raspberrypi=http://archive.raspberrypi.org/debian/
 release=jessie
 
