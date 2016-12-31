@@ -10,8 +10,8 @@ RASPBERRYPI_ARCHIVE_KEY_FILE_NAME="raspberrypi.gpg.key"
 RASPBERRYPI_ARCHIVE_KEY_URL="${RASPBERRYPI_ARCHIVE_KEY_DIRECTORY}/${RASPBERRYPI_ARCHIVE_KEY_FILE_NAME}"
 RASPBERRYPI_ARCHIVE_KEY_FINGERPRINT="CF8A1AF502A2AA2D763BAE7E82B129927FA3303E"
 
-mirror_raspbian=http://mirrordirector.raspbian.org/raspbian/
-mirror_raspberrypi=http://archive.raspberrypi.org/debian/
+mirror_raspbian=http://mirrordirector.raspbian.org/raspbian
+mirror_raspberrypi=http://archive.raspberrypi.org/debian
 release=jessie
 
 packages=()
@@ -128,7 +128,7 @@ setup_archive_keys() {
 	echo ""
 
 	echo "Downloading ${RASPBIAN_ARCHIVE_KEY_FILE_NAME}."
-	curl -L -H 'Cache-Control: no-cache' -H 'Cache-Control: max-age=0' -# -O ${RASPBIAN_ARCHIVE_KEY_URL}
+	wget -q --show-progress --no-cache ${RASPBIAN_ARCHIVE_KEY_URL}
 	if check_key "${RASPBIAN_ARCHIVE_KEY_FILE_NAME}" "${RASPBIAN_ARCHIVE_KEY_FINGERPRINT}"; then
 		# GPG key checks out, thus import it into our own keyring
 		echo -n "Importing '${RASPBIAN_ARCHIVE_KEY_FILE_NAME}' into keyring... "
@@ -145,7 +145,7 @@ setup_archive_keys() {
 	echo ""
 
 	echo "Downloading ${RASPBERRYPI_ARCHIVE_KEY_FILE_NAME}."
-	curl -L -H 'Cache-Control: no-cache' -H 'Cache-Control: max-age=0' -# -O ${RASPBERRYPI_ARCHIVE_KEY_URL}
+	wget -q --show-progress --no-cache ${RASPBERRYPI_ARCHIVE_KEY_URL}
 	if check_key "${RASPBERRYPI_ARCHIVE_KEY_FILE_NAME}" "${RASPBERRYPI_ARCHIVE_KEY_FINGERPRINT}"; then
 		# GPG key checks out, thus import it into our own keyring
 		echo -n "Importing '${RASPBERRYPI_ARCHIVE_KEY_FILE_NAME}' into keyring..."
@@ -198,7 +198,11 @@ download_package_list() {
 
 			# Download Packages file
 			echo -e "\nDownloading ${package_section} package list..."
-			curl -L -H 'Cache-Control: no-cache' -H 'Cache-Control: max-age=0' -# -o "tmp${extension}" "${2}/dists/$release/$package_section/binary-armhf/Packages${extension}"
+			if ! wget -q --show-progress --no-cache -O "tmp${extension}" "${2}/dists/$release/$package_section/binary-armhf/Packages${extension}"; then
+				echo -e "ERROR\nDownloading ${package_section} package list failed! Exiting."
+				cd ..
+				exit 1
+			fi
 
 			# Verify the checksum of the Packages file, assuming that the last checksums in the Release file are SHA256 sums
 			echo -n "Verifying ${package_section} package list... "
@@ -236,8 +240,8 @@ download_package_lists() {
 	fi
 
 	echo -e "\nDownloading Release file and its signature..."
-	curl -L -H 'Cache-Control: no-cache' -H 'Cache-Control: max-age=0' -# -o "${1}_Release" "${2}/dists/$release/Release"
-	curl -L -H 'Cache-Control: no-cache' -H 'Cache-Control: max-age=0' -# -o "${1}_Release.gpg" "${2}/dists/$release/Release.gpg"
+	wget -q --show-progress --no-cache -O "${1}_Release" "${2}/dists/$release/Release"
+	wget -q --show-progress --no-cache -O "${1}_Release.gpg" "${2}/dists/$release/Release.gpg"
 	echo -n "Verifying Release file... "
 	if gpg --homedir gnupg --verify "${1}_Release.gpg" "${1}_Release" &> /dev/null; then
 		echo "OK"
@@ -270,7 +274,7 @@ add_packages() {
 			if required "${current_package}"; then
 				printf "  %-32s %s\n" "${current_package}" "$(basename "${current_filename}")"
 				unset_required "${current_package}"
-				packages_debs+=("${2}${current_filename}")
+				packages_debs+=("${2}/${current_filename}")
 				packages_sha256+=("${current_sha256} $(basename "${current_filename}")")
 				allfound && break
 			fi
@@ -286,7 +290,11 @@ download_packages() {
 	echo -e "\nDownloading packages..."
 	for package in "${packages_debs[@]}"; do
 		echo -e "Downloading package: \"${package}\""
-		curl -L -H 'Cache-Control: no-cache' -H 'Cache-Control: max-age=0' -# --remote-name ${package}
+		if ! wget -q --show-progress --no-cache ${package}; then
+			echo -e "ERROR\nDownloading ${package} failed! Exiting."
+			cd ..
+			exit 1
+		fi
 	done
 
 	echo -n "Verifying downloaded packages... "
@@ -307,8 +315,8 @@ download_remote_file() {
 		echo -e "\nDownloading ${2}..."
 	fi
 	
-	if ! curl -L -H 'Cache-Control: no-cache' -H 'Cache-Control: max-age=0' -# -o "${2}_tmp" -L "${1}${2}"; then
-		echo -e "ERROR\nDownloading ${1} failed! Exiting."
+	if ! wget -q --show-progress --no-cache -O "${2}_tmp" "${1}${2}"; then
+		echo -e "ERROR\nDownloading ${1}${2} failed! Exiting."
 		cd ..
 		exit 1
 	fi

@@ -5,7 +5,7 @@ To create an image yourself, you need to have various packages installed on the 
 On a Debian system those are the following, excluding packages with priority essential and required:
 
 - git
-- curl
+- wget
 - bzip2
 - zip
 - xz-utils
