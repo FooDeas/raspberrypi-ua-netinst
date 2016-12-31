@@ -339,9 +339,9 @@ echo "=================================================="
 echo "https://github.com/FooDeas/raspberrypi-ua-netinst/"
 echo "=================================================="
 
-echo -n "Starting HWRNG "
+echo -n "Starting HWRNG... "
 if /usr/sbin/rngd -r /dev/hwrng; then
-	echo "succeeded!"
+	echo "OK"
 else
 	echo "FAILED! (continuing to use the software RNG)"
 fi
@@ -469,15 +469,14 @@ echo
 # depmod needs to update modules.dep before using modprobe
 depmod -a
 if [ -n "${drivers_to_load}" ]; then
-	echo "Loading additional drivers."
+	echo "Loading additional kernel modules:"
 	drivers_to_load="$(echo ${drivers_to_load} | tr ',' ' ')"
 	for driver in ${drivers_to_load}
 	do
-		echo -n "  Loading driver '${driver}'... "
+		echo -n "  Loading module '${driver}'... "
 		modprobe "${driver}" || fail
 		echo "OK"
 	done
-	echo "Finished loading additional drivers"
 	echo
 fi
 
@@ -517,7 +516,7 @@ if [ "${ip_addr}" = "dhcp" ]; then
 	echo -n "Configuring ${ifname} with DHCP... "
 
 	if udhcpc -i "${ifname}" &>/dev/null; then
-		ifconfig "${ifname}" | fgrep addr: | awk '{print $2}' | cut -d: -f2
+		ifconfig "${ifname}" | grep -F addr: | awk '{print $2}' | cut -d: -f2
 	else
 		echo "FAILED"
 		fail
@@ -996,7 +995,7 @@ touch "${FDISK_SCHEME_USB_ROOT}"
 
 echo "Waiting for ${rootdev}... "
 for i in $(seq 1 10); do
-	if fdisk -l "${rootdev}" 2>&1 | fgrep Disk | sed 's/^/  /'; then
+	if fdisk -l "${rootdev}" 2>&1 | grep -F Disk | sed 's/^/  /'; then
 		echo "OK"
 		break
 	fi
