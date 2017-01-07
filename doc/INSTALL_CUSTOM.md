@@ -16,7 +16,7 @@
 |-------------------|---------|---------------------------|------------------------------------------------------------------------------------------------------|
 | `preset` | `server` | `base`/  `minimal`/  `server` | The current packages that are installed by default are listed below. |
 | `packages` |  |  | Install this additional packages (comma separated and quoted). (e.g. "pi-bluetooth,cifs-utils,curl") |
-| `firmware_packages` |  | `0` | `0`/`1` | Set to "1" to install common firmware packages (Atheros, Broadcom, Libertas, Ralink and Realtek) |
+| `firmware_packages` | `0` | `0`/`1` | Set to "1" to install common firmware packages (Atheros, Broadcom, Libertas, Ralink and Realtek) |
 | `mirror` | `http://mirrordirector.raspbian.org/raspbian/` |  |  |
 | `release` | `jessie` |  |  |
 
