@@ -680,8 +680,8 @@ mkdir -p bootfs/raspberrypi-ua-netinst/config/apt
 mkdir -p bootfs/raspberrypi-ua-netinst/config/boot
 mkdir -p bootfs/raspberrypi-ua-netinst/config/files
 mkdir -p bootfs/raspberrypi-ua-netinst/config/files/root
-if [ -d config ] ; then
-	cp -r config/* bootfs/raspberrypi-ua-netinst/config/
+if [ -d ../config ]; then
+	cp -r ../config/* bootfs/raspberrypi-ua-netinst/config/
 fi
 
 # create zip file
