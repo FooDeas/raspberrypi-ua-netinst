@@ -4,9 +4,10 @@
 set -e # exit if any command fails
 umask 022
 
-build_dir=build_dir
-packages_dir=../packages
-resources_dir=../res
+build_dir=./build_dir
+packages_dir=./packages
+resources_dir=./res
+scripts_dir=./scripts
 
 # update version and date
 version_tag="$(git describe --exact-match --tags HEAD 2> /dev/null || true)"
@@ -205,9 +206,9 @@ function create_cpio {
 	done
 
 	# install scripts
-	cp --preserve=xattr,timestamps -r ../scripts/* rootfs/
-	(cd ../scripts/ && find . -type d -exec echo rootfs/{} \;) | xargs chmod +rx
-	(cd ../scripts/ && find . -type f -exec echo rootfs/{} \;) | xargs chmod +rx
+	cp --preserve=xattr,timestamps -r ../"${scripts_dir}"/* rootfs/
+	(cd ../"${scripts_dir}"/ && find . -type d -exec echo rootfs/{} \;) | xargs chmod +rx
+	(cd ../"${scripts_dir}"/ && find . -type f -exec echo rootfs/{} \;) | xargs chmod +rx
 	sed -i "s/__VERSION__/${version_info}/" rootfs/opt/raspberrypi-ua-netinst/install.sh
 	sed -i "s/__DATE__/$(date)/" rootfs/opt/raspberrypi-ua-netinst/install.sh
 
@@ -412,7 +413,7 @@ function create_cpio {
 	cp --preserve=xattr,timestamps tmp/usr/sbin/ntpdate-debian rootfs/usr/sbin/
 
 	# raspberrypi.org GPG key
-	cp --preserve=xattr,timestamps ${packages_dir}/raspberrypi.gpg.key rootfs/usr/share/keyrings/
+	cp --preserve=xattr,timestamps ../"${packages_dir}"/raspberrypi.gpg.key rootfs/usr/share/keyrings/
 
 	# raspbian-archive-keyring components
 	cp --preserve=xattr,timestamps tmp/usr/share/keyrings/raspbian-archive-keyring.gpg rootfs/usr/share/keyrings/
@@ -623,9 +624,9 @@ function create_cpio {
 
 	# install additional resources
 	mkdir -p rootfs/opt/raspberrypi-ua-netinst/res
-	cp --preserve=xattr,timestamps -r ${resources_dir}/initramfs/* rootfs/opt/raspberrypi-ua-netinst/res/
-	(cd "${resources_dir}/initramfs/" && find . -type d -exec echo rootfs/opt/raspberrypi-ua-netinst/res/{} \;) | xargs chmod +rx
-	(cd "${resources_dir}/initramfs/" && find . -type f -exec echo rootfs/opt/raspberrypi-ua-netinst/res/{} \;) | xargs chmod +r
+	cp --preserve=xattr,timestamps -r ../"${resources_dir}"/initramfs/* rootfs/opt/raspberrypi-ua-netinst/res/
+	(cd ../"${resources_dir}"/initramfs/ && find . -type d -exec echo rootfs/opt/raspberrypi-ua-netinst/res/{} \;) | xargs chmod +rx
+	(cd ../"${resources_dir}"/initramfs/ && find . -type f -exec echo rootfs/opt/raspberrypi-ua-netinst/res/{} \;) | xargs chmod +r
 
 	INITRAMFS="../raspberrypi-ua-netinst.cpio.gz"
 	(cd rootfs && find . | cpio -H newc -ov | gzip --best > $INITRAMFS)
