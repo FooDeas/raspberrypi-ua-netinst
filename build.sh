@@ -637,7 +637,7 @@ fi
 
 # Prepare
 
-rm -rf tmp && mkdir -p ${build_dir} && cd ${build_dir}
+rm -rf ${build_dir} && mkdir -p ${build_dir} && cd ${build_dir}
 rm -rf tmp && mkdir tmp
 
 # extract debs
