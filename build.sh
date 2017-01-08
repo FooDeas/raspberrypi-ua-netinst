@@ -206,7 +206,8 @@ function create_cpio {
 
 	# install scripts
 	cp --preserve=xattr,timestamps -r ../scripts/* rootfs/
-	find ../scripts/ -type f | sed "s/^\.\.\/scripts\//rootfs\//g" | xargs chmod +x
+	(cd ../scripts/ && find . -type d -exec echo rootfs/{} \;) | xargs chmod +rx
+	(cd ../scripts/ && find . -type f -exec echo rootfs/{} \;) | xargs chmod +rx
 	sed -i "s/__VERSION__/${version_info}/" rootfs/opt/raspberrypi-ua-netinst/install.sh
 	sed -i "s/__DATE__/$(date)/" rootfs/opt/raspberrypi-ua-netinst/install.sh
 
@@ -623,6 +624,8 @@ function create_cpio {
 	# install additional resources
 	mkdir -p rootfs/opt/raspberrypi-ua-netinst/res
 	cp --preserve=xattr,timestamps -r ${resources_dir}/initramfs/* rootfs/opt/raspberrypi-ua-netinst/res/
+	(cd "${resources_dir}/initramfs/" && find . -type d -exec echo rootfs/opt/raspberrypi-ua-netinst/res/{} \;) | xargs chmod +rx
+	(cd "${resources_dir}/initramfs/" && find . -type f -exec echo rootfs/opt/raspberrypi-ua-netinst/res/{} \;) | xargs chmod +r
 
 	INITRAMFS="../raspberrypi-ua-netinst.cpio.gz"
 	(cd rootfs && find . | cpio -H newc -ov | gzip --best > $INITRAMFS)
