@@ -672,7 +672,9 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	# not very logical that minimal > base, but that's how it was historically defined
 
 	init_system=""
-	if [ "${release}" = "jessie" ] || [ "${release}" = "stretch" ]; then
+	if [ "${release}" = "wheezy" ]; then
+		init_system="sysvinit"
+	else
 		init_system="systemd"
 	fi
 
@@ -685,6 +687,9 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	fi
 	if [ -n "${keyboard_layout}" ] && [ "${keyboard_layout}" != "us" ]; then
 		custom_packages="${custom_packages},console-setup"
+	fi
+	if [ "${enable_watchdog}" = "1" ] && [ "${init_system}" = "sysvinit" ]; then
+		custom_packages="${custom_packages},watchdog"
 	fi
 	# add user defined packages
 	if [ -n "${packages}" ]; then
@@ -1566,12 +1571,6 @@ if [ "${kernel_module}" = true ]; then
 	unset DEBIAN_FRONTEND
 fi
 
-# (conditionaly) enable hardware watchdog and set up systemd to use it
-if [ "${init_system}" = "systemd" ] && [ "${enable_watchdog}" = "1" ]; then
-	echo "bcm2708_wdog" >> /rootfs/etc/modules
-	sed -i 's/^.*RuntimeWatchdogSec=.*$/RuntimeWatchdogSec=14s/' /rootfs/etc/systemd/system.conf
-fi
-
 echo "Preserving original config.txt and kernels..."
 mkdir -p /rootfs/boot/raspberrypi-ua-netinst/reinstall
 cp /bootfs/config.txt /rootfs/boot/raspberrypi-ua-netinst/reinstall/config.txt
@@ -1676,6 +1675,21 @@ if [ -n "${gpu_mem}" ]; then
 	if [ "$(grep -c "^gpu_mem=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
 		sed -i "s/^\(gpu_mem=.*\)/#\1/" /rootfs/boot/config.txt
 		echo "gpu_mem=${gpu_mem}" >> /rootfs/boot/config.txt
+	fi
+fi
+
+# enable hardware watchdog and set up systemd to use it
+if [ "${enable_watchdog}" = "1" ]; then
+	if [ "${init_system}" = "sysvinit" ]; then
+		sed -i "s/^\(#\)*\(max-load-1\t\t= \)\S\+/\224/" /rootfs/etc/watchdog.conf || fail
+		sed -i "s/^\(#\)*\(watchdog-device\t\)\(= \)\S\+/\2\t\3\/dev\/watchdog/" /rootfs/etc/watchdog.conf || fail
+		if [ "$(grep -c "^\(#\)*watchdog-timeout" /etc/watchdog.conf)" -eq 1 ]; then
+			sed -i "s/^\(#\)*\(watchdog-timeout\t= \)\S\+/\214/" /rootfs/etc/watchdog.conf || fail
+		else
+			echo -e "watchdog-timeout\t= 14" >> /rootfs/etc/watchdog.conf || fail
+		fi
+	elif [ "${init_system}" = "systemd" ]; then
+		sed -i 's/^.*RuntimeWatchdogSec=.*$/RuntimeWatchdogSec=14s/' /rootfs/etc/systemd/system.conf
 	fi
 fi
 
