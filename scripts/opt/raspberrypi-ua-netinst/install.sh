@@ -58,7 +58,7 @@ cmdline="dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 elevator=deadl
 rootfstype=f2fs
 final_action=reboot
 hwrng_support=1
-enable_watchdog=0
+watchdog_enable=0
 quiet_boot=0
 cleanup=0
 cleanup_logfiles=0
@@ -688,7 +688,7 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	if [ -n "${keyboard_layout}" ] && [ "${keyboard_layout}" != "us" ]; then
 		custom_packages="${custom_packages},console-setup"
 	fi
-	if [ "${enable_watchdog}" = "1" ] && [ "${init_system}" = "sysvinit" ]; then
+	if [ "${watchdog_enable}" = "1" ] && [ "${init_system}" = "sysvinit" ]; then
 		custom_packages="${custom_packages},watchdog"
 	fi
 	# add user defined packages
@@ -1679,7 +1679,7 @@ if [ -n "${gpu_mem}" ]; then
 fi
 
 # enable hardware watchdog and set up systemd to use it
-if [ "${enable_watchdog}" = "1" ]; then
+if [ "${watchdog_enable}" = "1" ]; then
 	if [ "${init_system}" = "sysvinit" ]; then
 		sed -i "s/^\(#\)*\(max-load-1\t\t= \)\S\+/\224/" /rootfs/etc/watchdog.conf || fail
 		sed -i "s/^\(#\)*\(watchdog-device\t\)\(= \)\S\+/\2\t\3\/dev\/watchdog/" /rootfs/etc/watchdog.conf || fail
