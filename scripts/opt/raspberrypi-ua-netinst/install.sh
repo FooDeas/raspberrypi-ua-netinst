@@ -699,7 +699,10 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	# base
 	base_packages="cpufrequtils,kmod,raspbian-archive-keyring"
 	base_packages="${custom_packages},${base_packages}"
-	base_packages_postinstall=raspberrypi-kernel,raspberrypi-bootloader
+	base_packages_postinstall=raspberrypi-bootloader
+	if [ "${release}" != "wheezy" ]; then
+		base_packages_postinstall="${base_packages_postinstall},raspberrypi-kernel"
+	fi
 	base_packages_postinstall="${custom_packages_postinstall},${base_packages_postinstall}"
 	if [ "${init_system}" = "systemd" ]; then
 		base_packages="${base_packages},libpam-systemd"
@@ -716,7 +719,9 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	if [ -z "${rtc}" ]; then
 		minimal_packages="${minimal_packages},fake-hwclock"
 	fi
-	minimal_packages_postinstall=raspberrypi-sys-mods
+	if [ "${release}" != "wheezy" ]; then
+		minimal_packages_postinstall="${minimal_packages_postinstall},raspberrypi-sys-mods"
+	fi
 	minimal_packages_postinstall="${base_packages_postinstall},${minimal_packages_postinstall}"
 	if echo "${ifname}" | grep -q "wlan"; then
 		minimal_packages_postinstall="${minimal_packages_postinstall},firmware-brcm80211"
