@@ -1517,7 +1517,7 @@ do
 	fi
 done
 
-# iterate through all the *.conf files and add them to /etc/apt/sources.list.d
+# iterate through all the *.conf files and add them to /etc/apt/apt.conf.d
 for conffile in ./*.conf
 do
 	if [ -e "${conffile}" ]; then
