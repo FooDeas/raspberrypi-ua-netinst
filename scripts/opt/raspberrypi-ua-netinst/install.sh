@@ -1517,6 +1517,16 @@ do
 	fi
 done
 
+# iterate through all the *.conf files and add them to /etc/apt/sources.list.d
+for conffile in ./*.conf
+do
+	if [ -e "${conffile}" ]; then
+		echo -n "  Copying '${conffile%.*}' to /etc/apt/apt.conf.d/... "
+		sed "s/__RELEASE__/${release}/g" "${conffile}" > "/rootfs/etc/apt/apt.conf.d/${conffile%.*}" || fail
+		echo "OK"
+	fi
+done
+
 # return to the old location for the rest of the processing
 cd "${old_dir}" || fail
 
