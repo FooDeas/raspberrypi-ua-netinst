@@ -1490,7 +1490,7 @@ done
 # iterate through all the *.pref files and add them to /etc/apt/preferences.d
 for preffile in ./*.pref
 do
-	if [ "${listfile}" != "./archive_raspberrypi_org.pref" ] && [ -e "${preffile}" ]; then
+	if [ "${preffile}" != "./archive_raspberrypi_org.pref" ] && [ -e "${preffile}" ]; then
 		echo -n "  Copying '${preffile}' to /etc/apt/preferences.d/... "
 		sed "s/__RELEASE__/${release}/g" "${preffile}" > "/rootfs/etc/apt/preferences.d/${preffile}" || fail
 		echo "OK"
