@@ -331,10 +331,23 @@ download_remote_file() {
 	fi
 }
 
+# Read config
+if [ -r ./build.conf ]; then
+	source ./build.conf
+fi
+
 # Download packages
 (
 	rm -rf packages/
 	mkdir packages && cd packages
+
+	## Add caching proxy if configured
+	if [ -n "${mirror_raspbian}" ]; then
+		mirror_raspbian=${mirror_raspbian/:\/\//:\/\/${mirror_raspbian_cache}\/}
+	fi
+	if [ -n "${mirror_raspberrypi}" ]; then
+		mirror_raspberrypi=${mirror_raspberrypi/:\/\//:\/\/${mirror_raspberrypi_cache}\/}
+	fi
 
 	## Download package list
 	download_package_lists raspberry ${mirror_raspberrypi}
