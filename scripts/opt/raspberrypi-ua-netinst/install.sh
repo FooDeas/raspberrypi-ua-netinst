@@ -1721,9 +1721,17 @@ if [ "${watchdog_enable}" = "1" ]; then
 fi
 
 # set wlan country code
-if [ -n "${wlan_country}" ] && ! grep -q "country=" /rootfs/etc/wpa_supplicant/wpa_supplicant.conf; then
-	sanitize_inputfile /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
-	echo "country=${wlan_country}" >> /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
+if [ -n "${wlan_country}" ]; then
+	if [ -r /rootfs/etc/wpa_supplicant/wpa_supplicant.conf ]; then
+		sanitize_inputfile /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
+		if ! grep -q "country=" /rootfs/etc/wpa_supplicant/wpa_supplicant.conf; then
+			echo "country=${wlan_country}" >> /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
+		fi
+	else
+		mkdir -p /rootfs/etc/wpa_supplicant/
+		echo "country=${wlan_country}" >> /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
+		chmod 600 /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
+	fi
 fi
 
 # set hdmi options
