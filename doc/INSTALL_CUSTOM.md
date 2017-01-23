@@ -13,11 +13,12 @@
 ## Package
 
 | Parameter | Default | Options | Description |
-|-------------------|---------|---------------------------|------------------------------------------------------------------------------------------------------|
+|---------------------|------------------------------------------------|-------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `preset` | `server` | `base`/  `minimal`/  `server` | The current packages that are installed by default are listed below. |
 | `packages` |  |  | Install this additional packages (comma separated and quoted). (e.g. "pi-bluetooth,cifs-utils,curl") |
 | `firmware_packages` | `0` | `0`/`1` | Set to "1" to install common firmware packages (Atheros, Broadcom, Libertas, Ralink and Realtek) |
 | `mirror` | `http://mirrordirector.raspbian.org/raspbian/` |  |  |
+| `mirror_cache` |  |  | Set an HTTP apt-cacher-(ng) to be used while installation for the repository set in `mirror` and additionally "http://archive.raspberrypi.org/debian". (e.g "192.168.0.1:3142") |
 | `release` | `jessie` |  |  |
 
 ### Description: Presets
