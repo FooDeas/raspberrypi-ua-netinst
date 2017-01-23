@@ -460,6 +460,7 @@ if echo "${ifname}" | grep -q "wlan"; then
 		echo "  wlan_psk = ${wlan_psk}"
 		{
 			echo "network={"
+			echo "    scan_ssid=1"
 			echo "    ssid=\"${wlan_ssid}\""
 			echo "    psk=\"${wlan_psk}\""
 			echo "}"
