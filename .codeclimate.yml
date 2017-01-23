@@ -2,6 +2,8 @@ engines:
   shellcheck:
     enabled: true
     checks:
+      SC1090:
+        enabled: false
       SC1091:
         enabled: false
   markdownlint:

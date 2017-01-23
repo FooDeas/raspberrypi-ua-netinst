@@ -28,7 +28,7 @@ The following scripts are used to build the raspberrypi-ua-netinst installer, li
 - `build.sh` - Builds the installer initramfs and .zip package for Windows/Mac SD card extraction method. Transfer the .zip package to a Windows/Mac computer, then simply unzip it and copy the files onto a FAT formatted SD card.
 - `buildroot.sh` - Builds the installer SD card image, it requires root privileges and it makes some assumptions like not having any other loop devices in use. You only need to execute this script if you need more than a .zip package. The script produces an .img package and also its bzip2 and xz compressed versions.
 
-To set build options, create a file named `build.conf`, which contains the appropriate variable settings. Make sure, that this file uses Unix line endings! Supported variables are:
+To set build options, create a file named `build.conf`, which contains the appropriate variable settings. Supported variables are:
 
-- `mirror_raspbian_cache` - Sets a apt caching proxy for the raspbian.org repository.
-- `mirror_raspberrypi_cache` - Sets a apt caching proxy for the raspberrypi.org repository.
+- `mirror_raspbian_cache` - Sets a apt caching proxy for the raspbian.org repository. (e.g. "192.168.0.1:3142")
+- `mirror_raspberrypi_cache` - Sets a apt caching proxy for the raspberrypi.org repository. (e.g. "192.168.0.1:3142")

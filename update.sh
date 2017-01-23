@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# shellcheck source=./build.conf
+# shellcheck disable=SC1091
 
 RASPBIAN_ARCHIVE_KEY_DIRECTORY="https://archive.raspbian.org"
 RASPBIAN_ARCHIVE_KEY_FILE_NAME="raspbian.public.key"
@@ -333,7 +335,7 @@ download_remote_file() {
 
 # Read config
 if [ -r ./build.conf ]; then
-	source ./build.conf
+	source <(tr -d "\015" < ./build.conf)
 fi
 
 # Download packages
