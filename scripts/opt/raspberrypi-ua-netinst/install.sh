@@ -1696,6 +1696,11 @@ fi
 
 # enable hardware watchdog and set up systemd to use it
 if [ "${watchdog_enable}" = "1" ]; then
+	sed -i "s/^#\(dtparam=watchdog=on\)/\1/" /rootfs/boot/config.txt
+	if [ "$(grep -c "^dtparam=watchdog=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
+		sed -i "s/^\(dtparam=watchdog=.*\)/#\1/" /rootfs/boot/config.txt
+		echo "dtparam=watchdog=on" >> /rootfs/boot/config.txt
+	fi
 	if [ "${init_system}" = "sysvinit" ]; then
 		sed -i "s/^\(#\)*\(max-load-1\t\t= \)\S\+/\224/" /rootfs/etc/watchdog.conf || fail
 		sed -i "s/^\(#\)*\(watchdog-device\t\)\(= \)\S\+/\2\t\3\/dev\/watchdog/" /rootfs/etc/watchdog.conf || fail
