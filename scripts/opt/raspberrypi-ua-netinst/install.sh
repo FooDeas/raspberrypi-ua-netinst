@@ -1883,7 +1883,7 @@ fi
 
 if [ "${final_action}" != "console" ]; then
 	echo -n "Unmounting filesystems... "
-	for sysfolder in /dev /dev/pts /proc /sys /run; do
+	for sysfolder in /dev/pts /proc /sys; do
 		umount "/rootfs${sysfolder}"
 	done
 	umount /rootfs/boot
