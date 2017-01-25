@@ -13,11 +13,12 @@
 ## Package
 
 | Parameter | Default | Options | Description |
-|-------------------|---------|---------------------------|------------------------------------------------------------------------------------------------------|
+|---------------------|--------------------------------------------------|-------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `preset` | `server` | `base`/  `minimal`/  `server` | The current packages that are installed by default are listed below. |
 | `packages` |  |  | Install this additional packages (comma separated and quoted). (e.g. "pi-bluetooth,cifs-utils,curl") |
 | `firmware_packages` | `0` | `0`/`1` | Set to "1" to install common firmware packages (Atheros, Broadcom, Libertas, Ralink and Realtek) |
-| `mirror` | `http://mirrordirector.raspbian.org/raspbian/` |  |  |
+| `mirror` | `http:// mirrordirector.raspbian.org/ raspbian/` |  |  |
+| `mirror_cache` |  |  | Set address and port for HTTP apt-cacher or apt-cacher-ng (e.g. "192.168.0.1:3142"). If set, the cacher will be used to cache packages during installation downloaded from the repository set in `mirror` as well as "http://archive.raspberrypi.org/debian". |
 | `release` | `jessie` |  |  |
 
 ### Description: Presets
@@ -31,13 +32,14 @@
 ## Device / peripheral
 
 | Parameter | Default | Options | Description |
-|----------------------|---------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------|
+|----------------------|---------|----------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `spi_enable` | `0` | `0`/`1` | Set to "1" to enable the SPI interface. |
 | `i2c_enable` | `0` | `0`/`1` | Set to "1" to enable the I²C (I2C) interface. |
 | `i2c_baudrate` |  |  | Specifies the I²C baudrate in bit/s. If not defined, the bootloader sets it to 100000 bit/s. The option `i2c_enable=1` has to be set to take effect. |
 | `sound_enable` | `0` | `0`/`1` | Set to "1" to enable the onboard audio. |
 | `camera_enable` | `0` | `0`/`1` | Set to "1" to enable the camera module. This sets all needed parameters in config.txt. |
 | `camera_disable_led` | `0` | `0`/`1` | Disables the camera led. The option `camera_enable=1` has to be set to take effect. |
+| `rtc` |  | `ds1307`/  `ds1339`/  `ds3231`/  `mcp7940x`/  `mcp7941x`/  `pcf2127`/  `pcf8523`/  `pcf8563` | Select an RTC if it is connected via I²C. |
 
 ## SSH
 
@@ -51,14 +53,13 @@
 ## User
 
 | Parameter | Default | Options | Description |
-|-------------------|----------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|-----------------|----------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `username` |  |  | Username of the user to create |
 | `userpw` |  |  | Password to use for created user |
 | `usergpio` |  | `0`/`1` | Set to 1 to give created user permissions to access GPIO pins. A new system group 'gpio' will be created automatically. |
 | `usergpu` |  | `0`/`1` | Set to 1 to give created user GPU access permissions (e.g. to run vcgencmd without using sudo). |
 | `usergroups` |  |  | Add created user to this additional groups (comma separated and quoted). Non-existent groups will be created. (e.g. 'usergroups=family,friends') |
 | `usersysgroups` |  |  | Add created user to this additional groups (comma separated and quoted). Non-existent groups will be created as system groups. (e.g. 'usersysgroups=video,www-data') |
-| `user_ssh_pubkey` |  |  | Public SSH key for created user; the public SSH key must be on a single line, enclosed in quotes |
 | `user_is_admin` |  | `0`/`1` | Set to 1 to install sudo and make the user a sudo user. |
 | `rootpw` | raspbian |  | Sets password for root. To disable root completely, also set root_ssh_pubkey empty. |
 
@@ -110,16 +111,16 @@
 ## Advanced
 
 | Parameter | Default | Options | Description |
-|--------------------------------|------------------------------------------------------------------------------------------------|--------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|--------------------------------|------------------------------------------------------------------------------------------------|--------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `quiet_boot` | `0` | `0`/`1` | Disables most log messages on boot. |
 | `cleanup` | `0` | `0`/`1` | Remove installer files after success. To also remove log files, note the option below. |
 | `cleanup_logfiles` | `0` | `0`/`1` | Removes installer log files after success. |
 | `cmdline` | `"dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 elevator=deadline fsck.repair=yes"` |  |  |
 | `rootfs_install_mount_options` |  |  |  |
 | `rootfs_mount_options` |  |  |  |
-| `final_action` | `reboot` | `poweroff`/  `halt`/  `reboot` | Action at the end of install. |
+| `final_action` | `reboot` | `reboot`/  `poweroff`/  `halt`/  `console` | Action at the end of install. |
 | `hwrng_support` | `1` | `0`/`1` | Install support for the ARM hardware random number generator. The default is enabled (1) on all presets. Users requiring a `base` install are advised that `hwrng_support=0` must be added in `installer-config.txt` if HWRNG support is undesirable. |
-| `enable_watchdog` | `0` | `0`/`1` | loads up the hardware watchdog module and configures systemd to use it. Set to "1" to enable this functionality. |
+| `watchdog_enable` | `0` | `0`/`1` | Set to "1" to enable and use the hardware watchdog. |
 | `cdebootstrap_cmdline` |  |  |  |
 | `rootfs_mkfs_options` |  |  |  |
 | `rootsize` |  |  | / partition size in megabytes, provide it in the form '+\<number\>M' (without quotes), leave empty to use all free space |

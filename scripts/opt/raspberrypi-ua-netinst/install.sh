@@ -8,6 +8,7 @@ preset=server
 packages=
 firmware_packages=
 mirror=http://mirrordirector.raspbian.org/raspbian/
+mirror_cache=
 release=jessie
 hostname=pi
 boot_volume_label=
@@ -31,6 +32,7 @@ rootsize=
 timeserver=time.nist.gov
 timeserver_http=
 timezone=Etc/UTC
+rtc=
 keyboard_layout=
 locales=
 system_default_locale=
@@ -57,7 +59,7 @@ cmdline="dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 elevator=deadl
 rootfstype=f2fs
 final_action=reboot
 hwrng_support=1
-enable_watchdog=0
+watchdog_enable=0
 quiet_boot=0
 cleanup=0
 cleanup_logfiles=0
@@ -339,9 +341,9 @@ echo "=================================================="
 echo "https://github.com/FooDeas/raspberrypi-ua-netinst/"
 echo "=================================================="
 
-echo -n "Starting HWRNG "
+echo -n "Starting HWRNG... "
 if /usr/sbin/rngd -r /dev/hwrng; then
-	echo "succeeded!"
+	echo "OK"
 else
 	echo "FAILED! (continuing to use the software RNG)"
 fi
@@ -408,6 +410,17 @@ if [ "${hdmi_system_only}" = "0" ]; then
 		echo "  =================================================="
 	fi
 fi
+# RTC
+if [ -n "${rtc}" ] ; then
+	echo "  =================================================="
+	echo "  == Enabling RTC configuration... ================="
+	if ! grep -q "^dtoverlay=i2c-rtc,${rtc}\>" /boot/config.txt; then
+		echo -e "\ndtoverlay=i2c-rtc,${rtc}" >> /boot/config.txt
+		preinstall_reboot=1
+	fi
+	echo "  == Done. ========================================="
+	echo "  =================================================="
+fi
 echo "OK"
 # Reboot if needed
 if [ "${preinstall_reboot}" = "1" ]; then
@@ -442,17 +455,13 @@ if [ "${ip_addr}" != "dhcp" ]; then
 fi
 
 if echo "${ifname}" | grep -q "wlan"; then
-	if [ -z "${drivers_to_load}" ]; then
-		drivers_to_load="brcmfmac"
-	else
-		drivers_to_load="${drivers_to_load},brcmfmac"
-	fi
 	if [ ! -e "${wlan_configfile}" ]; then
 		wlan_configfile=/tmp/wpa_supplicant.conf
 		echo "  wlan_ssid = ${wlan_ssid}"
 		echo "  wlan_psk = ${wlan_psk}"
 		{
 			echo "network={"
+			echo "    scan_ssid=1"
 			echo "    ssid=\"${wlan_ssid}\""
 			echo "    psk=\"${wlan_psk}\""
 			echo "}"
@@ -468,17 +477,17 @@ echo
 
 # depmod needs to update modules.dep before using modprobe
 depmod -a
+find /sys/ -name modalias -print0 | xargs -0 sort -u | xargs modprobe -abq
 if [ -n "${drivers_to_load}" ]; then
-   echo "Loading additional drivers."
-   drivers_to_load="$(echo ${drivers_to_load} | tr ',' ' ')"
-   for driver in ${drivers_to_load}
-   do
-	  echo -n "  Loading driver '${driver}'... "
-	  modprobe "${driver}" || fail
-	  echo "OK"
-   done
-   echo "Finished loading additional drivers"
-   echo
+	echo "Loading additional kernel modules:"
+	drivers_to_load="$(echo ${drivers_to_load} | tr ',' ' ')"
+	for driver in ${drivers_to_load}
+	do
+		echo -n "  Loading module '${driver}'... "
+		modprobe "${driver}" || fail
+		echo "OK"
+	done
+	echo
 fi
 
 echo -n "Waiting for ${ifname}... "
@@ -517,7 +526,7 @@ if [ "${ip_addr}" = "dhcp" ]; then
 	echo -n "Configuring ${ifname} with DHCP... "
 
 	if udhcpc -i "${ifname}" &>/dev/null; then
-		ifconfig "${ifname}" | fgrep addr: | awk '{print $2}' | cut -d: -f2
+		ifconfig "${ifname}" | grep -F addr: | awk '{print $2}' | cut -d: -f2
 	else
 		echo "FAILED"
 		fail
@@ -665,7 +674,9 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	# not very logical that minimal > base, but that's how it was historically defined
 
 	init_system=""
-	if [ "${release}" = "jessie" ]; then
+	if [ "${release}" = "wheezy" ]; then
+		init_system="sysvinit"
+	else
 		init_system="systemd"
 	fi
 
@@ -679,6 +690,9 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	if [ -n "${keyboard_layout}" ] && [ "${keyboard_layout}" != "us" ]; then
 		custom_packages="${custom_packages},console-setup"
 	fi
+	if [ "${watchdog_enable}" = "1" ] && [ "${init_system}" = "sysvinit" ]; then
+		custom_packages="${custom_packages},watchdog"
+	fi
 	# add user defined packages
 	if [ -n "${packages}" ]; then
 		custom_packages_postinstall="${custom_packages_postinstall},${packages}"
@@ -687,7 +701,10 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	# base
 	base_packages="cpufrequtils,kmod,raspbian-archive-keyring"
 	base_packages="${custom_packages},${base_packages}"
-	base_packages_postinstall=raspberrypi-kernel,raspberrypi-bootloader
+	base_packages_postinstall=raspberrypi-bootloader
+	if [ "${release}" != "wheezy" ]; then
+		base_packages_postinstall="${base_packages_postinstall},raspberrypi-kernel"
+	fi
 	base_packages_postinstall="${custom_packages_postinstall},${base_packages_postinstall}"
 	if [ "${init_system}" = "systemd" ]; then
 		base_packages="${base_packages},libpam-systemd"
@@ -697,8 +714,16 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	fi
 	
 	# minimal
-	minimal_packages="fake-hwclock,ifupdown,net-tools,ntp,openssh-server,dosfstools"
-	minimal_packages_postinstall=raspberrypi-sys-mods
+	minimal_packages="ifupdown,net-tools,openssh-server,dosfstools"
+	if [ "${init_system}" != "systemd" ]; then
+		minimal_packages="${minimal_packages},ntp"
+	fi
+	if [ -z "${rtc}" ]; then
+		minimal_packages="${minimal_packages},fake-hwclock"
+	fi
+	if [ "${release}" != "wheezy" ]; then
+		minimal_packages_postinstall="${minimal_packages_postinstall},raspberrypi-sys-mods"
+	fi
 	minimal_packages_postinstall="${base_packages_postinstall},${minimal_packages_postinstall}"
 	if echo "${ifname}" | grep -q "wlan"; then
 		minimal_packages_postinstall="${minimal_packages_postinstall},firmware-brcm80211"
@@ -794,10 +819,6 @@ fi
 
 if [ "${usbroot}" = "1" ]; then
 	rootdev=/dev/sda
-	echo -n "Loading USB modules... "
-	modprobe sd_mod &> /dev/null || fail
-	modprobe usb-storage &> /dev/null || fail
-	echo "OK"
 fi
 
 if [ -z "${rootpartition}" ]; then
@@ -834,6 +855,7 @@ echo "  preset = ${preset}"
 echo "  packages = ${packages}"
 echo "  firmware_packages = ${firmware_packages}"
 echo "  mirror = ${mirror}"
+echo "  mirror_cache = ${mirror_cache}"
 echo "  release = ${release}"
 echo "  hostname = ${hostname}"
 echo "  domainname = ${domainname}"
@@ -857,6 +879,7 @@ echo "  bootoffset = ${bootoffset}"
 echo "  rootsize = ${rootsize}"
 echo "  timeserver = ${timeserver}"
 echo "  timezone = ${timezone}"
+echo "  rtc = ${rtc}"
 echo "  keyboard_layout = ${keyboard_layout}"
 echo "  locales = ${locales}"
 echo "  system_default_locale = ${system_default_locale}"
@@ -993,7 +1016,7 @@ touch "${FDISK_SCHEME_USB_ROOT}"
 
 echo "Waiting for ${rootdev}... "
 for i in $(seq 1 10); do
-	if fdisk -l "${rootdev}" 2>&1 | fgrep Disk | sed 's/^/  /'; then
+	if fdisk -l "${rootdev}" 2>&1 | grep -F Disk | sed 's/^/  /'; then
 		echo "OK"
 		break
 	fi
@@ -1070,8 +1093,12 @@ fi
 
 echo
 echo "Starting install process..."
+if [ -n "${mirror_cache}" ]; then
+	export http_proxy="http://${mirror_cache}/"
+fi
 eval cdebootstrap-static --arch=armhf "${cdebootstrap_cmdline}" "${release}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg 2>&1 | output_filter | sed 's/^/  /'
 cdebootstrap_exitcode="${PIPESTATUS[0]}"
+unset http_proxy
 if [ "${cdebootstrap_exitcode}" -ne 0 ]; then
 	echo
 	echo "  ERROR: ${cdebootstrap_exitcode}"
@@ -1080,6 +1107,10 @@ fi
 
 echo
 echo "Configuring installed system:"
+# mount chroot system folders
+for sysfolder in /dev /dev/pts /proc /sys /run; do
+	mount --bind "${sysfolder}" "/rootfs${sysfolder}"
+done
 # configure root login
 if [ -n "${rootpw}" ]; then
 	echo -n "  Setting root password... "
@@ -1106,12 +1137,14 @@ if [ -n "${root_ssh_pubkey}" ]; then
 		fail
 	fi
 fi
-# openssh-server in jessie doesn't allow root to login with a password
+# openssh-server in jessie and higher doesn't allow root to login with a password
 if [ "${root_ssh_pwlogin}" = "1" ]; then
-	if [ "${release}" = "jessie" ] && [ -f /rootfs/etc/ssh/sshd_config ]; then
-		echo -n "  Allowing root to login with password on jessie... "
-		sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /rootfs/etc/ssh/sshd_config || fail
-		echo "OK"
+	if [ "${release}" = "jessie" ] || [ "${release}" = "stretch" ]; then
+		if [ -f /rootfs/etc/ssh/sshd_config ]; then
+			echo -n "  Allowing root to login with password... "
+			sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /rootfs/etc/ssh/sshd_config || fail
+			echo "OK"
+		fi
 	fi
 fi
 # disable global password login if requested
@@ -1393,13 +1426,22 @@ fi
 
 echo
 
-# there is no hw clock on rpi
-if grep -q "#HWCLOCKACCESS=yes" /rootfs/etc/default/hwclock; then
-	sed -i "s/^#\(HWCLOCKACCESS=\)yes/\1no/" /rootfs/etc/default/hwclock
-elif grep -q "HWCLOCKACCESS=yes" /rootfs/etc/default/hwclock; then
-	sed -i "s/^\(HWCLOCKACCESS=\)yes/\1no/m" /rootfs/etc/default/hwclock
+# if there is no hw clock on rpi
+if [ -z "${rtc}" ]; then
+	if grep -q "#HWCLOCKACCESS=yes" /rootfs/etc/default/hwclock; then
+		sed -i "s/^#\(HWCLOCKACCESS=\)yes/\1no/" /rootfs/etc/default/hwclock
+	elif grep -q "HWCLOCKACCESS=yes" /rootfs/etc/default/hwclock; then
+		sed -i "s/^\(HWCLOCKACCESS=\)yes/\1no/m" /rootfs/etc/default/hwclock
+	else
+		echo -e "HWCLOCKACCESS=no\n" >> /rootfs/etc/default/hwclock
+	fi
 else
-	echo -e "HWCLOCKACCESS=no\n" >> /rootfs/etc/default/hwclock
+	sed -i "s/^\(exit 0\)/\/sbin\/hwclock --hctosys\n\1/" /rootfs/etc/rc.local
+fi
+
+# enable NTP client on systemd releases
+if [ "${init_system}" = "systemd" ]; then
+	ln -s /usr/lib/systemd/system/systemd-timesyncd.service /rootfs/etc/systemd/system/multi-user.target.wants/systemd-timesyncd.service
 fi
 
 # copy apt's sources.list to the target system
@@ -1455,7 +1497,7 @@ done
 # iterate through all the *.pref files and add them to /etc/apt/preferences.d
 for preffile in ./*.pref
 do
-	if [ "${listfile}" != "./archive_raspberrypi_org.pref" ] && [ -e "${preffile}" ]; then
+	if [ "${preffile}" != "./archive_raspberrypi_org.pref" ] && [ -e "${preffile}" ]; then
 		echo -n "  Copying '${preffile}' to /etc/apt/preferences.d/... "
 		sed "s/__RELEASE__/${release}/g" "${preffile}" > "/rootfs/etc/apt/preferences.d/${preffile}" || fail
 		echo "OK"
@@ -1482,13 +1524,23 @@ do
 	fi
 done
 
+# iterate through all the *.conf files and add them to /etc/apt/apt.conf.d
+for conffile in ./*.conf
+do
+	if [ -e "${conffile}" ]; then
+		echo -n "  Copying '${conffile%.*}' to /etc/apt/apt.conf.d/... "
+		sed "s/__RELEASE__/${release}/g" "${conffile}" > "/rootfs/etc/apt/apt.conf.d/${conffile%.*}" || fail
+		echo "OK"
+	fi
+done
+
 # return to the old location for the rest of the processing
 cd "${old_dir}" || fail
 
 echo
 echo -n "Updating package lists... "
 for i in $(seq 1 3); do
-	if chroot /rootfs /usr/bin/apt-get update &>/dev/null ; then
+	if chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" update &>/dev/null ; then
 		echo "OK"
 		break
 	else
@@ -1514,7 +1566,7 @@ if [ "${kernel_module}" = true ]; then
 	echo
 	echo "Downloading packages..."
 	for i in $(seq 1 3); do
-		eval chroot /rootfs /usr/bin/apt-get -y -d install "${packages_postinstall}" 2>&1 | output_filter | sed 's/^/  /'
+		eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y -d install "${packages_postinstall}" 2>&1 | output_filter | sed 's/^/  /'
 		download_exitcode="${PIPESTATUS[0]}"
 		if [ "${download_exitcode}" -eq 0 ]; then
 			echo "OK"
@@ -1531,7 +1583,7 @@ if [ "${kernel_module}" = true ]; then
 
 	echo
 	echo "Installing kernel, bootloader (=firmware) and user packages..."
-	eval chroot /rootfs /usr/bin/apt-get -y install "${packages_postinstall}" 2>&1 | output_filter | sed 's/^/  /'
+	eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y install "${packages_postinstall}" 2>&1 | output_filter | sed 's/^/  /'
 	if [ "${PIPESTATUS[0]}" -eq 0 ]; then
 		echo "OK"
 	else
@@ -1539,12 +1591,6 @@ if [ "${kernel_module}" = true ]; then
 	fi
 	
 	unset DEBIAN_FRONTEND
-fi
-
-# (conditionaly) enable hardware watchdog and set up systemd to use it
-if [ "${enable_watchdog}" = "1" ]; then
-	echo "bcm2708_wdog" >> /rootfs/etc/modules
-	sed -i 's/^.*RuntimeWatchdogSec=.*$/RuntimeWatchdogSec=14s/' /rootfs/etc/systemd/system.conf
 fi
 
 echo "Preserving original config.txt and kernels..."
@@ -1654,10 +1700,38 @@ if [ -n "${gpu_mem}" ]; then
 	fi
 fi
 
+# enable hardware watchdog and set up systemd to use it
+if [ "${watchdog_enable}" = "1" ]; then
+	sed -i "s/^#\(dtparam=watchdog=on\)/\1/" /rootfs/boot/config.txt
+	if [ "$(grep -c "^dtparam=watchdog=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
+		sed -i "s/^\(dtparam=watchdog=.*\)/#\1/" /rootfs/boot/config.txt
+		echo "dtparam=watchdog=on" >> /rootfs/boot/config.txt
+	fi
+	if [ "${init_system}" = "sysvinit" ]; then
+		sed -i "s/^\(#\)*\(max-load-1\t\t= \)\S\+/\224/" /rootfs/etc/watchdog.conf || fail
+		sed -i "s/^\(#\)*\(watchdog-device\t\)\(= \)\S\+/\2\t\3\/dev\/watchdog/" /rootfs/etc/watchdog.conf || fail
+		if [ "$(grep -c "^\(#\)*watchdog-timeout" /etc/watchdog.conf)" -eq 1 ]; then
+			sed -i "s/^\(#\)*\(watchdog-timeout\t= \)\S\+/\214/" /rootfs/etc/watchdog.conf || fail
+		else
+			echo -e "watchdog-timeout\t= 14" >> /rootfs/etc/watchdog.conf || fail
+		fi
+	elif [ "${init_system}" = "systemd" ]; then
+		sed -i 's/^.*RuntimeWatchdogSec=.*$/RuntimeWatchdogSec=14s/' /rootfs/etc/systemd/system.conf
+	fi
+fi
+
 # set wlan country code
-if [ -n "${wlan_country}" ] && ! grep -q "country=" /rootfs/etc/wpa_supplicant/wpa_supplicant.conf; then
-	sanitize_inputfile /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
-	echo "country=${wlan_country}" >> /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
+if [ -n "${wlan_country}" ]; then
+	if [ -r /rootfs/etc/wpa_supplicant/wpa_supplicant.conf ]; then
+		sanitize_inputfile /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
+		if ! grep -q "country=" /rootfs/etc/wpa_supplicant/wpa_supplicant.conf; then
+			echo "country=${wlan_country}" >> /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
+		fi
+	else
+		mkdir -p /rootfs/etc/wpa_supplicant/
+		echo "country=${wlan_country}" >> /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
+		chmod 600 /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
+	fi
 fi
 
 # set hdmi options
@@ -1738,6 +1812,15 @@ if [ "${hdmi_type}" = "tv" ] || [ "${hdmi_type}" = "monitor" ]; then
 	fi
 fi
 
+# enable rtc if specified in the configuration file
+if [ -n "${rtc}" ]; then
+	sed -i "s/^#\(dtoverlay=i2c-rtc,${rtc}\)/\1/" /rootfs/boot/config.txt
+	if [ "$(grep -c "^dtoverlay=i2c-rtc,.*" /rootfs/boot/config.txt)" -ne 1 ]; then
+		sed -i "s/^\(dtoverlay=i2c-rtc,\)/#\1/" /rootfs/boot/config.txt
+		echo "dtoverlay=i2c-rtc,${rtc}" >> /rootfs/boot/config.txt
+	fi
+fi
+
 # iterate through all the file lists and call the install_files method for them
 old_dir=$(pwd)
 cd /rootfs/boot/raspberrypi-ua-netinst/config/files/ || fail
@@ -1764,10 +1847,17 @@ echo -n "Removing cdebootstrap-helper-rc.d... "
 chroot /rootfs /usr/bin/dpkg -r cdebootstrap-helper-rc.d &>/dev/null || fail
 echo "OK"
 
-# save current time if fake-hwclock
-echo "Saving current time for fake-hwclock..."
-sync # synchronize before saving time to make it "more accurate"
-date +"%Y-%m-%d %H:%M:%S" > /rootfs/etc/fake-hwclock.data
+# save current time
+if [ -z "${rtc}" ]; then
+	echo -n "Saving current time for fake-hwclock... "
+	sync # synchronize before saving time to make it "more accurate"
+	date +"%Y-%m-%d %H:%M:%S" > /rootfs/etc/fake-hwclock.data
+	echo "OK"
+else
+	echo -n "Saving current time to RTC... "
+	/opt/busybox/bin/hwclock --systohc || fail
+	echo "OK"
+fi
 
 ENDTIME=$(date +%s)
 DURATION=$((ENDTIME - REAL_STARTTIME))
@@ -1791,10 +1881,15 @@ if [ "${cleanup}" = "1" ]; then
 	echo "OK"
 fi
 
-echo -n "Unmounting filesystems... "
-umount /rootfs/boot
-umount /rootfs
-echo "OK"
+if [ "${final_action}" != "console" ]; then
+	echo -n "Unmounting filesystems... "
+	for sysfolder in /dev/pts /proc /sys; do
+		umount "/rootfs${sysfolder}"
+	done
+	umount /rootfs/boot
+	umount /rootfs
+	echo "OK"
+fi
 
 case ${final_action} in
 	poweroff)
@@ -1803,15 +1898,19 @@ case ${final_action} in
 	halt)
 		echo -n "Finished! Halting in 5 seconds..."
 		;;
+	console)
+		echo -n "Finished!"
+		;;
 	*)
 		echo -n "Finished! Rebooting to installed system in 5 seconds..."
 		final_action=reboot
 esac
 
-for i in $(seq 5 -1 1); do
-	sleep 1
-
-	echo -n "${i}.. "
-done
-echo " now"
-${final_action}
+if [ "${final_action}" != "console" ]; then
+	for i in $(seq 5 -1 1); do
+		sleep 1
+		echo -n "${i}.. "
+	done
+	echo "0"
+	${final_action}
+fi

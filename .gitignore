@@ -1,3 +1,4 @@
+/build.conf
 /bootfs/
 /config/
 !/config/apt/custom_sources.txt
@@ -5,6 +6,7 @@
 !/config/files/custom_files.txt
 /res/initramfs/boot/config.txt
 /packages/
+/build_dir/
 /raspberrypi-ua-netinst-*.zip
 /raspberrypi-ua-netinst-*.img
 /raspberrypi-ua-netinst-*.img.xz

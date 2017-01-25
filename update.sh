@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# shellcheck source=./build.conf
+# shellcheck disable=SC1091
 
 RASPBIAN_ARCHIVE_KEY_DIRECTORY="https://archive.raspbian.org"
 RASPBIAN_ARCHIVE_KEY_FILE_NAME="raspbian.public.key"
@@ -10,8 +12,10 @@ RASPBERRYPI_ARCHIVE_KEY_FILE_NAME="raspberrypi.gpg.key"
 RASPBERRYPI_ARCHIVE_KEY_URL="${RASPBERRYPI_ARCHIVE_KEY_DIRECTORY}/${RASPBERRYPI_ARCHIVE_KEY_FILE_NAME}"
 RASPBERRYPI_ARCHIVE_KEY_FINGERPRINT="CF8A1AF502A2AA2D763BAE7E82B129927FA3303E"
 
-mirror_raspbian=http://archive.raspbian.org/raspbian/
-mirror_raspberrypi=http://archive.raspberrypi.org/debian/
+mirror_raspbian=http://mirrordirector.raspbian.org/raspbian
+mirror_raspberrypi=http://archive.raspberrypi.org/debian
+declare mirror_raspbian_cache
+declare mirror_raspberrypi_cache
 release=jessie
 
 packages=()
@@ -81,6 +85,22 @@ packages+=("libraspberrypi0")
 packages_debs=
 packages_sha256=
 
+download_file() {
+	local download_source=$1
+	local download_target=$2
+	if [ -z "${download_target}" ]; then
+		if ! wget -q --show-progress --no-cache "${download_source}"; then
+			echo -e "ERROR\nDownloading file '${download_source}' failed! Exiting."
+			exit 1
+		fi
+	else
+		if ! wget -q --show-progress --no-cache -O "${download_target}" "${download_source}"; then
+			echo -e "ERROR\nDownloading file '${download_source}' failed! Exiting."
+			exit 1
+		fi
+	fi
+}
+
 check_key() {
 	# param 1 = keyfile
 	# param 2 = key fingerprint
@@ -128,7 +148,7 @@ setup_archive_keys() {
 	echo ""
 
 	echo "Downloading ${RASPBIAN_ARCHIVE_KEY_FILE_NAME}."
-	curl -# -O ${RASPBIAN_ARCHIVE_KEY_URL}
+	download_file ${RASPBIAN_ARCHIVE_KEY_URL}
 	if check_key "${RASPBIAN_ARCHIVE_KEY_FILE_NAME}" "${RASPBIAN_ARCHIVE_KEY_FINGERPRINT}"; then
 		# GPG key checks out, thus import it into our own keyring
 		echo -n "Importing '${RASPBIAN_ARCHIVE_KEY_FILE_NAME}' into keyring... "
@@ -145,7 +165,7 @@ setup_archive_keys() {
 	echo ""
 
 	echo "Downloading ${RASPBERRYPI_ARCHIVE_KEY_FILE_NAME}."
-	curl -# -O ${RASPBERRYPI_ARCHIVE_KEY_URL}
+	download_file ${RASPBERRYPI_ARCHIVE_KEY_URL}
 	if check_key "${RASPBERRYPI_ARCHIVE_KEY_FILE_NAME}" "${RASPBERRYPI_ARCHIVE_KEY_FINGERPRINT}"; then
 		# GPG key checks out, thus import it into our own keyring
 		echo -n "Importing '${RASPBERRYPI_ARCHIVE_KEY_FILE_NAME}' into keyring..."
@@ -198,7 +218,11 @@ download_package_list() {
 
 			# Download Packages file
 			echo -e "\nDownloading ${package_section} package list..."
-			curl -# -o "tmp${extension}" "${2}/dists/$release/$package_section/binary-armhf/Packages${extension}"
+			if ! download_file "${2}/dists/$release/$package_section/binary-armhf/Packages${extension}" "tmp${extension}"; then
+				echo -e "ERROR\nDownloading '${package_section}' package list failed! Exiting."
+				cd ..
+				exit 1
+			fi
 
 			# Verify the checksum of the Packages file, assuming that the last checksums in the Release file are SHA256 sums
 			echo -n "Verifying ${package_section} package list... "
@@ -206,7 +230,7 @@ download_package_list() {
 				 "$(sha256sum "tmp${extension}" | awk '{print $1}')" ]; then
 				echo "OK"
 			else
-				echo -e "ERROR\nThe checksum of the ${package_section}/binary-armhf/Packages${extension} file doesn't match!"
+				echo -e "ERROR\nThe checksum of file '${package_section}/binary-armhf/Packages${extension}' doesn't match!"
 				cd ..
 				exit 1
 			fi
@@ -236,8 +260,8 @@ download_package_lists() {
 	fi
 
 	echo -e "\nDownloading Release file and its signature..."
-	curl -# -o "${1}_Release" "${2}/dists/$release/Release"
-	curl -# -o "${1}_Release.gpg" "${2}/dists/$release/Release.gpg"
+	download_file "${2}/dists/$release/Release" "${1}_Release"
+	download_file "${2}/dists/$release/Release.gpg" "${1}_Release.gpg"
 	echo -n "Verifying Release file... "
 	if gpg --homedir gnupg --verify "${1}_Release.gpg" "${1}_Release" &> /dev/null; then
 		echo "OK"
@@ -270,7 +294,7 @@ add_packages() {
 			if required "${current_package}"; then
 				printf "  %-32s %s\n" "${current_package}" "$(basename "${current_filename}")"
 				unset_required "${current_package}"
-				packages_debs+=("${2}${current_filename}")
+				packages_debs+=("${2}/${current_filename}")
 				packages_sha256+=("${current_sha256} $(basename "${current_filename}")")
 				allfound && break
 			fi
@@ -285,8 +309,12 @@ add_packages() {
 download_packages() {
 	echo -e "\nDownloading packages..."
 	for package in "${packages_debs[@]}"; do
-		echo -e "Downloading package: \"${package}\""
-		curl -# --remote-name ${package}
+		echo -e "Downloading package: '${package}'"
+		if ! download_file ${package}; then
+			echo -e "ERROR\nDownloading '${package}' failed! Exiting."
+			cd ..
+			exit 1
+		fi
 	done
 
 	echo -n "Verifying downloaded packages... "
@@ -302,16 +330,11 @@ download_packages() {
 
 download_remote_file() {
 	if [ "${4}" != "" ]; then
-		echo -e "\nDownloading ${4}..."
+		echo -e "\nDownloading '${4}'..."
 	else
-		echo -e "\nDownloading ${2}..."
+		echo -e "\nDownloading '${2}'..."
 	fi
-	
-	if ! curl -# -o "${2}_tmp" -L "${1}${2}"; then
-		echo -e "ERROR\nDownloading ${1} failed! Exiting."
-		cd ..
-		exit 1
-	fi
+	download_file "${1}${2}" "${2}_tmp"
 	if [ "${3}" != "" ]; then
 		if [[ "${2}" =~ .*\.tar\..* ]]; then
 			${3} "${2}_tmp" | tar -x "${4}"
@@ -324,10 +347,23 @@ download_remote_file() {
 	fi
 }
 
+# Read config
+if [ -r ./build.conf ]; then
+	source <(tr -d "\015" < ./build.conf)
+fi
+
 # Download packages
 (
 	rm -rf packages/
 	mkdir packages && cd packages
+
+	## Add caching proxy if configured
+	if [ -n "${mirror_raspbian_cache}" ]; then
+		mirror_raspbian=${mirror_raspbian/:\/\//:\/\/${mirror_raspbian_cache}\/}
+	fi
+	if [ -n "${mirror_raspberrypi_cache}" ]; then
+		mirror_raspberrypi=${mirror_raspberrypi/:\/\//:\/\/${mirror_raspberrypi_cache}\/}
+	fi
 
 	## Download package list
 	download_package_lists raspberry ${mirror_raspberrypi}
@@ -341,7 +377,7 @@ download_remote_file() {
 	add_packages raspbian ${mirror_raspbian}
 	if ! allfound; then
 		echo "ERROR: Unable to find all required packages in package list!"
-		echo "Missing packages: ${packages[*]}"
+		echo "Missing packages: '${packages[*]}'"
 		exit 1
 	fi
 
