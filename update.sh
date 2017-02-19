@@ -295,7 +295,7 @@ add_packages() {
 				printf "  %-32s %s\n" "${current_package}" "$(basename "${current_filename}")"
 				unset_required "${current_package}"
 				packages_debs+=("${2}/${current_filename}")
-				packages_sha256+=("${current_sha256} $(basename "${current_filename}")")
+				packages_sha256+=("${current_sha256}  $(basename "${current_filename}")")
 				allfound && break
 			fi
 
