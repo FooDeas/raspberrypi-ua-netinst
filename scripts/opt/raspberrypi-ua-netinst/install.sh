@@ -712,6 +712,9 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	if [ "${hwrng_support}" = "1" ]; then
 		base_packages="${base_packages},rng-tools"
 	fi
+	if [ "$(find /rootfs/boot/raspberrypi-ua-netinst/config/apt/ -maxdepth 1 -type f -name "*.list" | wc -l)" != 0 ]; then
+		base_packages="${base_packages},apt-transport-https"
+	fi
 	
 	# minimal
 	minimal_packages="ifupdown,net-tools,openssh-server,dosfstools"
