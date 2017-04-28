@@ -1876,7 +1876,7 @@ if [ -n "${rtc}" ]; then
 	fi
 fi
 
-if [ "${sound_usb_first}" = "1" ]; then
+if [ "${sound_enable=1}" ] && [ "${sound_usb_enable=1}" ] && [ "${sound_usb_first}" = "1" ]; then
 	{
 		echo "pcm.!default {"
 		echo " type hw card 1"
