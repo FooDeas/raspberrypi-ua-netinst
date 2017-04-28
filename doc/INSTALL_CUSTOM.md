@@ -58,13 +58,13 @@
 |-----------------|----------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `username` |  |  | Username of the user to create |
 | `userpw` |  |  | Password to use for created user |
-| `usergpio` |  | `0`/`1` | Set to 1 to give created user permissions to access GPIO pins. A new system group 'gpio' will be created automatically. |
-| `usergpu` |  | `0`/`1` | Set to 1 to give created user GPU access permissions (e.g. to run vcgencmd without using sudo). |
+| `usergpio` |  | `0`/`1` | Set to "1" to give created user permissions to access GPIO pins. A new system group 'gpio' will be created automatically. |
+| `usergpu` |  | `0`/`1` | Set to "1" to give created user GPU access permissions (e.g. to run vcgencmd without using sudo). |
 | `usergroups` |  |  | Add created user to this additional groups (comma separated and quoted). Non-existent groups will be created. (e.g. 'usergroups=family,friends') |
 | `usersysgroups` |  |  | Add created user to this additional groups (comma separated and quoted). Non-existent groups will be created as system groups. (e.g. 'usersysgroups=video,www-data') |
-| `user_is_admin` |  | `0`/`1` | Set to 1 to install sudo and make the user a sudo user. |
+| `userperms_admin` | `0` | `0`/`1` | Set to "1" to install sudo and make the user a sudo user. |
 | `userperms_sound` | `0` | `0`/`1` | Set to "1" to add the user to the group 'audio'. This system group will be created automatically. |
-| `rootpw` | raspbian |  | Sets password for root. To disable root completely, also set root_ssh_pubkey empty. |
+| `rootpw` | `raspbian` |  | Sets password for root. To disable root completely, also set root_ssh_pubkey empty. |
 
 ## Network
 
@@ -99,13 +99,13 @@
 | `hdmi_type` |  | `tv`/  `monitor` | Forces HDMI mode and disables automatic display identification. Choose between TV or monitor  mode and specify the resolution with the options below. If not defined, the automatic display setting is used to determine the information sent by the display. |
 | `hdmi_tv_res` | `1080p` | `720p`/  `1080i`/  `1080p` | Specifies the display resolution if `hdmi_type` is set to TV mode. |
 | `hdmi_monitor_res` | `1024x768` | `640x480`/  `800x600`/  `1024x768`/  `1280x1024` | Specifies the display resolution if `hdmi_type` is set to monitor mode. |
-| `hdmi_system_only` | `0` | `0`/`1` | Ignore HDMI settings during installation and apply these settings only to the system. |
+| `hdmi_system_only` | `0` | `0`/`1` | Set to "1" to ignore HDMI settings during installation and apply these settings only to the system. |
 
 ## Partitioning / Filesystem
 
 | Parameter | Default | Options | Description |
 |-------------------|---------|-----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `usbroot` |  |  | Set to 1 to install to first USB disk. |
+| `usbroot` | `0` | `0`/`1` | Set to "1" to install to first USB disk. |
 | `rootfstype` | f2fs | `ext4`/  `f2fs`/  `btrfs` | Sets the file system of the root partition. |
 | `boot_volume_label` |  |  | Sets the volume name of the boot partition. The volume name can be up to 11 characters long. The label is used by most OSes (Windows, Mac OSX and Linux) to identify the SD-card on the desktop and can be useful when using multiple SD-cards. |
 | `bootsize` | `+128M` |  | /boot partition size in megabytes, provide it in the form '+\<number\>M' (without quotes) |

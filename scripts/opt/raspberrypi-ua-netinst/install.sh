@@ -1,5 +1,4 @@
 #!/bin/bash
-# shellcheck disable=SC1091
 
 LOGFILE=/tmp/raspberrypi-ua-netinst.log
 
@@ -24,7 +23,7 @@ usergpio=
 usergpu=
 usergroups=
 usersysgroups=
-user_is_admin=
+userperms_admin=0
 userperms_sound=0
 cdebootstrap_cmdline=
 bootsize=+128M
@@ -54,8 +53,8 @@ hdmi_type=
 hdmi_tv_res=1080p
 hdmi_monitor_res=1024x768
 hdmi_system_only=0
-usbroot=
-usbboot=
+usbroot=0
+usbboot=0
 cmdline="dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 elevator=deadline fsck.repair=yes"
 rootfstype=f2fs
 final_action=reboot
@@ -283,6 +282,7 @@ if [ -z "${am_subscript}" ]; then
 		echo "=== Start executing alternative rcS =============="
 		echo "--------------------------------------------------"
 		export am_subscript=true
+		# shellcheck disable=SC1091
 		source /opt/raspberrypi-ua-netinst/custom-rcS
 		echo "--------------------------------------------------"
 		echo "=== Execution of alternative rcS finished ========"
@@ -372,6 +372,7 @@ echo "OK"
 if [ -e "/bootfs/raspberrypi-ua-netinst/config/installer-config.txt" ]; then
 	echo -n "Executing installer-config.txt... "
 	sanitize_inputfile /bootfs/raspberrypi-ua-netinst/config/installer-config.txt
+	# shellcheck disable=SC1091
 	source /bootfs/raspberrypi-ua-netinst/config/installer-config.txt
 	echo "OK"
 fi
@@ -630,9 +631,29 @@ if [ -n "${online_config}" ]; then
 
 	echo -n "Executing online-config.txt... "
 	sanitize_inputfile /online-config.txt
+	# shellcheck disable=SC1091
 	source /online-config.txt
 	echo "OK"
 fi
+
+# backward compatibility of deprecated variables
+echo "Searching for deprecated variables..."
+# shellcheck disable=SC2154
+if [ -z "${watchdog_enable}" ] && [ -n "${enable_watchdog}" ]; then
+	watchdog_enable="${enable_watchdog}"
+	echo "Variable 'enable_watchdog' is deprecated. Variable 'watchdog_enable' was set instead!"
+fi
+# shellcheck disable=SC2154
+if [ -z "${root_ssh_pwlogin}" ] && [ -n "${root_ssh_allow}" ]; then
+	root_ssh_pwlogin="${root_ssh_allow}"
+	echo "Variable 'root_ssh_allow' is deprecated. Variable 'root_ssh_pwlogin' was set instead!"
+fi
+# shellcheck disable=SC2154
+if [ -z "${userperms_admin}" ] && [ -n "${user_is_admin}" ]; then
+	userperms_admin="${user_is_admin}"
+	echo "Variable 'user_is_admin' is deprecated. Variable 'userperms_admin' was set instead!"
+fi
+echo
 
 # prepare rootfs mount options
 case "${rootfstype}" in
@@ -670,7 +691,7 @@ if [ "${ifname}" != "eth0" ]; then
 fi
 
 # check if we need the sudo package and add it if so
-if [ "${user_is_admin}" = "1" ]; then
+if [ "${userperms_admin}" = "1" ]; then
 	if [ -z "${syspackages}" ]; then
 		syspackages="sudo"
 	else
@@ -692,7 +713,6 @@ fi
 
 # configure different kinds of presets
 if [ -z "${cdebootstrap_cmdline}" ]; then
-
 	# from small to large: base, minimal, server
 	# not very logical that minimal > base, but that's how it was historically defined
 
@@ -780,7 +800,7 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 			packages_postinstall="${minimal_packages_postinstall}"
 			;;
 		*)
-			# this should be 'server', but using '*' for backward-compatibility
+			# this should be 'server', but using '*' for backward compatibility
 			cdebootstrap_cmdline="--flavour=minimal --include=${base_packages},${minimal_packages},${server_packages}"
 			packages_postinstall="${server_packages_postinstall}"
 			if [ "${preset}" != "server" ]; then
@@ -899,7 +919,7 @@ echo "  usergpio = ${usergpio}"
 echo "  usergpu = ${usergpu}"
 echo "  usergroups = ${usergroups}"
 echo "  usersysgroups = ${usersysgroups}"
-echo "  user_is_admin = ${user_is_admin}"
+echo "  userperms_admin = ${userperms_admin}"
 echo "  userperms_sound = ${userperms_sound}"
 echo "  cdebootstrap_cmdline = ${cdebootstrap_cmdline}"
 echo "  packages_postinstall = ${packages_postinstall}"
@@ -1255,7 +1275,7 @@ if [ -n "${username}" ]; then
 		done
 		echo "OK"
 	fi
-	if [ "${user_is_admin}" = "1" ]; then
+	if [ "${userperms_admin}" = "1" ]; then
 		echo -n "  Adding '${username}' to sudo group... "
 		chroot /rootfs /usr/sbin/usermod -aG sudo "${username}" || fail
 		echo "OK"
@@ -1883,6 +1903,7 @@ if [ -e "/bootfs/raspberrypi-ua-netinst/config/post-install.txt" ]; then
 	echo "================================================="
 	echo "=== Start executing post-install.txt. ==="
 	sanitize_inputfile /bootfs/raspberrypi-ua-netinst/config/post-install.txt
+	# shellcheck disable=SC1091
 	source /bootfs/raspberrypi-ua-netinst/config/post-install.txt
 	echo "=== Finished executing post-install.txt. ==="
 	echo "================================================="
