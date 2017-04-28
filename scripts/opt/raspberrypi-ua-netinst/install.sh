@@ -25,6 +25,7 @@ usergpu=
 usergroups=
 usersysgroups=
 user_is_admin=
+userperms_sound=0
 cdebootstrap_cmdline=
 bootsize=+128M
 bootoffset=8192
@@ -67,6 +68,8 @@ spi_enable=0
 i2c_enable=0
 i2c_baudrate=
 sound_enable=0
+sound_usb_enable=0
+sound_usb_first=0
 camera_enable=0
 camera_disable_led=0
 
@@ -713,6 +716,9 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	if [ "${watchdog_enable}" = "1" ] && [ "${init_system}" = "sysvinit" ]; then
 		custom_packages="${custom_packages},watchdog"
 	fi
+	if [ "${sound_usb_enable}" = "1" ]; then
+		custom_packages_postinstall="${custom_packages_postinstall},alsa-utils,jackd,oss-compat,pulseaudio"
+	fi
 	# add user defined packages
 	if [ -n "${packages}" ]; then
 		custom_packages_postinstall="${custom_packages_postinstall},${packages}"
@@ -894,6 +900,7 @@ echo "  usergpu = ${usergpu}"
 echo "  usergroups = ${usergroups}"
 echo "  usersysgroups = ${usersysgroups}"
 echo "  user_is_admin = ${user_is_admin}"
+echo "  userperms_sound = ${userperms_sound}"
 echo "  cdebootstrap_cmdline = ${cdebootstrap_cmdline}"
 echo "  packages_postinstall = ${packages_postinstall}"
 echo "  boot_volume_label = ${boot_volume_label}"
@@ -930,6 +937,8 @@ echo "  spi_enable = ${spi_enable}"
 echo "  i2c_enable = ${i2c_enable}"
 echo "  i2c_baudrate = ${i2c_baudrate}"
 echo "  sound_enable = ${sound_enable}"
+echo "  sound_usb_enable = ${sound_usb_enable}"
+echo "  sound_usb_first = ${sound_usb_first}"
 echo "  camera_enable = ${camera_enable}"
 echo "  camera_disable_led = ${camera_disable_led}"
 echo
@@ -1219,6 +1228,9 @@ if [ -n "${username}" ]; then
 	fi
 	if [ "${usergpio}" = "1" ]; then
 		usersysgroups="${usersysgroups},gpio"
+	fi
+	if [ "${userperms_sound}" = "1" ]; then
+		usersysgroups="${usersysgroups},audio"
 	fi
 	if [ "${usergpu}" = "1" ]; then
 		usersysgroups="${usersysgroups},video"
@@ -1842,6 +1854,17 @@ if [ -n "${rtc}" ]; then
 		sed -i "s/^\(dtoverlay=i2c-rtc,\)/#\1/" /rootfs/boot/config.txt
 		echo "dtoverlay=i2c-rtc,${rtc}" >> /rootfs/boot/config.txt
 	fi
+fi
+
+if [ "${sound_usb_first}" = "1" ]; then
+	{
+		echo "pcm.!default {"
+		echo " type hw card 1"
+		echo "}"
+		echo "ctl.!default {"
+		echo " type hw card 1"
+		echo "}"
+	} > /etc/asound.conf
 fi
 
 # iterate through all the file lists and call the install_files method for them

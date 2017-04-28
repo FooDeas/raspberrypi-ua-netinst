@@ -37,6 +37,8 @@
 | `i2c_enable` | `0` | `0`/`1` | Set to "1" to enable the I²C (I2C) interface. |
 | `i2c_baudrate` |  |  | Specifies the I²C baudrate in bit/s. If not defined, the bootloader sets it to 100000 bit/s. The option `i2c_enable=1` has to be set to take effect. |
 | `sound_enable` | `0` | `0`/`1` | Set to "1" to enable the onboard audio. |
+| `sound_usb_enable` | `0` | `0`/`1` | Set to "1" to enable the USB audio. This will install the packages `alsa-utils`, `jackd`, `oss-compat` and `pulseaudio`. |
+| `sound_usb_first` | `0` | `0`/`1` | Set to "1" to define USB audio as default if onboard audio is also enabled. The options `sound_enable=1` and `sound_usb_enable=1` have to be set to take effect. |
 | `camera_enable` | `0` | `0`/`1` | Set to "1" to enable the camera module. This sets all needed parameters in config.txt. |
 | `camera_disable_led` | `0` | `0`/`1` | Disables the camera led. The option `camera_enable=1` has to be set to take effect. |
 | `rtc` |  | `ds1307`/  `ds1339`/  `ds3231`/  `mcp7940x`/  `mcp7941x`/  `pcf2127`/  `pcf8523`/  `pcf8563` | Select an RTC if it is connected via I²C. |
@@ -61,6 +63,7 @@
 | `usergroups` |  |  | Add created user to this additional groups (comma separated and quoted). Non-existent groups will be created. (e.g. 'usergroups=family,friends') |
 | `usersysgroups` |  |  | Add created user to this additional groups (comma separated and quoted). Non-existent groups will be created as system groups. (e.g. 'usersysgroups=video,www-data') |
 | `user_is_admin` |  | `0`/`1` | Set to 1 to install sudo and make the user a sudo user. |
+| `userperms_sound` | `0` | `0`/`1` | Set to "1" to add the user to the group 'audio'. This system group will be created automatically. |
 | `rootpw` | raspbian |  | Sets password for root. To disable root completely, also set root_ssh_pubkey empty. |
 
 ## Network
