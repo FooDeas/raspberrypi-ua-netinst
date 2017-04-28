@@ -675,6 +675,18 @@ if [ "${user_is_admin}" = "1" ]; then
 	fi
 fi
 
+# determine available releases
+mirror_base=http://archive.raspberrypi.org/debian/dists/
+release_fallback=jessie
+release_base="${release}"
+release_raspbian="${release}"
+if ! wget --spider "${mirror_base}/${release}/" &> /dev/null; then
+	release_base="${release_fallback}"
+fi
+if ! wget --spider "${mirror}/dists/${release}/" &> /dev/null; then
+	release_raspbian="${release_fallback}"
+fi
+
 # configure different kinds of presets
 if [ -z "${cdebootstrap_cmdline}" ]; then
 
@@ -861,13 +873,13 @@ fi
 
 # show resulting variables
 echo
-echo "Installer configuration:"
+echo "Resulting installer configuration:"
 echo "  preset = ${preset}"
 echo "  packages = ${packages}"
 echo "  firmware_packages = ${firmware_packages}"
 echo "  mirror = ${mirror}"
 echo "  mirror_cache = ${mirror_cache}"
-echo "  release = ${release}"
+echo "  release = ${release_raspbian}"
 echo "  hostname = ${hostname}"
 echo "  domainname = ${domainname}"
 echo "  rootpw = ${rootpw}"
@@ -1107,7 +1119,7 @@ echo "Starting install process..."
 if [ -n "${mirror_cache}" ]; then
 	export http_proxy="http://${mirror_cache}/"
 fi
-eval cdebootstrap-static --arch=armhf "${cdebootstrap_cmdline}" "${release}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg 2>&1 | output_filter | sed 's/^/  /'
+eval cdebootstrap-static --arch=armhf "${cdebootstrap_cmdline}" "${release_raspbian}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg 2>&1 | output_filter | sed 's/^/  /'
 cdebootstrap_exitcode="${PIPESTATUS[0]}"
 unset http_proxy
 if [ "${cdebootstrap_exitcode}" -ne 0 ]; then
@@ -1150,7 +1162,7 @@ if [ -n "${root_ssh_pubkey}" ]; then
 fi
 # openssh-server in jessie and higher doesn't allow root to login with a password
 if [ "${root_ssh_pwlogin}" = "1" ]; then
-	if [ "${release}" = "jessie" ] || [ "${release}" = "stretch" ]; then
+	if [ "${release_raspbian}" != "wheezy" ]; then
 		if [ -f /rootfs/etc/ssh/sshd_config ]; then
 			echo -n "  Allowing root to login with password... "
 			sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /rootfs/etc/ssh/sshd_config || fail
@@ -1459,10 +1471,10 @@ fi
 echo "Configuring apt:"
 echo -n "  Configuring Raspbian repository... "
 if [ -e "/bootfs/raspberrypi-ua-netinst/config/apt/sources.list" ]; then
-	sed "s/__RELEASE__/${release}/g" "/bootfs/raspberrypi-ua-netinst/config/apt/sources.list" > "/rootfs/etc/apt/sources.list" || fail
+	sed "s/__RELEASE__/${release_raspbian}/g" "/bootfs/raspberrypi-ua-netinst/config/apt/sources.list" > "/rootfs/etc/apt/sources.list" || fail
 	cp /bootfs/raspberrypi-ua-netinst/config/apt/sources.list /rootfs/etc/apt/sources.list || fail
 else
-	sed "s/__RELEASE__/${release}/g" "/opt/raspberrypi-ua-netinst/res/etc/apt/sources.list" > "/rootfs/etc/apt/sources.list" || fail
+	sed "s/__RELEASE__/${release_raspbian}/g" "/opt/raspberrypi-ua-netinst/res/etc/apt/sources.list" > "/rootfs/etc/apt/sources.list" || fail
 fi
 echo "OK"
 # if __RELEASE__ is still present, something went wrong
@@ -1478,16 +1490,16 @@ echo "OK"
 
 echo -n "  Configuring RaspberryPi repository... "
 if [ -e "/bootfs/raspberrypi-ua-netinst/config/apt/raspberrypi.org.list" ]; then
-	sed "s/__RELEASE__/${release}/g" "/bootfs/raspberrypi-ua-netinst/config/apt/raspberrypi.org.list" > "/rootfs/etc/apt/sources.list.d/raspberrypi.org.list" || fail
+	sed "s/__RELEASE__/${release_base}/g" "/bootfs/raspberrypi-ua-netinst/config/apt/raspberrypi.org.list" > "/rootfs/etc/apt/sources.list.d/raspberrypi.org.list" || fail
 else
-	sed "s/__RELEASE__/${release}/g" "/opt/raspberrypi-ua-netinst/res/etc/apt/raspberrypi.org.list" > "/rootfs/etc/apt/sources.list.d/raspberrypi.org.list" || fail
+	sed "s/__RELEASE__/${release_base}/g" "/opt/raspberrypi-ua-netinst/res/etc/apt/raspberrypi.org.list" > "/rootfs/etc/apt/sources.list.d/raspberrypi.org.list" || fail
 fi
 echo "OK"
 echo -n "  Configuring RaspberryPi preference... "
 if [ -e "/bootfs/raspberrypi-ua-netinst/config/apt/archive_raspberrypi_org.pref" ]; then
-	sed "s/__RELEASE__/${release}/g" "/bootfs/raspberrypi-ua-netinst/config/apt/archive_raspberrypi_org.pref" > "/rootfs/etc/apt/preferences.d/archive_raspberrypi_org.pref" || fail
+	sed "s/__RELEASE__/${release_base}/g" "/bootfs/raspberrypi-ua-netinst/config/apt/archive_raspberrypi_org.pref" > "/rootfs/etc/apt/preferences.d/archive_raspberrypi_org.pref" || fail
 else
-	sed "s/__RELEASE__/${release}/g" "/opt/raspberrypi-ua-netinst/res/etc/apt/archive_raspberrypi_org.pref" > "/rootfs/etc/apt/preferences.d/archive_raspberrypi_org.pref" || fail
+	sed "s/__RELEASE__/${release_base}/g" "/opt/raspberrypi-ua-netinst/res/etc/apt/archive_raspberrypi_org.pref" > "/rootfs/etc/apt/preferences.d/archive_raspberrypi_org.pref" || fail
 fi
 echo "OK"
 
@@ -1500,7 +1512,7 @@ for listfile in ./*.list
 do
 	if [ "${listfile}" != "./sources.list" ] && [ "${listfile}" != "./raspberrypi.org.list" ] && [ -e "${listfile}" ]; then
 		echo -n "  Copying '${listfile}' to /etc/apt/sources.list.d/... "
-		sed "s/__RELEASE__/${release}/g" "${listfile}" > "/rootfs/etc/apt/sources.list.d/${listfile}" || fail
+		sed "s/__RELEASE__/${release_raspbian}/g" "${listfile}" > "/rootfs/etc/apt/sources.list.d/${listfile}" || fail
 		echo "OK"
 	fi
 done
@@ -1510,7 +1522,7 @@ for preffile in ./*.pref
 do
 	if [ "${preffile}" != "./archive_raspberrypi_org.pref" ] && [ -e "${preffile}" ]; then
 		echo -n "  Copying '${preffile}' to /etc/apt/preferences.d/... "
-		sed "s/__RELEASE__/${release}/g" "${preffile}" > "/rootfs/etc/apt/preferences.d/${preffile}" || fail
+		sed "s/__RELEASE__/${release_raspbian}/g" "${preffile}" > "/rootfs/etc/apt/preferences.d/${preffile}" || fail
 		echo "OK"
 	fi
 done
@@ -1540,7 +1552,7 @@ for conffile in ./*.conf
 do
 	if [ -e "${conffile}" ]; then
 		echo -n "  Copying '${conffile%.*}' to /etc/apt/apt.conf.d/... "
-		sed "s/__RELEASE__/${release}/g" "${conffile}" > "/rootfs/etc/apt/apt.conf.d/${conffile%.*}" || fail
+		sed "s/__RELEASE__/${release_raspbian}/g" "${conffile}" > "/rootfs/etc/apt/apt.conf.d/${conffile%.*}" || fail
 		echo "OK"
 	fi
 done
