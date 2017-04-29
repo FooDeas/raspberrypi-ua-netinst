@@ -15,11 +15,11 @@
 | Parameter | Default | Options | Description |
 |---------------------|--------------------------------------------------|-------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `preset` | `server` | `base`/  `minimal`/  `server` | The current packages that are installed by default are listed below. |
-| `packages` |  |  | Install this additional packages (comma separated and quoted). (e.g. "pi-bluetooth,cifs-utils,curl") |
-| `firmware_packages` | `0` | `0`/`1` | Set to "1" to install common firmware packages (Atheros, Broadcom, Libertas, Ralink and Realtek) |
+| `packages` |  |  | Install these additional packages (comma separated and quoted). (e.g. "pi-bluetooth,cifs-utils,curl") |
+| `firmware_packages` | `0` | `0`/`1` | Set to "1" to install common firmware packages (Atheros, Broadcom, Libertas, Ralink and Realtek). |
 | `mirror` | `http:// mirrordirector.raspbian.org/ raspbian/` |  |  |
 | `mirror_cache` |  |  | Set address and port for HTTP apt-cacher or apt-cacher-ng (e.g. "192.168.0.1:3142"). If set, the cacher will be used to cache packages during installation downloaded from the repository set in `mirror` as well as "http://archive.raspberrypi.org/debian". |
-| `release` | `jessie` |  |  |
+| `release` | `jessie` |  | Raspbian release name |
 
 ### Description: Presets
 
@@ -39,8 +39,8 @@
 | `sound_enable` | `0` | `0`/`1` | Set to "1" to enable the onboard audio. |
 | `sound_usb_enable` | `0` | `0`/`1` | Set to "1" to enable the USB audio. This will install the packages `alsa-utils`, `jackd`, `oss-compat` and `pulseaudio`. |
 | `sound_usb_first` | `0` | `0`/`1` | Set to "1" to define USB audio as default if onboard audio is also enabled. The options `sound_enable=1` and `sound_usb_enable=1` have to be set to take effect. |
-| `camera_enable` | `0` | `0`/`1` | Set to "1" to enable the camera module. This sets all needed parameters in config.txt. |
-| `camera_disable_led` | `0` | `0`/`1` | Disables the camera led. The option `camera_enable=1` has to be set to take effect. |
+| `camera_enable` | `0` | `0`/`1` | Set to "1" to enable the camera module. This enables all camera-related parameters in config.txt. |
+| `camera_disable_led` | `0` | `0`/`1` | Disables the camera LED. The option `camera_enable=1` has to be set to take effect. |
 | `rtc` |  | `ds1307`/  `ds1339`/  `ds3231`/  `mcp7940x`/  `mcp7941x`/  `pcf2127`/  `pcf8523`/  `pcf8563` | Select an RTC if it is connected via I²C. |
 
 ## SSH
@@ -70,17 +70,17 @@
 
 | Parameter | Default | Options | Description |
 |------------------|-----------|----------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `hostname` | `pi` |  |  |
+| `hostname` | `pi` |  | Name of device on the network |
 | `domainname` |  |  |  |
 | `ifname` | `eth0` |  | Change to 'wlan0' to use onboard WiFi. Use the 'wlan_*' options below or provide a 'wpa_supplicant.conf' with WiFi login data in the directory `config`. |
 | `wlan_country` |  | [ref: doc/wlan_country.txt](/doc/wlan_country.txt) | Sets the country code for the WiFi interface. |
 | `wlan_ssid` |  |  | Sets SSID for WiFi authentication if no 'wpa_supplicant.conf' is provided. |
 | `wlan_psk` |  |  | Sets PSK for Wifi authentication if no 'wpa_supplicant.conf' is provided. |
-| `ip_addr` | `dhcp` |  |  |
-| `ip_netmask` | `0.0.0.0` |  |  |
-| `ip_broadcast` | `0.0.0.0` |  |  |
-| `ip_gateway` | `0.0.0.0` |  |  |
-| `ip_nameservers` |  |  |  |
+| `ip_addr` | `dhcp` |  | Use "dhcp" to let the network DHCP server dynamically assign an IP-address or specify a static IP-address (e.g. 192.168.2.50). |
+| `ip_netmask` | `0.0.0.0` |  | Network mask (e.g. 255.255.255.0) |
+| `ip_broadcast` | `0.0.0.0` |  | Broadcast address |
+| `ip_gateway` | `0.0.0.0` |  | Gateway address (e.g. 192.168.2.1) |
+| `ip_nameservers` |  |  | DNS nameservers (e.g. 8.8.8.8) |
 
 ## Localization
 
