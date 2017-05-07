@@ -1,84 +1,157 @@
 #!/bin/bash
 
-LOGFILE=/tmp/raspberrypi-ua-netinst.log
+variables_reset() {
+	# internal variables
+	logfile=
+	bootdev=
+	am_subscript=
+	final_action=
+	rpi_hardware=
+	rpi_hardware_version=
+	preinstall_reboot=
+	bootpartition=
+	rootdev=
+	rootpartition=
+	wlan_configfile=
 
-# default options, can be overriden in installer-config.txt
-preset=server
-packages=
-firmware_packages=
-mirror=http://mirrordirector.raspbian.org/raspbian/
-mirror_cache=
-release=jessie
-hostname=pi
-boot_volume_label=
-domainname=
-rootpw=raspbian
-user_ssh_pubkey=
-root_ssh_pubkey=
-root_ssh_pwlogin=1
-ssh_pwlogin=
-username=
-userpw=
-usergpio=
-usergpu=
-usergroups=
-usersysgroups=
-userperms_admin=0
-userperms_sound=0
-cdebootstrap_cmdline=
-bootsize=+128M
-bootoffset=8192
-rootsize=
-timeserver=time.nist.gov
-timeserver_http=
-timezone=Etc/UTC
-rtc=
-keyboard_layout=
-locales=
-system_default_locale=
-disable_predictable_nin=1
-ifname=eth0
-wlan_country=
-wlan_ssid=
-wlan_psk=
-ip_addr=dhcp
-ip_netmask=0.0.0.0
-ip_broadcast=0.0.0.0
-ip_gateway=0.0.0.0
-ip_nameservers=
-drivers_to_load=
-online_config=
-gpu_mem=
-hdmi_type=
-hdmi_tv_res=1080p
-hdmi_monitor_res=1024x768
-hdmi_system_only=0
-usbroot=0
-usbboot=0
-cmdline="dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 elevator=deadline fsck.repair=yes"
-rootfstype=f2fs
-final_action=reboot
-hwrng_support=1
-watchdog_enable=0
-quiet_boot=0
-cleanup=0
-cleanup_logfiles=0
-spi_enable=0
-i2c_enable=0
-i2c_baudrate=
-sound_enable=0
-sound_usb_enable=0
-sound_usb_first=0
-camera_enable=0
-camera_disable_led=0
+	# config variables
+	preset=
+	packages=
+	firmware_packages=
+	mirror=
+	mirror_cache=
+	release=
+	hostname=
+	boot_volume_label=
+	domainname=
+	rootpw=
+	user_ssh_pubkey=
+	root_ssh_pubkey=
+	root_ssh_pwlogin=
+	ssh_pwlogin=
+	username=
+	userpw=
+	usergpio=
+	usergpu=
+	usergroups=
+	usersysgroups=
+	userperms_admin=
+	userperms_sound=
+	cdebootstrap_cmdline=
+	bootsize=
+	bootoffset=
+	rootsize=
+	timeserver=
+	timeserver_http=
+	timezone=
+	rtc=
+	keyboard_layout=
+	locales=
+	system_default_locale=
+	disable_predictable_nin=
+	ifname=
+	wlan_country=
+	wlan_ssid=
+	wlan_psk=
+	ip_addr=
+	ip_netmask=
+	ip_broadcast=
+	ip_gateway=
+	ip_nameservers=
+	drivers_to_load=
+	online_config=
+	gpu_mem=
+	hdmi_type=
+	hdmi_tv_res=
+	hdmi_monitor_res=
+	hdmi_system_only=
+	usbroot=
+	usbboot=
+	cmdline=
+	rootfstype=
+	final_action=
+	hwrng_support=
+	watchdog_enable=
+	quiet_boot=
+	cleanup=
+	cleanup_logfiles=
+	spi_enable=
+	i2c_enable=
+	i2c_baudrate=
+	sound_enable=
+	sound_usb_enable=
+	sound_usb_first=
+	camera_enable=
+	camera_disable_led=
+}
 
-# internal variables
-rootdev=/dev/mmcblk0
-rootpartition=
-wlan_configfile=/bootfs/raspberrypi-ua-netinst/config/wpa_supplicant.conf
+variable_set() {
+	local variable="${1}"
+	local value="${2}"
+	if [ -z "${!variable}" ]; then
+		eval "${variable}=\"${value}\""
+	fi
+}
 
-fail()
-{
+variable_set_deprecated() {
+	local variable_old="${1}"
+	local variable_new="${2}"
+	if [ -z "${!variable_new}" ] && [ -n "${!variable_old}" ]; then
+		eval "${variable_new}=\"${!variable_old}\""
+		echo "  Variable '${variable_old}' is deprecated. Variable '${variable_new}' was set instead!"
+	fi
+}
+
+variables_set_defaults() {
+	# backward compatibility of deprecated variables
+	echo "  Searching for deprecated variables..."
+	variable_set_deprecated enable_watchdog watchdog_enable
+	variable_set_deprecated root_ssh_allow root_ssh_pwlogin
+	variable_set_deprecated user_is_admin userperms_admin
+
+	# set defaults
+	variable_set "preset" "server"
+	variable_set "mirror" "http://mirrordirector.raspbian.org/raspbian/"
+	variable_set "release" "jessie"
+	variable_set "hostname" "pi"
+	variable_set "rootpw" "raspbian"
+	variable_set "root_ssh_pwlogin" "1"
+	variable_set "userperms_admin" "0"
+	variable_set "userperms_sound" "0"
+	variable_set "bootsize" "+128M"
+	variable_set "bootoffset" "8192"
+	variable_set "timeserver" "time.nist.gov"
+	variable_set "timezone" "Etc/UTC"
+	variable_set "disable_predictable_nin" "1"
+	variable_set "ifname" "eth0"
+	variable_set "ip_addr" "dhcp"
+	variable_set "ip_netmask" "0.0.0.0"
+	variable_set "ip_broadcast" "0.0.0.0"
+	variable_set "ip_gateway" "0.0.0.0"
+	variable_set "hdmi_tv_res" "1080p"
+	variable_set "hdmi_monitor_res" "1024x768"
+	variable_set "hdmi_system_only" "0"
+	variable_set "usbroot" "0"
+	variable_set "usbboot" "0"
+	variable_set "cmdline" "dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 elevator=deadline fsck.repair=yes"
+	variable_set "rootfstype" "f2fs"
+	variable_set "final_action" "reboot"
+	variable_set "hwrng_support" "1"
+	variable_set "watchdog_enable" "0"
+	variable_set "quiet_boot" "0"
+	variable_set "cleanup" "0"
+	variable_set "cleanup_logfiles" "0"
+	variable_set "spi_enable" "0"
+	variable_set "i2c_enable" "0"
+	variable_set "sound_enable" "0"
+	variable_set "sound_usb_enable" "0"
+	variable_set "sound_usb_first" "0"
+	variable_set "camera_enable" "0"
+	variable_set "camera_disable_led" "0"
+}
+
+fail() {
+	local fail_boot_mounted
 	echo
 	echo "Oh noes, something went wrong!"
 	echo "You have 10 seconds to hit ENTER to get a shell..."
@@ -89,7 +162,7 @@ fail()
 		mount "${bootpartition}" /boot
 		fail_boot_mounted=true
 	fi
-	cp "${LOGFILE}" "/boot/raspberrypi-ua-netinst/error-$(date +%Y%m%dT%H%M%S).log"
+	cp "${logfile}" "/boot/raspberrypi-ua-netinst/error-$(date +%Y%m%dT%H%M%S).log"
 	sync
 
 	# if we mounted /boot in the fail command, unmount it.
@@ -101,8 +174,8 @@ fail()
 	sh
 }
 
-sanitize_inputfile()
-{
+sanitize_inputfile() {
+	local inputfile
 	if [ -z "${1}" ]; then
 		echo "No input file specified!"
 	else
@@ -117,26 +190,31 @@ sanitize_inputfile()
 }
 
 # sanitizes variables that use comma separation
-sanitize_variable()
-{
-	local tmp_variable
-	tmp_variable="${!1}"
-	tmp_variable="$(echo "${tmp_variable}" | tr ' ' ',')"
-	while [ "${tmp_variable:0:1}" == "," ]; do
-		tmp_variable="${tmp_variable:1}"
+sanitize_variable() {
+	local variable="${1}"
+	local value="${!1}"
+	value="$(echo "${value}" | tr ' ' ',')"
+	while [ "${value:0:1}" == "," ]; do
+		value="${value:1}"
 	done
-	while [ "${tmp_variable: -1}" == "," ]; do
-		tmp_variable="${tmp_variable:0:-1}"
+	while [ "${value: -1}" == "," ]; do
+		value="${value:0:-1}"
 	done
-	while echo "${tmp_variable}" | grep -q ",,"; do
-		tmp_variable="${tmp_variable//,,/,}"
+	while echo "${value}" | grep -q ",,"; do
+		value="${value//,,/,}"
 	done
-	eval "${1}"="${tmp_variable}"
+	eval "${variable}=\"${value}\""
 }
 
-install_files()
-{
-	file_to_read="${1}"
+convert_listvariable() {
+	local variable="${1}"
+	sanitize_variable "${variable}"
+	local value="${!1}"
+	eval "${variable}=\"$(echo "${value}" | tr ',' ' ')\""
+}
+
+install_files() {
+	local file_to_read="${1}"
 	echo "Adding files & folders listed in /boot/raspberrypi-ua-netinst/config/files/${file_to_read}..."
 	sanitize_inputfile "/bootfs/raspberrypi-ua-netinst/config/files/${file_to_read}"
 	grep -v "^[[:space:]]*#\|^[[:space:]]*$" "/bootfs/raspberrypi-ua-netinst/config/files/${file_to_read}" | while read -r line; do
@@ -156,8 +234,7 @@ install_files()
 	echo
 }
 
-output_filter()
-{
+output_filter() {
 	local filterstring
 	filterstring="^$"
 	filterstring+="|^Setcap failed on \S.*, falling back to setuid$"
@@ -180,6 +257,19 @@ output_filter()
 	filterstring+="|^Failed to read \S.*\. Ignoring: No such file or directory$"
 	grep -Ev "${filterstring}"
 }
+
+#######################
+###    INSTALLER    ###
+#######################
+
+# clear variables
+variables_reset
+
+# preset installer variables
+logfile=/tmp/raspberrypi-ua-netinst.log
+rootdev=/dev/mmcblk0
+wlan_configfile=/bootfs/raspberrypi-ua-netinst/config/wpa_supplicant.conf
+final_action=reboot
 
 # set screen blank period to an hour
 # hopefully the install should be done by then
@@ -299,10 +389,10 @@ fi
 
 # redirect stdout and stderr also to logfile
 # http://stackoverflow.com/questions/3173131/redirect-copy-of-stdout-to-log-file-from-within-bash-script-itself/6635197#6635197
-mkfifo "${LOGFILE}.pipe"
-tee < "${LOGFILE}.pipe" "${LOGFILE}" &
-exec &> "${LOGFILE}.pipe"
-rm "${LOGFILE}.pipe"
+mkfifo "${logfile}.pipe"
+tee < "${logfile}.pipe" "${logfile}" &
+exec &> "${logfile}.pipe"
+rm "${logfile}.pipe"
 
 # detecting model based on http://elinux.org/RPi_HardwareHistory
 rpi_hardware="$(grep Revision /proc/cpuinfo | cut -d " " -f 2 | sed 's/^1000//')"
@@ -370,12 +460,13 @@ echo "OK"
 
 # Read installer-config.txt
 if [ -e "/bootfs/raspberrypi-ua-netinst/config/installer-config.txt" ]; then
-	echo -n "Executing installer-config.txt... "
+	echo "Executing installer-config.txt..."
 	sanitize_inputfile /bootfs/raspberrypi-ua-netinst/config/installer-config.txt
 	# shellcheck disable=SC1091
 	source /bootfs/raspberrypi-ua-netinst/config/installer-config.txt
 	echo "OK"
 fi
+variables_set_defaults
 
 preinstall_reboot=0
 echo
@@ -492,7 +583,7 @@ depmod -a
 find /sys/ -name modalias -print0 | xargs -0 sort -u | xargs modprobe -abq
 if [ -n "${drivers_to_load}" ]; then
 	echo "Loading additional kernel modules:"
-	drivers_to_load="$(echo ${drivers_to_load} | tr ',' ' ')"
+	convert_listvariable drivers_to_load
 	for driver in ${drivers_to_load}
 	do
 		echo -n "  Loading module '${driver}'... "
@@ -626,34 +717,16 @@ echo
 
 if [ -n "${online_config}" ]; then
 	echo -n "Downloading online config from ${online_config}... "
-	wget -q -O /online-config.txt "${online_config}" &>/dev/null || fail
+	wget -q -O /opt/raspberrypi-ua-netinst/installer-config_online.txt "${online_config}" &>/dev/null || fail
 	echo "OK"
 
 	echo -n "Executing online-config.txt... "
-	sanitize_inputfile /online-config.txt
+	sanitize_inputfile /opt/raspberrypi-ua-netinst/installer-config_online.txt
 	# shellcheck disable=SC1091
-	source /online-config.txt
+	source /opt/raspberrypi-ua-netinst/installer-config_online.txt
+	variables_set_defaults
 	echo "OK"
 fi
-
-# backward compatibility of deprecated variables
-echo "Searching for deprecated variables..."
-# shellcheck disable=SC2154
-if [ -z "${watchdog_enable}" ] && [ -n "${enable_watchdog}" ]; then
-	watchdog_enable="${enable_watchdog}"
-	echo "Variable 'enable_watchdog' is deprecated. Variable 'watchdog_enable' was set instead!"
-fi
-# shellcheck disable=SC2154
-if [ -z "${root_ssh_pwlogin}" ] && [ -n "${root_ssh_allow}" ]; then
-	root_ssh_pwlogin="${root_ssh_allow}"
-	echo "Variable 'root_ssh_allow' is deprecated. Variable 'root_ssh_pwlogin' was set instead!"
-fi
-# shellcheck disable=SC2154
-if [ -z "${userperms_admin}" ] && [ -n "${user_is_admin}" ]; then
-	userperms_admin="${user_is_admin}"
-	echo "Variable 'user_is_admin' is deprecated. Variable 'userperms_admin' was set instead!"
-fi
-echo
 
 # prepare rootfs mount options
 case "${rootfstype}" in
@@ -783,13 +856,11 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	server_packages_postinstall="libraspberrypi-bin,raspi-copies-and-fills"
 	server_packages_postinstall="${minimal_packages_postinstall},${server_packages_postinstall}"
 
-	# cleanup package variables
+	# cleanup package variables used by cdebootstrap_cmdline
 	sanitize_variable base_packages
-	sanitize_variable base_packages_postinstall
 	sanitize_variable minimal_packages
-	sanitize_variable minimal_packages_postinstall
 	sanitize_variable server_packages
-	sanitize_variable server_packages_postinstall
+	sanitize_variable syspackages
 	case "${preset}" in
 		"base")
 			cdebootstrap_cmdline="--flavour=minimal --include=${base_packages}"
@@ -882,9 +953,6 @@ if [ -z "${rootpartition}" ]; then
 	fi
 fi
 
-# sanitize_variables
-sanitize_variable locales
-
 # modify variables
 # add $system_default_locale to $locales if not included
 if [ -n "${system_default_locale}" ]; then
@@ -896,6 +964,11 @@ if [ -n "${system_default_locale}" ]; then
 		fi
 	fi
 fi
+
+# sanitize_variables
+sanitize_variable locales
+sanitize_variable packages
+sanitize_variable packages_postinstall
 
 # show resulting variables
 echo
@@ -1257,7 +1330,7 @@ if [ -n "${username}" ]; then
 	fi
 	if [ -n "${usersysgroups}" ]; then
 		echo -n "  Adding '${username}' to system groups: "
-		usersysgroups="$(echo ${usersysgroups} | tr ',' ' ')"
+		convert_listvariable usersysgroups
 		for sysgroup in ${usersysgroups}; do
 			echo -n "${sysgroup}... "
 			chroot /rootfs /usr/sbin/groupadd -fr "${sysgroup}" || fail
@@ -1267,7 +1340,7 @@ if [ -n "${username}" ]; then
 	fi
 	if [ -n "${usergroups}" ]; then
 		echo -n "  Adding '${username}' to groups: "
-		usergroups="$(echo ${usergroups} | tr ',' ' ')"
+		convert_listvariable usergroups
 		for usergroup in ${usergroups}; do
 			echo -n "${usergroup} "
 			chroot /rootfs /usr/sbin/groupadd -f "${usergroup}" || fail
@@ -1393,8 +1466,7 @@ fi
 # generate locale data
 if [ -n "${locales}" ]; then
 	echo -n "  Enabling locales... "
-	sanitize_variable locales
-	locales="$(echo "${locales}" | tr ',' ' ')"
+	convert_listvariable locales
 	for locale in ${locales}; do
 		echo -n "${locale}... "
 		locale_regex="${locale//./\.}" # escape dots
@@ -1612,7 +1684,7 @@ done
 # kernel and firmware package can't be installed during cdebootstrap phase, so do so now
 if [ "${kernel_module}" = true ]; then
 	if [ -n "${packages_postinstall}" ]; then
-		packages_postinstall="$(echo "${packages_postinstall}" | tr ',' ' ')"
+		convert_listvariable packages_postinstall
 	fi
 
 	DEBIAN_FRONTEND=noninteractive
@@ -1937,7 +2009,7 @@ if [ "${cleanup_logfiles}" = "1" ]; then
 	rm -f /rootfs/boot/raspberrypi-ua-netinst/error-*.log
 else
 	sleep 1
-	cp "${LOGFILE}" /rootfs/var/log/raspberrypi-ua-netinst.log
+	cp "${logfile}" /rootfs/var/log/raspberrypi-ua-netinst.log
 	chmod 0640 /rootfs/var/log/raspberrypi-ua-netinst.log
 fi
 
