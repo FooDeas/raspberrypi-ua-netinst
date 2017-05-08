@@ -1046,6 +1046,13 @@ for i in $(seq 1 5); do
 done
 echo
 
+if [ -n "${rtc}" ] ; then
+	echo -n "Checking hardware clock access... "
+	/opt/busybox/bin/hwclock --show &>/dev/null || fail
+	echo "OK"
+	echo
+fi
+
 # fdisk's boot offset is 2048, so only handle $bootoffset is it's larger then that
 if [ -n "${bootoffset}" ] && [ "${bootoffset}" -gt 2048 ]; then
 	emptyspaceend=$((bootoffset - 1))
