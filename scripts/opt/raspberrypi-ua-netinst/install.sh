@@ -1160,7 +1160,7 @@ fi
 echo
 echo "Configuring installed system:"
 # mount chroot system folders
-for sysfolder in /dev /dev/pts /proc /sys /run; do
+for sysfolder in /dev /dev/pts /proc /sys; do
 	mount --bind "${sysfolder}" "/rootfs${sysfolder}"
 done
 # configure root login
@@ -1683,7 +1683,7 @@ if [ -f /rootfs/etc/profile.d/sshpasswd.sh ]; then
 	sed -i "s/service ssh status/\/usr\/sbin\/service ssh status/" /rootfs/etc/profile.d/sshpasswd.sh
 	echo "OK"
 else
-	echo "not possible!"
+	echo "not necessary!"
 fi
 
 # enable spi if specified in the configuration file
