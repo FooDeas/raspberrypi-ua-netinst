@@ -106,11 +106,11 @@ system_default_locale=en_US
 
 username=pi
 userpw=login
-user_is_admin=1
+userperms_admin=1
 usergpu=1
 
 rootpw=raspbian
-root_ssh_allow=0
+root_ssh_pwlogin=0
 
 gpu_mem=32
 ```
