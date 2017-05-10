@@ -13,6 +13,7 @@ variables_reset() {
 	rootdev=
 	rootpartition=
 	wlan_configfile=
+	installer_retries=
 
 	# config variables
 	preset=
@@ -104,12 +105,13 @@ variable_set_deprecated() {
 
 variables_set_defaults() {
 	# backward compatibility of deprecated variables
-	echo "  Searching for deprecated variables..."
+	echo
+	echo "Searching for deprecated variables..."
 	variable_set_deprecated enable_watchdog watchdog_enable
 	variable_set_deprecated root_ssh_allow root_ssh_pwlogin
 	variable_set_deprecated user_is_admin userperms_admin
 
-	# set defaults
+	# set config defaults
 	variable_set "preset" "server"
 	variable_set "mirror" "http://mirrordirector.raspbian.org/raspbian/"
 	variable_set "release" "jessie"
@@ -153,8 +155,7 @@ variables_set_defaults() {
 fail() {
 	local fail_boot_mounted
 	echo
-	echo "Oh noes, something went wrong!"
-	echo "You have 10 seconds to hit ENTER to get a shell..."
+	echo "Error: The installation could not be completed!"
 
 	# copy logfile to /boot/raspberrypi-ua-netinst/ to preserve it.
 	# test whether the sd card is still mounted on /boot and if not, mount it.
@@ -164,12 +165,33 @@ fail() {
 	fi
 	cp "${logfile}" "/boot/raspberrypi-ua-netinst/error-$(date +%Y%m%dT%H%M%S).log"
 	sync
+	
+	if [ -e "/boot/raspberrypi-ua-netinst/config/installer-retries.txt" ]; then
+		sanitize_inputfile /boot/raspberrypi-ua-netinst/config/installer-retries.txt
+		# shellcheck disable=SC1091
+		source /boot/raspberrypi-ua-netinst/config/installer-retries.txt
+	fi
+	variable_set "installer_retries" "3"
+	installer_retries=$((installer_retries-1))
+	if [ "${installer_retries}" -ge "0" ]; then
+		echo "installer_retries=\"${installer_retries}\"" > /boot/raspberrypi-ua-netinst/config/installer-retries.txt
+		sync
+	fi
+	if [ "${installer_retries}" -le "0" ]; then
+		echo "  The maximum number of retries is reached!"
+		echo "  Check the logfiles for errors. Then delete or edit \"installer-retries.txt\" in installer config folder to (re)set the counter."
+		echo "  The system is stopped to prevent an infinite loop."
+		sleep infinity
+	else
+		echo "  ${installer_retries} retries left."
+	fi
 
 	# if we mounted /boot in the fail command, unmount it.
 	if [ "${fail_boot_mounted}" = true ]; then
 		umount /boot
 	fi
 
+	echo "  You have 10 seconds to press ENTER to get a shell or it will be retried automatically."
 	read -rt 10 || reboot && exit
 	sh
 }
@@ -466,6 +488,8 @@ if [ -e "/bootfs/raspberrypi-ua-netinst/config/installer-config.txt" ]; then
 	source /bootfs/raspberrypi-ua-netinst/config/installer-config.txt
 	echo "OK"
 fi
+
+# Setting default variables
 variables_set_defaults
 
 preinstall_reboot=0
@@ -2021,6 +2045,7 @@ else
 fi
 
 # Cleanup installer files
+rm -f /rootfs/boot/raspberrypi-ua-netinst/config/installer-retries.txt
 if [ "${cleanup}" = "1" ]; then
 	echo -n "Removing installer files... "
 	rm -rf /rootfs/boot/raspberrypi-ua-netinst/
