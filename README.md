@@ -84,9 +84,9 @@ This is the configuration directory of the installer.
 
 ### Unattended install settings
 
-The primary way to customize the installation process is done through a file named _installer-config.txt_. Create this file in the _config_ folder on the SD card.
+The primary way to customize the installation process is done through a file named _installer-config.txt_. Edit or create this file in the _config_ folder on the SD card.
 
-If you want settings changed for your installation, you should **only** place that changed setting in the _installer-config.txt_ file. So if you want to have vim and aptitude installed by default, create a _installer-config.txt_ file with the following contents:
+If you want settings changed for your installation, you should **only** place that changed setting in the _installer-config.txt_ file. So if you want to have vim and aptitude installed by default, edit or create the _installer-config.txt_ file with the following contents:
 
 ```
 packages=vim,aptitude
