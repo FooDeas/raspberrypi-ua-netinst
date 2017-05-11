@@ -2045,7 +2045,7 @@ else
 fi
 
 # Cleanup installer files
-rm -f /rootfs/boot/raspberrypi-ua-netinst/config/installer-retries.txt
+echo "installer_retries=\"3\"" > /rootfs/boot/raspberrypi-ua-netinst/config/installer-retries.txt
 if [ "${cleanup}" = "1" ]; then
 	echo -n "Removing installer files... "
 	rm -rf /rootfs/boot/raspberrypi-ua-netinst/
