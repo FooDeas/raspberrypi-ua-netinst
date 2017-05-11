@@ -152,6 +152,41 @@ variables_set_defaults() {
 	variable_set "camera_disable_led" "0"
 }
 
+led_sos() {
+	local led0=/sys/class/leds/led0 # Power LED
+	local led1=/sys/class/leds/led1 # Activity LED
+
+	if [ -e /sys/class/leds/led0 ]; then (echo none > /sys/class/leds/led0/trigger) &> /dev/null; else led0=; fi
+	if [ -e /sys/class/leds/led1 ]; then (echo none > /sys/class/leds/led1/trigger) &> /dev/null; else led1=; fi
+	for i in $(seq 1 3); do
+		if [ -n "$led0" ]; then (echo 1 > "${led0}"/brightness) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo 1 > "${led1}"/brightness) &> /dev/null; fi
+		sleep 0.3s;
+		if [ -n "$led0" ]; then (echo 0 > "${led0}"/brightness) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo 0 > "${led1}"/brightness) &> /dev/null; fi
+		sleep 0.2s;
+	done
+	sleep 0.1s;
+	for i in $(seq 1 3); do
+		if [ -n "$led0" ]; then (echo 1 > "${led0}"/brightness) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo 1 > "${led1}"/brightness) &> /dev/null; fi
+		sleep 0.8s;
+		if [ -n "$led0" ]; then (echo 0 > "${led0}"/brightness) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo 0 > "${led1}"/brightness) &> /dev/null; fi
+		sleep 0.2s;
+	done
+	sleep 0.1s;
+	for i in $(seq 1 3); do
+		if [ -n "$led0" ]; then (echo 1 > "${led0}"/brightness) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo 1 > "${led1}"/brightness) &> /dev/null; fi
+		sleep 0.3s;
+		if [ -n "$led0" ]; then (echo 0 > "${led0}"/brightness) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo 0 > "${led1}"/brightness) &> /dev/null; fi
+		sleep 0.2s;
+	done
+	sleep 1.5s;
+}
+
 fail() {
 	local fail_boot_mounted
 	echo
@@ -181,7 +216,9 @@ fail() {
 		echo "  The maximum number of retries is reached!"
 		echo "  Check the logfiles for errors. Then delete or edit \"installer-retries.txt\" in installer config folder to (re)set the counter."
 		echo "  The system is stopped to prevent an infinite loop."
-		sleep infinity
+		while true; do
+			led_sos
+		done
 	else
 		echo "  ${installer_retries} retries left."
 	fi
