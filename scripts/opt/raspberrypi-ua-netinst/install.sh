@@ -13,7 +13,7 @@ variables_reset() {
 	rootdev=
 	rootpartition=
 	wlan_configfile=
-	installer_attempts=
+	installer_retries=
 	cmdline_custom=
 
 	# config variables
@@ -208,26 +208,26 @@ fail() {
 	cp "${logfile}" "/boot/raspberrypi-ua-netinst/error-$(date +%Y%m%dT%H%M%S).log"
 	sync
 	
-	if [ -e "/boot/raspberrypi-ua-netinst/config/installer-attempts.txt" ]; then
-		sanitize_inputfile /boot/raspberrypi-ua-netinst/config/installer-attempts.txt
+	if [ -e "/boot/raspberrypi-ua-netinst/config/installer-retries.txt" ]; then
+		sanitize_inputfile /boot/raspberrypi-ua-netinst/config/installer-retries.txt
 		# shellcheck disable=SC1091
-		source /boot/raspberrypi-ua-netinst/config/installer-attempts.txt
+		source /boot/raspberrypi-ua-netinst/config/installer-retries.txt
 	fi
-	variable_set "installer_attempts" "3"
-	installer_attempts=$((installer_attempts-1))
-	if [ "${installer_attempts}" -ge "0" ]; then
-		echo "installer_attempts=\"${installer_attempts}\"" > /boot/raspberrypi-ua-netinst/config/installer-attempts.txt
+	variable_set "installer_retries" "3"
+	installer_retries=$((installer_retries-1))
+	if [ "${installer_retries}" -ge "0" ]; then
+		echo "installer_retries=\"${installer_retries}\"" > /boot/raspberrypi-ua-netinst/config/installer-retries.txt
 		sync
 	fi
-	if [ "${installer_attempts}" -le "0" ]; then
+	if [ "${installer_retries}" -le "0" ]; then
 		echo "  The maximum number of retries is reached!"
-		echo "  Check the logfiles for errors. Then delete or edit \"installer-attempts.txt\" in installer config folder to (re)set the counter."
+		echo "  Check the logfiles for errors. Then delete or edit \"installer-retries.txt\" in installer config folder to (re)set the counter."
 		echo "  The system is stopped to prevent an infinite loop."
 		while true; do
 			led_sos
 		done
 	else
-		echo "  ${installer_attempts} retries left."
+		echo "  ${installer_retries} retries left."
 	fi
 
 	# if we mounted /boot in the fail command, unmount it.
@@ -2101,7 +2101,7 @@ else
 fi
 
 # Cleanup installer files
-echo "installer_attempts=\"3\"" > /rootfs/boot/raspberrypi-ua-netinst/config/installer-attempts.txt
+echo "installer_retries=\"3\"" > /rootfs/boot/raspberrypi-ua-netinst/config/installer-retries.txt
 if [ "${cleanup}" = "1" ]; then
 	echo -n "Removing installer files... "
 	rm -rf /rootfs/boot/raspberrypi-ua-netinst/
