@@ -77,6 +77,7 @@ variables_reset() {
 	watchdog_enable=
 	quiet_boot=
 	disable_raspberries=
+	disable_splash=
 	cleanup=
 	cleanup_logfiles=
 	spi_enable=
@@ -146,6 +147,7 @@ variables_set_defaults() {
 	variable_set "watchdog_enable" "0"
 	variable_set "quiet_boot" "0"
 	variable_set "disable_raspberries" "0"
+	variable_set "disable_splash" "0"
 	variable_set "cleanup" "0"
 	variable_set "cleanup_logfiles" "0"
 	variable_set "spi_enable" "0"
@@ -1140,6 +1142,7 @@ echo "  rootfs_mount_options = ${rootfs_mount_options}"
 echo "  final_action = ${final_action}"
 echo "  quiet_boot = ${quiet_boot}"
 echo "  disable_raspberries = ${disable_raspberries}"
+echo "  disable_splash = ${disable_splash}"
 echo "  cleanup = ${cleanup}"
 echo "  cleanup_logfiles = ${cleanup_logfiles}"
 echo "  spi_enable = ${spi_enable}"
@@ -2028,6 +2031,9 @@ if [ -n "${rtc}" ]; then
 		echo "dtoverlay=i2c-rtc,${rtc}" >> /rootfs/boot/config.txt
 	fi
 fi
+
+# disable splash if specified in the configuration file
+config_set "/rootfs/boot/config.txt" "disable_splash" "1"
 
 if [ "${sound_enable=1}" ] && [ "${sound_usb_enable=1}" ] && [ "${sound_usb_first}" = "1" ]; then
 	{
