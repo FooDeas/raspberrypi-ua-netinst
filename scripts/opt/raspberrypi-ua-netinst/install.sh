@@ -66,6 +66,7 @@ variables_reset() {
 	hdmi_type=
 	hdmi_tv_res=
 	hdmi_monitor_res=
+	hdmi_disable_overscan=
 	hdmi_system_only=
 	usbroot=
 	usbboot=
@@ -134,6 +135,7 @@ variables_set_defaults() {
 	variable_set "ip_gateway" "0.0.0.0"
 	variable_set "hdmi_tv_res" "1080p"
 	variable_set "hdmi_monitor_res" "1024x768"
+	variable_set "hdmi_disable_overscan" "0"
 	variable_set "hdmi_system_only" "0"
 	variable_set "usbroot" "0"
 	variable_set "usbboot" "0"
@@ -351,6 +353,17 @@ line_add_if_string() {
 		line_add "${target}" "${value}"
 	else
 		line_add "${target}" "${value_else}"
+	fi
+}
+
+config_set() {
+	local configfile="${1}"
+	local option="${2}"
+	local value="${3}"
+	sed -i "s/^#\(${option}=1\)/\1/" "${configfile}"
+	if [ "$(grep -c "^${option}=.*" "${configfile}")" -ne 1 ]; then
+		sed -i "s/^\(${option}=.*\)/#\1/" "${configfile}"
+		echo "${option}=${value}" >> "${configfile}"
 	fi
 }
 
@@ -581,9 +594,9 @@ if [ -e "/boot/raspberrypi-ua-netinst/reinstall/kernel.img" ] && [ -e "/boot/ras
 fi
 # HDMI settings
 if [ "${hdmi_system_only}" = "0" ]; then
+	echo "  =================================================="
+	echo "  == Setting HDMI options... ======================="
 	if [ "${hdmi_type}" = "tv" ] || [ "${hdmi_type}" = "monitor" ]; then
-		echo "  =================================================="
-		echo "  == Setting HDMI options... ======================="
 		if ! grep -q "^hdmi_ignore_edid=0xa5000080\>" /boot/config.txt; then echo -e "\nhdmi_ignore_edid=0xa5000080" >> /boot/config.txt; preinstall_reboot=1; fi
 		if ! grep -q "^hdmi_drive=2\>" /boot/config.txt; then echo "hdmi_drive=2" >> /boot/config.txt; preinstall_reboot=1; fi
 		if [ "${hdmi_type}" = "tv" ]; then
@@ -607,9 +620,12 @@ if [ "${hdmi_system_only}" = "0" ]; then
 				if ! grep -q "^hdmi_mode=16\>" /boot/config.txt; then echo "hdmi_mode=16" >> /boot/config.txt; preinstall_reboot=1; fi
 			fi
 		fi
-		echo "  == Done. ========================================="
-		echo "  =================================================="
 	fi
+	if [ "${hdmi_disable_overscan}" = "1" ]; then
+		echo "disable_overscan=1" >> /boot/config.txt; preinstall_reboot=1
+	fi
+	echo "  == Done. ========================================="
+	echo "  =================================================="
 fi
 # RTC
 if [ -n "${rtc}" ] ; then
@@ -1111,6 +1127,7 @@ echo "  gpu_mem = ${gpu_mem}"
 echo "  hdmi_type = ${hdmi_type}"
 echo "  hdmi_tv_res = ${hdmi_tv_res}"
 echo "  hdmi_monitor_res = ${hdmi_monitor_res}"
+echo "  hdmi_disable_overscan = ${hdmi_disable_overscan}"
 echo "  hdmi_system_only = ${hdmi_system_only}"
 echo "  usbroot = ${usbroot}"
 echo "  usbboot = ${usbboot}"
@@ -1970,81 +1987,38 @@ fi
 
 # set hdmi options
 if [ "${hdmi_type}" = "tv" ] || [ "${hdmi_type}" = "monitor" ]; then
-	sed -i "s/^#\(hdmi_ignore_edid=0xa5000080\)/\1/" /rootfs/boot/config.txt
-	if [ "$(grep -c "^hdmi_ignore_edid=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
-		sed -i "s/^\(hdmi_ignore_edid=.*\)/#\1/" /rootfs/boot/config.txt
-		echo "hdmi_ignore_edid=0xa5000080" >> /rootfs/boot/config.txt
-	fi
-	sed -i "s/^#\(hdmi_drive=2\)/\1/" /rootfs/boot/config.txt
-	if [ "$(grep -c "^hdmi_drive=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
-		sed -i "s/^\(hdmi_drive=.*\)/#\1/" /rootfs/boot/config.txt
-		echo "hdmi_drive=2" >> /rootfs/boot/config.txt
-	fi
+	config_set "/rootfs/boot/config.txt" "hdmi_ignore_edid" "0xa5000080"
+	config_set "/rootfs/boot/config.txt" "hdmi_drive" "2"
 	if [ "${hdmi_type}" = "tv" ]; then
-		sed -i "s/^#\(hdmi_group=1\)/\1/" /rootfs/boot/config.txt
-		if [ "$(grep -c "^hdmi_group=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
-			sed -i "s/^\(hdmi_group=.*\)/#\1/" /rootfs/boot/config.txt
-			echo "hdmi_group=1" >> /rootfs/boot/config.txt
-		fi
+		config_set "/rootfs/boot/config.txt" "hdmi_group" "1"
 		if [ "${hdmi_tv_res}" = "720p" ]; then
 			#hdmi_mode=4 720p@60Hz
-			sed -i "s/^#\(hdmi_mode=4\)/\1/" /rootfs/boot/config.txt
-			if [ "$(grep -c "^hdmi_mode=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
-				sed -i "s/^\(hdmi_mode=.*\)/#\1/" /rootfs/boot/config.txt
-				echo "hdmi_mode=4" >> /rootfs/boot/config.txt
-			fi
+			config_set "/rootfs/boot/config.txt" "hdmi_mode" "4"
 		elif [ "${hdmi_tv_res}" = "1080i" ]; then
 			#hdmi_mode=5 1080i@60Hz
-			sed -i "s/^#\(hdmi_mode=5\)/\1/" /rootfs/boot/config.txt
-			if [ "$(grep -c "^hdmi_mode=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
-				sed -i "s/^\(hdmi_mode=.*\)/#\1/" /rootfs/boot/config.txt
-				echo "hdmi_mode=5" >> /rootfs/boot/config.txt
-			fi
+			config_set "/rootfs/boot/config.txt" "hdmi_mode" "5"
 		else
 			#hdmi_mode=16 1080p@60Hz
-			sed -i "s/^#\(hdmi_mode=16\)/\1/" /rootfs/boot/config.txt
-			if [ "$(grep -c "^hdmi_mode=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
-				sed -i "s/^\(hdmi_mode=.*\)/#\1/" /rootfs/boot/config.txt
-				echo "hdmi_mode=16" >> /rootfs/boot/config.txt
-			fi
+			config_set "/rootfs/boot/config.txt" "hdmi_mode" "16"
 		fi
 	elif [ "${hdmi_type}" = "monitor" ]; then
-		sed -i "s/^#\(hdmi_group=2\)/\1/" /rootfs/boot/config.txt
-		if [ "$(grep -c "^hdmi_group=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
-			sed -i "s/^\(hdmi_group=.*\)/#\1/" /rootfs/boot/config.txt
-			echo "hdmi_group=2" >> /rootfs/boot/config.txt
-		fi
+		config_set "/rootfs/boot/config.txt" "hdmi_group" "2"
 		if [ "${hdmi_monitor_res}" = "640x480" ]; then
 			#hdmi_mode=4 640x480@60Hz
-			sed -i "s/^#\(hdmi_mode=4\)/\1/" /rootfs/boot/config.txt
-			if [ "$(grep -c "^hdmi_mode=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
-				sed -i "s/^\(hdmi_mode=.*\)/#\1/" /rootfs/boot/config.txt
-				echo "hdmi_mode=4" >> /rootfs/boot/config.txt
-			fi
+			config_set "/rootfs/boot/config.txt" "hdmi_mode" "4"
 		elif [ "${hdmi_monitor_res}" = "800x600" ]; then
 			#hdmi_mode=9 800x600@60Hz
-			sed -i "s/^#\(hdmi_mode=9\)/\1/" /rootfs/boot/config.txt
-			if [ "$(grep -c "^hdmi_mode=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
-				sed -i "s/^\(hdmi_mode=.*\)/#\1/" /rootfs/boot/config.txt
-				echo "hdmi_mode=9" >> /rootfs/boot/config.txt
-			fi
+			config_set "/rootfs/boot/config.txt" "hdmi_mode" "9"
 		elif [ "${hdmi_monitor_res}" = "1280x1024" ]; then
 			#hdmi_mode=35 1280x1024@60Hz
-			sed -i "s/^#\(hdmi_mode=35\)/\1/" /rootfs/boot/config.txt
-			if [ "$(grep -c "^hdmi_mode=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
-				sed -i "s/^\(hdmi_mode=.*\)/#\1/" /rootfs/boot/config.txt
-				echo "hdmi_mode=35" >> /rootfs/boot/config.txt
-			fi
+			config_set "/rootfs/boot/config.txt" "hdmi_mode" "35"
 		else
 			#hdmi_mode=16 1024x768@60Hz
-			sed -i "s/^#\(hdmi_mode=16\)/\1/" /rootfs/boot/config.txt
-			if [ "$(grep -c "^hdmi_mode=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
-				sed -i "s/^\(hdmi_mode=.*\)/#\1/" /rootfs/boot/config.txt
-				echo "hdmi_mode=16" >> /rootfs/boot/config.txt
-			fi
+			config_set "/rootfs/boot/config.txt" "hdmi_mode" "16"
 		fi
 	fi
 fi
+config_set "/rootfs/boot/config.txt" "disable_overscan" "1"
 
 # enable rtc if specified in the configuration file
 if [ -n "${rtc}" ]; then
