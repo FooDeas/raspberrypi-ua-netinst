@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC1091,SC2186
 
 set -e # exit if any command fails
 umask 022
@@ -29,7 +28,7 @@ INSTALL_MODULES="$INSTALL_MODULES kernel/drivers/scsi/sg.ko"
 # defines array with kernel versions
 function get_kernels {
 	local moduleconf
-	moduleconf=($(find tmp/lib/modules/ -type f -name "modules.builtin"))
+	mapfile -t moduleconf < <(find tmp/lib/modules/ -type f -name "modules.builtin")
 	kernels=()
 	for i in "${moduleconf[@]}"; do
 		kernels+=("$(dirname "${i/tmp\/lib\/modules\//}")")
@@ -69,7 +68,7 @@ function check_dependencies {
 	# iterate over the passed modules
 	for mod in "${mods[@]}"; do
 		# find the modules dependencies, convert into array
-		deps=($(grep "^${mod}" "${depmod_file}" | cut -d':' -f2))
+		mapfile -t deps < <(grep "^${mod}" "${depmod_file}" | cut -d':' -f2)
 		# iterate over the found dependencies
 		for dep in "${deps[@]}"; do
 			# check if the dependency is in $modules, if not, add to temp array
@@ -101,6 +100,7 @@ function create_tempfile {
 			touch_tempfile "${tmp_ptrn}"
 	else
 		if type tempfile &> /dev/null; then
+			# shellcheck disable=SC2186
 			tempfile
 		else
 			touch_tempfile "${tmp_ptrn}"
@@ -134,7 +134,7 @@ function create_cpio {
 	mkdir -p rootfs/var/log/
 	mkdir -p rootfs/var/run/
 
-	moduleconf=($(find tmp/lib/modules/ -type f -name "modules.order" -o -name "modules.builtin"))
+	mapfile -t moduleconf < <(find tmp/lib/modules/ -type f -name "modules.order" -o -name "modules.builtin")
 	for i in "${moduleconf[@]}"; do
 		i="${i/tmp\/}"
 		# Copy modules file
@@ -148,7 +148,7 @@ function create_cpio {
 		/sbin/depmod -nb tmp "${kernel}" > "${depmod_file}"
 	done
 
-	modules=(${INSTALL_MODULES})
+	modules=("${INSTALL_MODULES[@]}")
 
 	# new_count contains the number of new elements in the $modules array for each iteration
 	new_count=${#modules[@]}
@@ -636,6 +636,7 @@ function create_cpio {
 
 # Run update if never run
 if [ ! -d packages ]; then
+	# shellcheck disable=SC1091
 	. ./update.sh
 fi
 
