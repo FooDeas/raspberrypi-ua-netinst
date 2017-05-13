@@ -586,18 +586,15 @@ echo
 echo "Checking if config.txt needs to be modified before starting installation..."
 # Reinstallation
 if [ -e "/boot/raspberrypi-ua-netinst/reinstall/kernel.img" ] && [ -e "/boot/raspberrypi-ua-netinst/reinstall/kernel7.img" ] ; then
-	echo "  =================================================="
-	echo "  == Reinstallation requested! Restoring files... =="
+	echo -n "  Reinstallation requested! Restoring files... "
 	mv /boot/raspberrypi-ua-netinst/reinstall/kernel.img /boot/kernel.img
 	mv /boot/raspberrypi-ua-netinst/reinstall/kernel7.img /boot/kernel7.img
-	echo "  == Done. ========================================="
-	echo "  =================================================="
+	echo "OK"
 	preinstall_reboot=1
 fi
 # HDMI settings
 if [ "${hdmi_system_only}" = "0" ]; then
-	echo "  =================================================="
-	echo "  == Setting HDMI options... ======================="
+	echo -n "  Setting HDMI options... "
 	if [ "${hdmi_type}" = "tv" ] || [ "${hdmi_type}" = "monitor" ]; then
 		if ! grep -q "^hdmi_ignore_edid=0xa5000080\>" /boot/config.txt; then echo -e "\nhdmi_ignore_edid=0xa5000080" >> /boot/config.txt; preinstall_reboot=1; fi
 		if ! grep -q "^hdmi_drive=2\>" /boot/config.txt; then echo "hdmi_drive=2" >> /boot/config.txt; preinstall_reboot=1; fi
@@ -626,27 +623,22 @@ if [ "${hdmi_system_only}" = "0" ]; then
 	if [ "${hdmi_disable_overscan}" = "1" ]; then
 		echo "disable_overscan=1" >> /boot/config.txt; preinstall_reboot=1
 	fi
-	echo "  == Done. ========================================="
-	echo "  =================================================="
+	echo "OK"
 fi
 # RTC
 if [ -n "${rtc}" ] ; then
-	echo "  =================================================="
-	echo "  == Enabling RTC configuration... ================="
+	echo -n "  Enabling RTC configuration... "
 	if ! grep -q "^dtoverlay=i2c-rtc,${rtc}\>" /boot/config.txt; then
 		echo -e "\ndtoverlay=i2c-rtc,${rtc}" >> /boot/config.txt
 		preinstall_reboot=1
 	fi
-	echo "  == Done. ========================================="
-	echo "  =================================================="
+	echo "OK"
 fi
 echo "OK"
 # Reboot if needed
 if [ "${preinstall_reboot}" = "1" ]; then
-	echo -e "\n"
-	echo "============================="
-	echo "== Rebooting in 3 seconds! =="
-	echo "============================="
+	echo
+	echo "Rebooting in 3 seconds!"
 	sleep 3s
 	reboot && exit
 fi
@@ -1877,12 +1869,10 @@ echo "${cmdline}" > /rootfs/boot/cmdline.txt
 echo "OK"
 
 # Password warning
-echo -n "Fixing non-privileged SSH password warning... "
 if [ -f /rootfs/etc/profile.d/sshpasswd.sh ]; then
+	echo -n "Fixing non-privileged SSH password warning... "
 	sed -i "s/service ssh status/\/usr\/sbin\/service ssh status/" /rootfs/etc/profile.d/sshpasswd.sh
 	echo "OK"
-else
-	echo "not necessary!"
 fi
 
 # enable spi if specified in the configuration file
