@@ -14,6 +14,7 @@ variables_reset() {
 	rootpartition=
 	wlan_configfile=
 	installer_retries=
+	cmdline_custom=
 
 	# config variables
 	preset=
@@ -74,6 +75,7 @@ variables_reset() {
 	hwrng_support=
 	watchdog_enable=
 	quiet_boot=
+	disable_raspberries=
 	cleanup=
 	cleanup_logfiles=
 	spi_enable=
@@ -141,6 +143,7 @@ variables_set_defaults() {
 	variable_set "hwrng_support" "1"
 	variable_set "watchdog_enable" "0"
 	variable_set "quiet_boot" "0"
+	variable_set "disable_raspberries" "0"
 	variable_set "cleanup" "0"
 	variable_set "cleanup_logfiles" "0"
 	variable_set "spi_enable" "0"
@@ -315,6 +318,40 @@ output_filter() {
 	filterstring+="|^The value of the capability argument is not permitted for a file\. Or the file is not a regular \(non-symlink\) file$"
 	filterstring+="|^Failed to read \S.*\. Ignoring: No such file or directory$"
 	grep -Ev "${filterstring}"
+}
+
+line_add() {
+	local variable="${1}"
+	local value="${2}"
+	if [ -z "${!variable}" ]; then
+		eval "${variable}=\"${value}\""
+	else
+		eval "${variable}=\"${!variable} ${value}\""
+	fi
+}
+
+line_add_if_boolean() {
+	local variable="${1}"
+	local target="${2}"
+	local value="${3}"
+	local value_else="${4}"
+	if [ "${!variable}" = "1" ]; then
+		line_add "${target}" "${value}"
+	else
+		line_add "${target}" "${value_else}"
+	fi
+}
+
+line_add_if_string() {
+	local variable="${1}"
+	local target="${2}"
+	local value="${3}"
+	local value_else="${4}"
+	if [ -n "${!variable}" ]; then
+		line_add "${target}" "${value}"
+	else
+		line_add "${target}" "${value_else}"
+	fi
 }
 
 #######################
@@ -1085,6 +1122,7 @@ echo "  rootfs_install_mount_options = ${rootfs_install_mount_options}"
 echo "  rootfs_mount_options = ${rootfs_mount_options}"
 echo "  final_action = ${final_action}"
 echo "  quiet_boot = ${quiet_boot}"
+echo "  disable_raspberries = ${disable_raspberries}"
 echo "  cleanup = ${cleanup}"
 echo "  cleanup_logfiles = ${cleanup_logfiles}"
 echo "  spi_enable = ${spi_enable}"
@@ -1509,12 +1547,15 @@ if echo "${ifname}" | grep -q "wlan"; then
 	} >> /rootfs/etc/network/interfaces
 fi
 
+# Customize cmdline.txt
 if [ "${disable_predictable_nin}" = "1" ]; then
 	# as described here: https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames
 	# adding net.ifnames=0 to /boot/cmdline and disabling the persistent-net-generator.rules
-	cmdline="${cmdline} net.ifnames=0"
+	line_add cmdline_custom "net.ifnames=0"
 	ln -s /dev/null /rootfs/etc/udev/rules.d/75-persistent-net-generator.rules
 fi
+line_add_if_boolean quiet_boot cmdline_custom "quiet" "loglevel=3"
+line_add_if_boolean disable_raspberries cmdline_custom "logo.nologo"
 
 if [ "${ip_addr}" != "dhcp" ]; then
 	cp /etc/resolv.conf /rootfs/etc/ || fail
@@ -1808,13 +1849,11 @@ if [ "${usbboot}" = "1" ]; then
 	touch /rootfs/boot/TIMEOUT
 fi
 
-# default cmdline.txt
-echo -n "Creating default cmdline.txt... "
-if [ "${quiet_boot}" = "1" ]; then
-	echo "${cmdline} root=${rootpartition} rootfstype=${rootfstype} rootwait quiet logo.nologo" > /rootfs/boot/cmdline.txt
-else
-	echo "${cmdline} root=${rootpartition} rootfstype=${rootfstype} rootwait loglevel=3" > /rootfs/boot/cmdline.txt
-fi
+# create cmdline.txt
+echo -n "Creating cmdline.txt... "
+line_add cmdline "root=${rootpartition} rootfstype=${rootfstype} rootwait"
+line_add_if_string cmdline_custom cmdline "${cmdline_custom}"
+echo "${cmdline}" > /rootfs/boot/cmdline.txt
 echo "OK"
 
 # Password warning
