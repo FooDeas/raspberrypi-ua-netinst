@@ -47,7 +47,7 @@ Configuration files have to be placed as follows:
 | `/raspberrypi-ua-netinst/config/post-install.txt` | Post installation script |
 | `/raspberrypi-ua-netinst/config/wpa_supplicant.conf` | WiFi configuration file |
 | `/raspberrypi-ua-netinst/config/files/<listname>.list` | List(s) of additional files |
-| `/raspberrypi-ua-netinst/config/installer-retries.txt` | Number of installation retries |
+| `/raspberrypi-ua-netinst/config/installer-attempts.txt` | Number of installation retries |
 | `/raspberrypi-ua-netinst/config/files/root/[folder/][filename]` | Listed additional files |
 | `/raspberrypi-ua-netinst/rcS` | Custom installer script |
 
