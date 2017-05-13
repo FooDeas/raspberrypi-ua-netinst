@@ -688,7 +688,8 @@ mkdir -p bootfs/raspberrypi-ua-netinst/config/boot
 mkdir -p bootfs/raspberrypi-ua-netinst/config/files
 mkdir -p bootfs/raspberrypi-ua-netinst/config/files/root
 if [ -d ../config ]; then
-	cp --preserve=xattr,timestamps -r ../config/* bootfs/raspberrypi-ua-netinst/config/
+	cp --preserve=xattr,timestamps -r ../config/* ./bootfs/raspberrypi-ua-netinst/config/
+	find ./bootfs/ -type f -name "*.txt" -execdir sed -i -e 's/\([^\r]\)$/\1\r/' {} +
 fi
 
 # create zip file
