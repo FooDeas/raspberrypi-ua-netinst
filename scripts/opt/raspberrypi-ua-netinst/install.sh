@@ -63,6 +63,7 @@ variables_reset() {
 	drivers_to_load=
 	online_config=
 	gpu_mem=
+	console_blank=
 	hdmi_type=
 	hdmi_tv_res=
 	hdmi_monitor_res=
@@ -1118,6 +1119,7 @@ echo "  wlan_country = ${wlan_country}"
 echo "  cmdline = ${cmdline}"
 echo "  drivers_to_load = ${drivers_to_load}"
 echo "  gpu_mem = ${gpu_mem}"
+echo "  console_blank = ${console_blank}"
 echo "  hdmi_type = ${hdmi_type}"
 echo "  hdmi_tv_res = ${hdmi_tv_res}"
 echo "  hdmi_monitor_res = ${hdmi_monitor_res}"
@@ -1568,6 +1570,7 @@ if [ "${disable_predictable_nin}" = "1" ]; then
 fi
 line_add_if_boolean quiet_boot cmdline_custom "quiet" "loglevel=3"
 line_add_if_boolean disable_raspberries cmdline_custom "logo.nologo"
+line_add_if_boolean disable_raspberries cmdline_custom "consoleblank=${console_blank}"
 
 if [ "${ip_addr}" != "dhcp" ]; then
 	cp /etc/resolv.conf /rootfs/etc/ || fail
