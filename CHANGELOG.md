@@ -7,6 +7,7 @@
   - seperate option to disable raspberry logos (no longer included in `quiet_boot`)
   - disable rainbow screen
   - disable overscan
+  - disable screensaver (console blank timeout)
 **Bugfixes:**
 - sha256sums generated file format
 - possibly missing apt-transport-https
