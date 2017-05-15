@@ -195,6 +195,21 @@ led_sos() {
 	sleep 1.5s;
 }
 
+inputfile_sanitize() {
+	local inputfile
+	if [ -z "${1}" ]; then
+		echo "No input file specified!"
+	else
+		inputfile=${1}
+		# convert line endings to unix
+		dos2unix "${inputfile}"
+		# add line feed at the end
+		if [ -n "$(tail -c1 "${inputfile}")" ]; then
+			echo >> "${inputfile}"
+		fi
+	fi
+}
+
 fail() {
 	local fail_boot_mounted
 	echo
@@ -210,7 +225,7 @@ fail() {
 	sync
 	
 	if [ -e "/boot/raspberrypi-ua-netinst/config/installer-retries.txt" ]; then
-		sanitize_inputfile /boot/raspberrypi-ua-netinst/config/installer-retries.txt
+		inputfile_sanitize /boot/raspberrypi-ua-netinst/config/installer-retries.txt
 		# shellcheck disable=SC1091
 		source /boot/raspberrypi-ua-netinst/config/installer-retries.txt
 	fi
@@ -241,23 +256,8 @@ fail() {
 	sh
 }
 
-sanitize_inputfile() {
-	local inputfile
-	if [ -z "${1}" ]; then
-		echo "No input file specified!"
-	else
-		inputfile=${1}
-		# convert line endings to unix
-		dos2unix "${inputfile}"
-		# add line feed at the end
-		if [ -n "$(tail -c1 "${inputfile}")" ]; then
-			echo >> "${inputfile}"
-		fi
-	fi
-}
-
 # sanitizes variables that use comma separation
-sanitize_variable() {
+variable_sanitize() {
 	local variable="${1}"
 	local value="${!1}"
 	value="$(echo "${value}" | tr ' ' ',')"
@@ -275,7 +275,7 @@ sanitize_variable() {
 
 convert_listvariable() {
 	local variable="${1}"
-	sanitize_variable "${variable}"
+	variable_sanitize "${variable}"
 	local value="${!1}"
 	eval "${variable}=\"$(echo "${value}" | tr ',' ' ')\""
 }
@@ -283,7 +283,7 @@ convert_listvariable() {
 install_files() {
 	local file_to_read="${1}"
 	echo "Adding files & folders listed in /boot/raspberrypi-ua-netinst/config/files/${file_to_read}..."
-	sanitize_inputfile "/bootfs/raspberrypi-ua-netinst/config/files/${file_to_read}"
+	inputfile_sanitize "/bootfs/raspberrypi-ua-netinst/config/files/${file_to_read}"
 	grep -v "^[[:space:]]*#\|^[[:space:]]*$" "/bootfs/raspberrypi-ua-netinst/config/files/${file_to_read}" | while read -r line; do
 		owner=$(echo "${line}" | awk '{ print $1 }')
 		perms=$(echo "${line}" | awk '{ print $2 }')
@@ -573,7 +573,7 @@ echo "OK"
 # Read installer-config.txt
 if [ -e "/bootfs/raspberrypi-ua-netinst/config/installer-config.txt" ]; then
 	echo "Executing installer-config.txt..."
-	sanitize_inputfile /bootfs/raspberrypi-ua-netinst/config/installer-config.txt
+	inputfile_sanitize /bootfs/raspberrypi-ua-netinst/config/installer-config.txt
 	# shellcheck disable=SC1091
 	source /bootfs/raspberrypi-ua-netinst/config/installer-config.txt
 	echo "OK"
@@ -651,7 +651,7 @@ umount /boot || fail
 echo "OK"
 
 if [ -e "${wlan_configfile}" ]; then
-	sanitize_inputfile "${wlan_configfile}"
+	inputfile_sanitize "${wlan_configfile}"
 fi
 
 echo
@@ -830,7 +830,7 @@ if [ -n "${online_config}" ]; then
 	echo "OK"
 
 	echo -n "Executing online-config.txt... "
-	sanitize_inputfile /opt/raspberrypi-ua-netinst/installer-config_online.txt
+	inputfile_sanitize /opt/raspberrypi-ua-netinst/installer-config_online.txt
 	# shellcheck disable=SC1091
 	source /opt/raspberrypi-ua-netinst/installer-config_online.txt
 	variables_set_defaults
@@ -966,10 +966,10 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	server_packages_postinstall="${minimal_packages_postinstall},${server_packages_postinstall}"
 
 	# cleanup package variables used by cdebootstrap_cmdline
-	sanitize_variable base_packages
-	sanitize_variable minimal_packages
-	sanitize_variable server_packages
-	sanitize_variable syspackages
+	variable_sanitize base_packages
+	variable_sanitize minimal_packages
+	variable_sanitize server_packages
+	variable_sanitize syspackages
 	case "${preset}" in
 		"base")
 			cdebootstrap_cmdline="--flavour=minimal --include=${base_packages}"
@@ -1075,9 +1075,9 @@ if [ -n "${system_default_locale}" ]; then
 fi
 
 # sanitize_variables
-sanitize_variable locales
-sanitize_variable packages
-sanitize_variable packages_postinstall
+variable_sanitize locales
+variable_sanitize packages
+variable_sanitize packages_postinstall
 
 # show resulting variables
 echo
@@ -1970,7 +1970,7 @@ fi
 # set wlan country code
 if [ -n "${wlan_country}" ]; then
 	if [ -r /rootfs/etc/wpa_supplicant/wpa_supplicant.conf ]; then
-		sanitize_inputfile /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
+		inputfile_sanitize /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
 		if ! grep -q "country=" /rootfs/etc/wpa_supplicant/wpa_supplicant.conf; then
 			echo "country=${wlan_country}" >> /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
 		fi
@@ -2054,7 +2054,7 @@ cd "${old_dir}" || fail
 if [ -e "/bootfs/raspberrypi-ua-netinst/config/post-install.txt" ]; then
 	echo "================================================="
 	echo "=== Start executing post-install.txt. ==="
-	sanitize_inputfile /bootfs/raspberrypi-ua-netinst/config/post-install.txt
+	inputfile_sanitize /bootfs/raspberrypi-ua-netinst/config/post-install.txt
 	# shellcheck disable=SC1091
 	source /bootfs/raspberrypi-ua-netinst/config/post-install.txt
 	echo "=== Finished executing post-install.txt. ==="
