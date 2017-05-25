@@ -2049,7 +2049,9 @@ if [ "${hdmi_type}" = "tv" ] || [ "${hdmi_type}" = "monitor" ]; then
 		fi
 	fi
 fi
-config_set "/rootfs/boot/config.txt" "disable_overscan" "1"
+if [ "${hdmi_disable_overscan}" = "1" ]; then
+	config_set "/rootfs/boot/config.txt" "disable_overscan" "1"
+fi
 
 # enable rtc if specified in the configuration file
 if [ -n "${rtc}" ]; then
@@ -2072,9 +2074,11 @@ if [ -n "${dt_overlays}" ]; then
 fi
 
 # disable splash if specified in the configuration file
-config_set "/rootfs/boot/config.txt" "disable_splash" "1"
+if [ "${disable_splash}" = "1" ]; then
+	config_set "/rootfs/boot/config.txt" "disable_splash" "1"
+fi
 
-if [ "${sound_enable=1}" ] && [ "${sound_usb_enable=1}" ] && [ "${sound_usb_first}" = "1" ]; then
+if [ "${sound_enable}" = "1" ] && [ "${sound_usb_enable}" = "1" ] && [ "${sound_usb_first}" = "1" ]; then
 	{
 		echo "pcm.!default {"
 		echo " type hw card 1"
