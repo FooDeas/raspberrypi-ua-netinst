@@ -32,7 +32,7 @@
 ## Device / peripheral
 
 | Parameter | Default | Options | Description |
-|----------------------|---------|----------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
+|----------------------|---------|----------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `spi_enable` | `0` | `0`/`1` | Set to "1" to enable the SPI interface. |
 | `i2c_enable` | `0` | `0`/`1` | Set to "1" to enable the I²C (I2C) interface. |
 | `i2c_baudrate` |  |  | Specifies the I²C baudrate in bit/s. If not defined, the bootloader sets it to 100000 bit/s. The option `i2c_enable=1` has to be set to take effect. |
@@ -42,6 +42,7 @@
 | `camera_enable` | `0` | `0`/`1` | Set to "1" to enable the camera module. This enables all camera-related parameters in config.txt. |
 | `camera_disable_led` | `0` | `0`/`1` | Disables the camera LED. The option `camera_enable=1` has to be set to take effect. |
 | `rtc` |  | `ds1307`/  `ds1339`/  `ds3231`/  `mcp7940x`/  `mcp7941x`/  `pcf2127`/  `pcf8523`/  `pcf8563` | Select an RTC if it is connected via I²C. |
+| `dt_overlays` |  |  | Enables additional device tree overlays (comma separated and quoted). (e.g. 'dt_overlays="hifiberry-dac,lirc-rpi"') |
 
 ## SSH
 
@@ -55,13 +56,13 @@
 ## User
 
 | Parameter | Default | Options | Description |
-|-----------------|----------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|-------------------|------------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `username` |  |  | Username of the user to create |
 | `userpw` |  |  | Password to use for created user |
 | `usergpio` |  | `0`/`1` | Set to "1" to give created user permissions to access GPIO pins. A new system group 'gpio' will be created automatically. |
 | `usergpu` |  | `0`/`1` | Set to "1" to give created user GPU access permissions (e.g. to run vcgencmd without using sudo). |
-| `usergroups` |  |  | Add created user to this additional groups (comma separated and quoted). Non-existent groups will be created. (e.g. 'usergroups=family,friends') |
-| `usersysgroups` |  |  | Add created user to this additional groups (comma separated and quoted). Non-existent groups will be created as system groups. (e.g. 'usersysgroups=video,www-data') |
+| `usergroups` |  |  | Add created user to this additional groups (comma separated and quoted). Non-existent groups will be created. (e.g. 'usergroups="family,friends"') |
+| `usersysgroups` |  |  | Add created user to this additional groups (comma separated and quoted). Non-existent groups will be created as system groups. (e.g. 'usersysgroups="video,www-data"') |
 | `userperms_admin` | `0` | `0`/`1` | Set to "1" to install sudo and make the user a sudo user. |
 | `userperms_sound` | `0` | `0`/`1` | Set to "1" to add the user to the group 'audio'. This system group will be created automatically. |
 | `rootpw` | `raspbian` |  | Sets password for root. To disable root completely, also set root_ssh_pubkey empty. |
@@ -85,10 +86,10 @@
 ## Localization
 
 | Parameter | Default | Options | Description |
-|-----------------------|---------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|-------------------------|-----------|----------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `timezone` | `Etc/UTC` | [ref: doc/timezone.txt](/doc/timezone.txt) | Set to desired timezone (e.g. Europe/Ljubljana) |
 | `keyboard_layout` | `us` | [ref: doc/keyboard_layout.txt](/doc/keyboard_layout.txt) | Set default keyboard layout. (e.g. "de") |
-| `locales` |  | [ref: doc/locales.txt](/doc/locales.txt) | Generate locales from this list (comma separated and quoted). UTF-8 is chosen preferentially if no encoding is specified. (e.g. "en_US.UTF-8,nl_NL,sl_SI.UTF-8") |
+| `locales` |  | [ref: doc/locales.txt](/doc/locales.txt) | Generate locales from this list (comma separated and quoted). UTF-8 is chosen preferentially if no encoding is specified. (e.g. 'locales="en_US.UTF-8,nl_NL,sl_SI.UTF-8"') |
 | `system_default_locale` |  | [ref: doc/locales.txt](/doc/locales.txt) | Set default system locale (using the LANG environment variable). UTF-8 is chosen preferentially if no encoding is specified. (e.g. "nl_NL" or "sl_SI.UTF-8") |
 
 ## Graphics / GPU

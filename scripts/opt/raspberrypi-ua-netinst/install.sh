@@ -47,6 +47,7 @@ variables_reset() {
 	timeserver_http=
 	timezone=
 	rtc=
+	dt_overlays=
 	keyboard_layout=
 	locales=
 	system_default_locale=
@@ -273,6 +274,30 @@ variable_sanitize() {
 	eval "${variable}=\"${value}\""
 }
 
+variable_deduplicate() {
+	local variable="${1}"
+	local values=()
+	eval values=\(\"\$\{"${variable}"[@]\}\"\)
+	local exists
+	local cleaned=()
+	for value in "${values[@]}"; do
+		exists=0
+		for search in "${cleaned[@]}"; do
+			if [ "${value}" == "${search}" ]; then
+				exists=1
+				break
+			fi
+		done
+		if [ "${exists}" == "0" ]; then
+			cleaned+=("${value}")
+		fi
+	done
+	for i in "${cleaned[@]}"; do
+		echo "result: ${i}"
+	done
+	eval "${variable}"=\(\"\$\{cleaned[@]\}\"\)
+}
+
 convert_listvariable() {
 	local variable="${1}"
 	variable_sanitize "${variable}"
@@ -367,6 +392,15 @@ config_set() {
 	if [ "$(grep -c "^${option}=.*" "${configfile}")" -ne 1 ]; then
 		sed -i "s/^\(${option}=.*\)/#\1/" "${configfile}"
 		echo "${option}=${value}" >> "${configfile}"
+	fi
+}
+
+dtoverlay_enable() {
+	local configfile="${1}"
+	local dtoverlay="${2}"
+	sed -i "s/^#\(dtoverlay=${dtoverlay}\)/\1/" "${configfile}"
+	if [ "$(grep -c "^dtoverlay=${dtoverlay}" "${configfile}")" -ne 1 ]; then
+		echo "dtoverlay=${dtoverlay}" >> "${configfile}"
 	fi
 }
 
@@ -1112,6 +1146,7 @@ echo "  rootsize = ${rootsize}"
 echo "  timeserver = ${timeserver}"
 echo "  timezone = ${timezone}"
 echo "  rtc = ${rtc}"
+echo "  dt_overlays = ${dt_overlays}"
 echo "  keyboard_layout = ${keyboard_layout}"
 echo "  locales = ${locales}"
 echo "  system_default_locale = ${system_default_locale}"
@@ -2023,6 +2058,17 @@ if [ -n "${rtc}" ]; then
 		sed -i "s/^\(dtoverlay=i2c-rtc,\)/#\1/" /rootfs/boot/config.txt
 		echo "dtoverlay=i2c-rtc,${rtc}" >> /rootfs/boot/config.txt
 	fi
+fi
+
+# enable custom dtoverlays
+if [ -n "${dt_overlays}" ]; then
+	echo "Enabling additional device tree overlays:"
+	convert_listvariable dt_overlays
+	for dtoverlay in ${dt_overlays}; do
+		echo "  ${dtoverlay}"
+		dtoverlay_enable "/rootfs/boot/config.txt" "${dtoverlay}"
+	done
+	echo "OK"
 fi
 
 # disable splash if specified in the configuration file
