@@ -9,6 +9,7 @@
   - disable overscan
   - disable screensaver (console blank timeout)
   - enable custom device tree overlays
+
 **Bugfixes:**
 - sha256sums generated file format
 - possibly missing apt-transport-https
@@ -111,7 +112,6 @@ This is a bugfix release.
 - Fixed installer customization to enable audio
 - Added ability to install Raspberry Pi tools like `vcgencmd`, `raspistill` and similar  
   (see #6 to patch existing systems)
-
 
 # raspberrypi-ua-netinst v1.1.0
 - added installer variable to enable audio
