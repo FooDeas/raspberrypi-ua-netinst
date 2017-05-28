@@ -233,7 +233,7 @@ fail() {
 	variable_set "installer_retries" "3"
 	installer_retries=$((installer_retries-1))
 	if [ "${installer_retries}" -ge "0" ]; then
-		echo "installer_retries=\"${installer_retries}\"" > /boot/raspberrypi-ua-netinst/config/installer-retries.txt
+		echo "installer_retries=${installer_retries}" > /boot/raspberrypi-ua-netinst/config/installer-retries.txt
 		sync
 	fi
 	if [ "${installer_retries}" -le "0" ]; then
@@ -2144,7 +2144,7 @@ else
 fi
 
 # Cleanup installer files
-echo "installer_retries=\"3\"" > /rootfs/boot/raspberrypi-ua-netinst/config/installer-retries.txt
+echo "installer_retries=3" > /rootfs/boot/raspberrypi-ua-netinst/config/installer-retries.txt
 if [ "${cleanup}" = "1" ]; then
 	echo -n "Removing installer files... "
 	rm -rf /rootfs/boot/raspberrypi-ua-netinst/
