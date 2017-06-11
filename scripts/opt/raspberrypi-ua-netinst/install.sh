@@ -384,14 +384,26 @@ line_add_if_set() {
 	fi
 }
 
+config_check() {
+	local configfile="${1}"
+	local option="${2}"
+	local value="${3}"
+	if [ "$(grep -c "^${option}=.*" "${configfile}")" -eq 1 ] && [ "$(grep -c "^${option}=${value}\>" "${configfile}")" -eq 1 ]; then
+		return 0
+	fi
+	return 1
+}
+
 config_set() {
 	local configfile="${1}"
 	local option="${2}"
 	local value="${3}"
-	sed -i "s/^#\(${option}=1\)/\1/" "${configfile}"
-	if [ "$(grep -c "^${option}=.*" "${configfile}")" -ne 1 ]; then
-		sed -i "s/^\(${option}=.*\)/#\1/" "${configfile}"
-		echo "${option}=${value}" >> "${configfile}"
+	if ! config_check "${1}" "${2}" "${3}"; then
+		sed -i "s/^#\(${option}=${value}\)/\1/" "${configfile}"
+		if [ "$(grep -c "^${option}=.*" "${configfile}")" -ne 1 ]; then
+			sed -i "s/^\(${option}=.*\)/#\1/" "${configfile}"
+			echo "${option}=${value}" >> "${configfile}"
+		fi
 	fi
 }
 
@@ -631,32 +643,32 @@ fi
 if [ "${hdmi_system_only}" = "0" ]; then
 	echo -n "  Setting HDMI options... "
 	if [ "${hdmi_type}" = "tv" ] || [ "${hdmi_type}" = "monitor" ]; then
-		if ! grep -q "^hdmi_ignore_edid=0xa5000080\>" /boot/config.txt; then echo -e "\nhdmi_ignore_edid=0xa5000080" >> /boot/config.txt; preinstall_reboot=1; fi
-		if ! grep -q "^hdmi_drive=2\>" /boot/config.txt; then echo "hdmi_drive=2" >> /boot/config.txt; preinstall_reboot=1; fi
+		if ! config_check "/boot/config.txt" "hdmi_ignore_edid" "0xa5000080"; then config_set "/boot/config.txt" "hdmi_ignore_edid" "0xa5000080" >> /boot/config.txt; preinstall_reboot=1; fi
+		if ! config_check "/boot/config.txt" "hdmi_drive" "2"; then config_set "/boot/config.txt" "hdmi_drive" "2" >> /boot/config.txt; preinstall_reboot=1; fi
 		if [ "${hdmi_type}" = "tv" ]; then
-			if ! grep -q "^hdmi_group=1\>" /boot/config.txt; then echo "hdmi_group=1" >> /boot/config.txt; preinstall_reboot=1; fi
+			if ! config_check "/boot/config.txt" "hdmi_group" "1"; then config_set "/boot/config.txt" "hdmi_group" "1" >> /boot/config.txt; preinstall_reboot=1; fi
 			if [ "${hdmi_tv_res}" = "720p" ]; then
-				if ! grep -q "^hdmi_mode=4\>" /boot/config.txt; then echo "hdmi_mode=4" >> /boot/config.txt; preinstall_reboot=1; fi
+				if ! config_check "/boot/config.txt" "hdmi_mode" "4"; then config_set "/boot/config.txt" "hdmi_mode" "4" >> /boot/config.txt; preinstall_reboot=1; fi
 			elif [ "${hdmi_tv_res}" = "1080i" ]; then
-				if ! grep -q "^hdmi_mode=5\>" /boot/config.txt; then echo "hdmi_mode=5" >> /boot/config.txt; preinstall_reboot=1; fi
+				if ! config_check "/boot/config.txt" "hdmi_mode" "5"; then config_set "/boot/config.txt" "hdmi_mode" "5" >> /boot/config.txt; preinstall_reboot=1; fi
 			else
-				if ! grep -q "^hdmi_mode=16\>" /boot/config.txt; then echo "hdmi_mode=16" >> /boot/config.txt; preinstall_reboot=1; fi
+				if ! config_check "/boot/config.txt" "hdmi_mode" "16"; then config_set "/boot/config.txt" "hdmi_mode" "16" >> /boot/config.txt; preinstall_reboot=1; fi
 			fi
 		elif [ "${hdmi_type}" = "monitor" ]; then
-			if ! grep -q "^hdmi_group=2\>" /boot/config.txt; then echo "hdmi_group=2" >> /boot/config.txt; preinstall_reboot=1; fi
+			if ! config_check "/boot/config.txt" "hdmi_group" "2"; then config_set "/boot/config.txt" "hdmi_group" "2" >> /boot/config.txt; preinstall_reboot=1; fi
 			if [ "${hdmi_monitor_res}" = "640x480" ]; then
-				if ! grep -q "^hdmi_mode=4\>" /boot/config.txt; then echo "hdmi_mode=4" >> /boot/config.txt; preinstall_reboot=1; fi
+				if ! config_check "/boot/config.txt" "hdmi_mode" "4"; then config_set "/boot/config.txt" "hdmi_mode" "4" >> /boot/config.txt; preinstall_reboot=1; fi
 			elif [ "${hdmi_monitor_res}" = "800x600" ]; then
-				if ! grep -q "^hdmi_mode=9\>" /boot/config.txt; then echo "hdmi_mode=9" >> /boot/config.txt; preinstall_reboot=1; fi
+				if ! config_check "/boot/config.txt" "hdmi_mode" "9"; then config_set "/boot/config.txt" "hdmi_mode" "9" >> /boot/config.txt; preinstall_reboot=1; fi
 			elif [ "${hdmi_monitor_res}" = "1280x1024" ]; then
-				if ! grep -q "^hdmi_mode=35\>" /boot/config.txt; then echo "hdmi_mode=35" >> /boot/config.txt; preinstall_reboot=1; fi
+				if ! config_check "/boot/config.txt" "hdmi_mode" "35"; then config_set "/boot/config.txt" "hdmi_mode" "35" >> /boot/config.txt; preinstall_reboot=1; fi
 			else
-				if ! grep -q "^hdmi_mode=16\>" /boot/config.txt; then echo "hdmi_mode=16" >> /boot/config.txt; preinstall_reboot=1; fi
+				if ! config_check "/boot/config.txt" "hdmi_mode" "16"; then config_set "/boot/config.txt" "hdmi_mode" "16" >> /boot/config.txt; preinstall_reboot=1; fi
 			fi
 		fi
 	fi
 	if [ "${hdmi_disable_overscan}" = "1" ]; then
-		echo "disable_overscan=1" >> /boot/config.txt; preinstall_reboot=1
+		if ! config_check "/boot/config.txt" "disable_overscan" "1"; then config_set "/boot/config.txt" "disable_overscan" "1"; preinstall_reboot=1; fi
 	fi
 	echo "OK"
 fi
