@@ -1,4 +1,7 @@
-# raspberrypi-ua-netinst v1.5.2
+# Changelog
+
+## raspberrypi-ua-netinst v1.5.2
+
 - support for Raspberry Pi Zero W
 - added limitation of installer attempts/retries with visual LED notification
 - add config editability with Windows editors
@@ -11,11 +14,13 @@
   - enable custom device tree overlays
 
 **Bugfixes:**
+
 - sha256sums generated file format
 - possibly missing apt-transport-https
 - improve log output
 
-# raspberrypi-ua-netinst v1.5.1
+## raspberrypi-ua-netinst v1.5.1
+
 - added or changed configuration variables
   - console mode as `final_action`
   - RTC support
@@ -30,6 +35,7 @@
 - variable processing via conf file for build process
 
 **Bugfixes:**
+
 - wheezy installation
 - config files in archive
 - fix potentially wrong file permissions
@@ -37,7 +43,8 @@
 - wifi for wheezy
 - watchdog for wheezy
 
-# raspberrypi-ua-netinst v1.5.0
+## raspberrypi-ua-netinst v1.5.0
+
 **Very important note:**
 This is a release with many big improvements and important changes!
 
@@ -62,11 +69,13 @@ If you are coming from an older version, **check your configuration options** to
 - many more big and small backend improvements
 
 **Bugfixes:**
+
 - filtered unnecessary installer warnings
 - enable devices even if a custom config.txt is used
 - configure system default locale if `locales` option is not used
 
-# raspberrypi-ua-netinst v1.4.1
+## raspberrypi-ua-netinst v1.4.1
+
 - added configuration variables
   - set keyboard layout
 - added method to set time with http
@@ -75,20 +84,24 @@ If you are coming from an older version, **check your configuration options** to
 - add hardware version 2 Model B+ (with BCM2837)
 
 **Bugfixes:**
+
 - locale selection
 - backup kernel for reinstall (see #31 for workaround)
 
-# raspberrypi-ua-netinst v1.3.0
+## raspberrypi-ua-netinst v1.3.0
+
 - improvements and tests on model Zero (many thanks to @thijstriemstra)
 - added support for many USB ethernet devices
 - added core packages to improve GPIO support
 - added support for onboard Bluetooth on model 3B
 
 **Bugfixes:**
+
 - locale selection
 - serial port handling with Bluetooth on model 3B
 
-# raspberrypi-ua-netinst v1.2.1
+## raspberrypi-ua-netinst v1.2.1
+
 - added compatibility for onboard wireless lan with model 3B to get used by installer and system (no ethernet needed)
 - added more configuration variables
   - allow user to access GPIOs
@@ -104,20 +117,24 @@ If you are coming from an older version, **check your configuration options** to
 - removed initramfs duality
 
 **Bugfixes:**
+
 - v1.2.0 build failed if git version had no tag
 
-# raspberrypi-ua-netinst v1.1.1
+## raspberrypi-ua-netinst v1.1.1
+
 This is a bugfix release.
 
 - Fixed installer customization to enable audio
 - Added ability to install Raspberry Pi tools like `vcgencmd`, `raspistill` and similar  
   (see #6 to patch existing systems)
 
-# raspberrypi-ua-netinst v1.1.0
+## raspberrypi-ua-netinst v1.1.0
+
 - added installer variable to enable audio
 - added installer variable to enable camera module
 - re-added installer variable to customize the amount of memory assigned to the GPU
 
-# raspberrypi-ua-netinst v1.0.1
+## raspberrypi-ua-netinst v1.0.1
+
 - default config.txt from raspbian added:  
   `dtparam=audio=on` is commented out
