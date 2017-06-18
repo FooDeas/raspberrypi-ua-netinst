@@ -673,13 +673,13 @@ mv raspberrypi-ua-netinst.cpio.gz bootfs/raspberrypi-ua-netinst/
 	echo "initramfs raspberrypi-ua-netinst/raspberrypi-ua-netinst.cpio.gz"
 	echo "[pi3]"
 	echo "enable_uart=1"
-	echo ""
-	echo "# Only for RPi model 3: The following line enables the ability to boot from USB."
-	echo "# Notice: This flag will be written to OTP and is permanent."
-	echo "#program_usb_boot_mode=1"
 } >> bootfs/config.txt
 
 echo "dwc_otg.lpm_enable=0 consoleblank=0 console=serial0,115200 console=tty1 elevator=deadline rootwait" > bootfs/cmdline.txt
+
+if [ ! -f bootfs/TIMEOUT ] ; then
+	touch bootfs/TIMEOUT
+fi
 
 # prepare config content
 mkdir -p bootfs/raspberrypi-ua-netinst/config
