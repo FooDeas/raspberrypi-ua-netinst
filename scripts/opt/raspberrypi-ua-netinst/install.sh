@@ -418,9 +418,15 @@ config_set() {
 dtoverlay_enable() {
 	local configfile="${1}"
 	local dtoverlay="${2}"
-	sed -i "s/^#\(dtoverlay=${dtoverlay}\)/\1/" "${configfile}"
+	local value="${3}"
+	sed -i "s/^#\(dtoverlay=${dtoverlay}=${value}\)/\1/" "${configfile}"
 	if [ "$(grep -c "^dtoverlay=${dtoverlay}" "${configfile}")" -ne 1 ]; then
-		echo "dtoverlay=${dtoverlay}" >> "${configfile}"
+		sed -i "s/^\(dtoverlay=${dtoverlay}\)/#\1/" "${configfile}"
+		if [ -z "${value}" ]; then
+			echo "dtoverlay=${dtoverlay}" >> "${configfile}"
+		else
+			echo "dtoverlay=${dtoverlay}=${value}" >> "${configfile}"
+		fi
 	fi
 }
 
@@ -2101,6 +2107,11 @@ if [ "${sound_enable}" = "1" ] && [ "${sound_usb_enable}" = "1" ] && [ "${sound_
 		echo " type hw card 1"
 		echo "}"
 	} > /etc/asound.conf
+fi
+
+# set mmc1 (USB) as default trigger for activity led
+if [ "${usbroot}" = "1" ]; then
+	dtoverlay_enable "/rootfs/boot/config.txt" "act_led_trigger" "mmc1"
 fi
 
 # iterate through all the file lists and call the install_files method for them
