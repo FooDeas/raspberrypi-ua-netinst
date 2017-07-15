@@ -8,6 +8,8 @@ variables_reset() {
 	final_action=
 	rpi_hardware=
 	rpi_hardware_version=
+	led_on=
+	led_off=
 	preinstall_reboot=
 	bootpartition=
 	rootdev=
