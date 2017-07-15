@@ -169,29 +169,29 @@ led_sos() {
 	if [ -e /sys/class/leds/led0 ]; then (echo none > /sys/class/leds/led0/trigger) &> /dev/null; else led0=; fi
 	if [ -e /sys/class/leds/led1 ]; then (echo none > /sys/class/leds/led1/trigger) &> /dev/null; else led1=; fi
 	for i in $(seq 1 3); do
-		if [ -n "$led0" ]; then (echo 1 > "${led0}"/brightness) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo 1 > "${led1}"/brightness) &> /dev/null; fi
+		if [ -n "$led0" ]; then (echo $led_on > "${led0}"/brightness) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo $led_on > "${led1}"/brightness) &> /dev/null; fi
 		sleep 0.3s;
-		if [ -n "$led0" ]; then (echo 0 > "${led0}"/brightness) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo 0 > "${led1}"/brightness) &> /dev/null; fi
+		if [ -n "$led0" ]; then (echo $led_off > "${led0}"/brightness) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo $led_off > "${led1}"/brightness) &> /dev/null; fi
 		sleep 0.2s;
 	done
 	sleep 0.1s;
 	for i in $(seq 1 3); do
-		if [ -n "$led0" ]; then (echo 1 > "${led0}"/brightness) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo 1 > "${led1}"/brightness) &> /dev/null; fi
+		if [ -n "$led0" ]; then (echo $led_on > "${led0}"/brightness) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo $led_on > "${led1}"/brightness) &> /dev/null; fi
 		sleep 0.8s;
-		if [ -n "$led0" ]; then (echo 0 > "${led0}"/brightness) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo 0 > "${led1}"/brightness) &> /dev/null; fi
+		if [ -n "$led0" ]; then (echo $led_off > "${led0}"/brightness) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo $led_off > "${led1}"/brightness) &> /dev/null; fi
 		sleep 0.2s;
 	done
 	sleep 0.1s;
 	for i in $(seq 1 3); do
-		if [ -n "$led0" ]; then (echo 1 > "${led0}"/brightness) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo 1 > "${led1}"/brightness) &> /dev/null; fi
+		if [ -n "$led0" ]; then (echo $led_on > "${led0}"/brightness) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo $led_on > "${led1}"/brightness) &> /dev/null; fi
 		sleep 0.3s;
-		if [ -n "$led0" ]; then (echo 0 > "${led0}"/brightness) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo 0 > "${led1}"/brightness) &> /dev/null; fi
+		if [ -n "$led0" ]; then (echo $led_off > "${led0}"/brightness) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo $led_off > "${led1}"/brightness) &> /dev/null; fi
 		sleep 0.2s;
 	done
 	sleep 1.5s;
@@ -602,6 +602,15 @@ case "${rpi_hardware}" in
 	"a32082") rpi_hardware_version="3 Model B" ;;
 	*) rpi_hardware_version="unknown (${rpi_hardware})" ;;
 esac
+
+# Setting leds on and off works the other way round on Pi Zero and Pi Zero W
+if [ ${rpi_hardware_version:0:4} = "Zero" ]; then
+	led_on="0"
+	led_off="1"
+else
+	led_on="1"
+	led_off="0"
+fi
 
 echo
 echo "=================================================="
