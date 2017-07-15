@@ -72,6 +72,8 @@ Under normal circumstances, you can just power on your Pi and cross your fingers
 
 If you don't have a display attached, you can monitor the ethernet card LEDs to guess the activity status. When it finally reboots after installing everything you will see them illuminate on and off a few times when Raspbian configures on boot.
 
+If the installation process fails, you will see SOS in Morse code (... --- ...) on an led.  In this case, power off the Pi and check the log on the sd card.
+
 If you do have a display, you can follow the progress and catch any possible errors in the default configuration or your own modifications.  
 If you have a serial cable connected, installer output can be followed there, too. If 'console=tty1' at then end of the `cmdline.txt` file is removed, you have access to the console in case of problems.
 
