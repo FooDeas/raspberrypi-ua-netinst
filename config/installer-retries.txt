@@ -1,1 +1,1 @@
-installer_retries="3"
+installer_retries=3

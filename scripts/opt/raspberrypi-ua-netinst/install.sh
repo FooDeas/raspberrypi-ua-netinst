@@ -8,12 +8,15 @@ variables_reset() {
 	final_action=
 	rpi_hardware=
 	rpi_hardware_version=
+	led_on=
+	led_off=
 	preinstall_reboot=
 	bootpartition=
 	rootdev=
 	rootpartition=
 	wlan_configfile=
 	installer_retries=
+	installer_fail_blocking=
 	cmdline_custom=
 
 	# config variables
@@ -168,29 +171,29 @@ led_sos() {
 	if [ -e /sys/class/leds/led0 ]; then (echo none > /sys/class/leds/led0/trigger) &> /dev/null; else led0=; fi
 	if [ -e /sys/class/leds/led1 ]; then (echo none > /sys/class/leds/led1/trigger) &> /dev/null; else led1=; fi
 	for i in $(seq 1 3); do
-		if [ -n "$led0" ]; then (echo 1 > "${led0}"/brightness) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo 1 > "${led1}"/brightness) &> /dev/null; fi
+		if [ -n "$led0" ]; then (echo $led_on > "${led0}"/brightness) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo $led_on > "${led1}"/brightness) &> /dev/null; fi
 		sleep 0.3s;
-		if [ -n "$led0" ]; then (echo 0 > "${led0}"/brightness) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo 0 > "${led1}"/brightness) &> /dev/null; fi
+		if [ -n "$led0" ]; then (echo $led_off > "${led0}"/brightness) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo $led_off > "${led1}"/brightness) &> /dev/null; fi
 		sleep 0.2s;
 	done
 	sleep 0.1s;
 	for i in $(seq 1 3); do
-		if [ -n "$led0" ]; then (echo 1 > "${led0}"/brightness) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo 1 > "${led1}"/brightness) &> /dev/null; fi
+		if [ -n "$led0" ]; then (echo $led_on > "${led0}"/brightness) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo $led_on > "${led1}"/brightness) &> /dev/null; fi
 		sleep 0.8s;
-		if [ -n "$led0" ]; then (echo 0 > "${led0}"/brightness) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo 0 > "${led1}"/brightness) &> /dev/null; fi
+		if [ -n "$led0" ]; then (echo $led_off > "${led0}"/brightness) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo $led_off > "${led1}"/brightness) &> /dev/null; fi
 		sleep 0.2s;
 	done
 	sleep 0.1s;
 	for i in $(seq 1 3); do
-		if [ -n "$led0" ]; then (echo 1 > "${led0}"/brightness) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo 1 > "${led1}"/brightness) &> /dev/null; fi
+		if [ -n "$led0" ]; then (echo $led_on > "${led0}"/brightness) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo $led_on > "${led1}"/brightness) &> /dev/null; fi
 		sleep 0.3s;
-		if [ -n "$led0" ]; then (echo 0 > "${led0}"/brightness) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo 0 > "${led1}"/brightness) &> /dev/null; fi
+		if [ -n "$led0" ]; then (echo $led_off > "${led0}"/brightness) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo $led_off > "${led1}"/brightness) &> /dev/null; fi
 		sleep 0.2s;
 	done
 	sleep 1.5s;
@@ -211,6 +214,11 @@ inputfile_sanitize() {
 	fi
 }
 
+fail_blocking() {
+	installer_fail_blocking=1
+	fail
+}
+
 fail() {
 	local fail_boot_mounted
 	echo
@@ -224,7 +232,7 @@ fail() {
 	fi
 	cp "${logfile}" "/boot/raspberrypi-ua-netinst/error-$(date +%Y%m%dT%H%M%S).log"
 	sync
-	
+
 	if [ -e "/boot/raspberrypi-ua-netinst/config/installer-retries.txt" ]; then
 		inputfile_sanitize /boot/raspberrypi-ua-netinst/config/installer-retries.txt
 		# shellcheck disable=SC1091
@@ -236,9 +244,11 @@ fail() {
 		echo "installer_retries=${installer_retries}" > /boot/raspberrypi-ua-netinst/config/installer-retries.txt
 		sync
 	fi
-	if [ "${installer_retries}" -le "0" ]; then
-		echo "  The maximum number of retries is reached!"
-		echo "  Check the logfiles for errors. Then delete or edit \"installer-retries.txt\" in installer config folder to (re)set the counter."
+	if [ "${installer_retries}" -le "0" ] || [ "${installer_fail_blocking}" = "1" ]; then
+		if [ "${installer_retries}" -le "0" ]; then
+			echo "  The maximum number of retries is reached!"
+			echo "  Check the logfiles for errors. Then delete or edit \"installer-retries.txt\" in installer config folder to (re)set the counter."
+		fi
 		echo "  The system is stopped to prevent an infinite loop."
 		while true; do
 			led_sos
@@ -410,9 +420,15 @@ config_set() {
 dtoverlay_enable() {
 	local configfile="${1}"
 	local dtoverlay="${2}"
-	sed -i "s/^#\(dtoverlay=${dtoverlay}\)/\1/" "${configfile}"
+	local value="${3}"
+	sed -i "s/^#\(dtoverlay=${dtoverlay}=${value}\)/\1/" "${configfile}"
 	if [ "$(grep -c "^dtoverlay=${dtoverlay}" "${configfile}")" -ne 1 ]; then
-		echo "dtoverlay=${dtoverlay}" >> "${configfile}"
+		sed -i "s/^\(dtoverlay=${dtoverlay}\)/#\1/" "${configfile}"
+		if [ -z "${value}" ]; then
+			echo "dtoverlay=${dtoverlay}" >> "${configfile}"
+		else
+			echo "dtoverlay=${dtoverlay}=${value}" >> "${configfile}"
+		fi
 	fi
 }
 
@@ -589,6 +605,15 @@ case "${rpi_hardware}" in
 	*) rpi_hardware_version="unknown (${rpi_hardware})" ;;
 esac
 
+# Setting leds on and off works the other way round on Pi Zero and Pi Zero W
+if [ ${rpi_hardware_version:0:4} = "Zero" ]; then
+	led_on="0"
+	led_off="1"
+else
+	led_on="1"
+	led_off="0"
+fi
+
 echo
 echo "=================================================="
 echo "raspberrypi-ua-netinst"
@@ -678,6 +703,26 @@ if [ -n "${rtc}" ] ; then
 	if ! grep -q "^dtoverlay=i2c-rtc,${rtc}\>" /boot/config.txt; then
 		echo -e "\ndtoverlay=i2c-rtc,${rtc}" >> /boot/config.txt
 		preinstall_reboot=1
+	fi
+	echo "OK"
+fi
+# MSD boot
+if [ "${usbboot}" = "1" ] ; then
+	echo -n "  Checking USB boot flag... "
+	msd_boot_enabled="$(vcgencmd otp_dump | grep 17: | cut -b 4-5)"
+	msd_boot_enabled="$(printf "%s" "${msd_boot_enabled}" | xxd -r -p | xxd -b | cut -d' ' -f2 | cut -b 3)"
+	if [ "${msd_boot_enabled}" = "0" ]; then
+		if ! config_check "/boot/config.txt" "program_usb_boot_mode" "1"; then
+			echo -e "\n    Set flag to allow USB boot on next reboot. "
+			config_set "/boot/config.txt" "program_usb_boot_mode" "1"
+			preinstall_reboot=1;
+		else
+			echo -e "\n    Enabling USB boot flag failed!"
+			echo "    Your device does not allow booting from USB. Disable booting from USB in installer-config.txt to proceed."
+			fail_blocking
+		fi
+	else
+		sed -i "/^program_usb_boot_mode=1/d" "/boot/config.txt"
 	fi
 	echo "OK"
 fi
@@ -1051,57 +1096,31 @@ else
 	preset=none
 fi
 
-if [ "${usbboot}" != "1" ]; then
-	bootdev=/dev/mmcblk0
-	bootpartition=/dev/mmcblk0p1
-else
-	msd_boot_enabled="$(vcgencmd otp_dump | grep 17: | cut -b 4-5)"
-	msd_boot_enabled="$(printf "%s" "${msd_boot_enabled}" | xxd -r -p | xxd -b | cut -d' ' -f2 | cut -b 3)"
-
-	if [ "${msd_boot_enabled}" != "1" ]; then
-		echo "================================================================"
-		echo "                    !!! IMPORTANT NOTICE !!!"
-		echo "Booting from USB mass storage device is disabled!"
-		echo "Read the manual to enable it in \"config.txt\"."
+if [ "${usbboot}" = "1" ]; then
+	if [ "${bootdev}" = "/dev/mmcblk0" ]; then
 		echo
-		echo "For this reason, only the system is installed on the USB device!"
+		echo "============================================================================================="
+		echo "                                  !!! IMPORTANT NOTICE !!!"
+		echo "Because you are installing from SD card and want to boot from USB,"
+		echo "the system will POWERED OFF after installation."
+		echo "After finishing the installation, you must REMOVE the SD card and reboot the system MANUALLY."
 		echo
 		echo "The installation will continue in 15 seconds..."
-		echo "================================================================"
-		usbboot=0
+		echo "============================================================================================="
 		sleep 15s
-	else
-		echo "Booting from USB mass storage device is enabled."
-		if [ "${bootdev}" = "/dev/mmcblk0" ]; then
-			echo
-			echo "============================================================================================="
-			echo "                                  !!! IMPORTANT NOTICE !!!"
-			echo "Because you are installing from SD card and want to boot from USB,"
-			echo "the system will POWERED OFF after installation."
-			echo "After finishing the installation, you must REMOVE the SD card and reboot the system MANUALLY."
-			echo
-			echo "The installation will continue in 15 seconds..."
-			echo "============================================================================================="
-			sleep 15s
-			final_action=halt
-		fi
-		bootdev=/dev/sda
-		bootpartition=/dev/sda1
+		final_action=halt
 	fi
-	echo
-	usbroot=1
-fi
-
-if [ "${usbroot}" = "1" ]; then
-	rootdev=/dev/sda
+	bootdev=/dev/sda
+	bootpartition=/dev/sda1
 fi
 
 if [ -z "${rootpartition}" ]; then
-	if [ "${rootdev}" = "/dev/sda" ]; then
-		if [ "${usbboot}" != "1" ]; then
-			rootpartition=/dev/sda1
-		else
+	if [ "${usbroot}" = "1" ]; then
+		rootdev=/dev/sda
+		if [ "${usbboot}" = "1" ]; then
 			rootpartition=/dev/sda2
+		else
+			rootpartition=/dev/sda1
 		fi
 	else
 		rootpartition=/dev/mmcblk0p2
@@ -1345,9 +1364,9 @@ mdev -s
 
 echo -n "Initializing /boot as vfat... "
 if [ -z "${boot_volume_label}" ]; then
-  mkfs.vfat "${bootpartition}" &>/dev/null || fail
+	mkfs.vfat "${bootpartition}" &>/dev/null || fail
 else
-  mkfs.vfat -n "${boot_volume_label}" "${bootpartition}" &>/dev/null || fail
+	mkfs.vfat -n "${boot_volume_label}" "${bootpartition}" &>/dev/null || fail
 fi
 echo "OK"
 
@@ -2099,6 +2118,11 @@ if [ "${sound_enable}" = "1" ] && [ "${sound_usb_enable}" = "1" ] && [ "${sound_
 		echo " type hw card 1"
 		echo "}"
 	} > /etc/asound.conf
+fi
+
+# set mmc1 (USB) as default trigger for activity led
+if [ "${usbroot}" = "1" ]; then
+	dtoverlay_enable "/rootfs/boot/config.txt" "act_led_trigger" "mmc1"
 fi
 
 # iterate through all the file lists and call the install_files method for them
