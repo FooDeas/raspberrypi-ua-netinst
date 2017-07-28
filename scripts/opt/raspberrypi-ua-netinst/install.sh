@@ -612,6 +612,8 @@ case "${rpi_hardware}" in
 	*) rpi_hardware_version="unknown (${rpi_hardware})" ;;
 esac
 
+
+
 echo
 echo "=================================================="
 echo "raspberrypi-ua-netinst"
