@@ -171,8 +171,8 @@ led_sos() {
 # Setting leds on and off works the other way round on Pi Zero and Pi Zero W
 # Also led0 (the only led on the Zeros) is the activity led
 if [ ${rpi_hardware_version:0:4} = "Zero" ]; then
-	led_on="0"
-	led_off="1"
+	led_on=0
+	led_off=1
 fi
 
 	if [ -e /sys/class/leds/led0 ]; then (echo none > /sys/class/leds/led0/trigger) &> /dev/null; else led0=; fi
