@@ -8,8 +8,6 @@ variables_reset() {
 	final_action=
 	rpi_hardware=
 	rpi_hardware_version=
-	led_on=
-	led_off=
 	preinstall_reboot=
 	bootpartition=
 	rootdev=
@@ -167,6 +165,15 @@ variables_set_defaults() {
 led_sos() {
 	local led0=/sys/class/leds/led0 # Power LED
 	local led1=/sys/class/leds/led1 # Activity LED
+	local led_on=1
+	local led_off=0
+
+# Setting leds on and off works the other way round on Pi Zero and Pi Zero W
+# Also led0 (the only led on the Zeros) is the activity led
+if [ ${rpi_hardware_version:0:4} = "Zero" ]; then
+	led_on=0
+	led_off=1
+fi
 
 	if [ -e /sys/class/leds/led0 ]; then (echo none > /sys/class/leds/led0/trigger) &> /dev/null; else led0=; fi
 	if [ -e /sys/class/leds/led1 ]; then (echo none > /sys/class/leds/led1/trigger) &> /dev/null; else led1=; fi
@@ -605,14 +612,7 @@ case "${rpi_hardware}" in
 	*) rpi_hardware_version="unknown (${rpi_hardware})" ;;
 esac
 
-# Setting leds on and off works the other way round on Pi Zero and Pi Zero W
-if [ ${rpi_hardware_version:0:4} = "Zero" ]; then
-	led_on=0
-	led_off=1
-else
-	led_on=1
-	led_off=0
-fi
+
 
 echo
 echo "=================================================="
