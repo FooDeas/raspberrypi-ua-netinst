@@ -30,7 +30,7 @@ The installer with the default settings configures eth0 with DHCP to get interne
 
 ### Features
 
-- completely unattended, you only need a working internet connection through the ethernet port or use the onboard wireless LAN (supported on model 3B)
+- completely unattended, you only need a working internet connection through the ethernet port or use the onboard wireless LAN (supported on model 3B and 0W)
 - DHCP and static IP configuration (DHCP is the default)
 - always installs the latest version of Raspbian
 - configurable default settings
@@ -72,7 +72,10 @@ Under normal circumstances, you can just power on your Pi and cross your fingers
 
 If you don't have a display attached, you can monitor the ethernet card LEDs to guess the activity status. When it finally reboots after installing everything you will see them illuminate on and off a few times when Raspbian configures on boot.
 
-If you do have a display, you can follow the progress and catch any possible errors in the default configuration or your own modifications.  
+If the installation process fails, you will see **SOS** in Morse code (... --- ...) on an led.  In this case, power off the Pi and check the log on the sd card.
+
+If you do have a display, you can follow the progress and catch any possible errors in the default configuration or your own modifications.
+
 If you have a serial cable connected, installer output can be followed there, too. If 'console=tty1' at then end of the `cmdline.txt` file is removed, you have access to the console in case of problems.
 
 ## Installer customization
