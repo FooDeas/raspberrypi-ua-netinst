@@ -493,15 +493,63 @@ fi
 echo
 echo "Searching for boot device..."
 until [ -n "${bootdev}" ]; do
-	if [ -e "/dev/mmcblk0p1" ]; then
+	if [ -e "/dev/mmcblk0" ]; then
 		echo "SD card detected."
-		mount /dev/mmcblk0p1 /boot
-		if [ -e /boot/bootcode.bin ]; then
-			echo "Boot files found on SD card."
-			bootdev=/dev/mmcblk0
-			bootpartition=/dev/mmcblk0p1
+                if [ -e "/dev/mmcblk0p1" ]; then
+			mount /dev/mmcblk0p1 /boot
+			if [ $? == 0 ]; then
+				echo "/dev/mmcblk0p1 successfully mounted to /boot"
+				if [ -e /boot/bootcode.bin ]; then
+					echo "Boot files found."
+					bootdev=/dev/mmcblk0
+					bootpartition=/dev/mmcblk0p1
+					umount /boot
+				else
+					umount /boot
+					echo "Boot files not found. Do fresh install!"
+					dd if=/dev/zero of=/dev/mmcblk0 bs=512 count=1
+					sync
+					fdisk /dev/mmcblk0 <<-EOF
+					n
+					p
+					1
+					
+					+128M
+					t
+					b
+					w
+					EOF
+					mkfs.vfat /dev/mmcblk0p1
+					sync
+					mount /dev/mmcblk0p1 /boot
+					cp -r /opt/raspberrypi-ua-netinst/res/boot/* /boot
+					sync
+					umount /boot
+				fi
+			else
+				echo "unable to mount /dev/mmcblk0p1"
+			fi
+		else
+			echo "no bootpartion found!"		
+			dd if=/dev/zero of=/dev/mmcblk0 bs=512 count=1
+			sync
+			fdisk /dev/mmcblk0 <<-EOF
+			n
+			p
+			1
+			
+			+128M
+			t
+			b
+			w
+			EOF
+			mkfs.vfat /dev/mmcblk0p1
+			sync
+			mount /dev/mmcblk0p1 /boot
+			cp -r /opt/raspberrypi-ua-netinst/res/boot/* /boot
+			sync
+			umount /boot
 		fi
-		umount /boot
 	else
 		if [ -e "/dev/sda1" ]; then
 			echo "USB drive detected."
@@ -590,6 +638,14 @@ case "${rpi_hardware}" in
 esac
 
 echo
+echo "=================================================="
+echo "raspberrypi-ua-netinst"
+echo "=================================================="
+echo "Revision __VERSION__"
+echo "Built on __DATE__"
+echo "Running on Raspberry Pi version ${rpi_hardware_version}"
+echo "=================================================="
+echo "https://github.com/FooDeas/raspberrypi-ua-netinst/"
 echo "=================================================="
 echo "raspberrypi-ua-netinst"
 echo "=================================================="
@@ -1388,6 +1444,7 @@ echo "Starting install process..."
 if [ -n "${mirror_cache}" ]; then
 	export http_proxy="http://${mirror_cache}/"
 fi
+echo "cdebootstrap-static --arch=armhf ${cdebootstrap_cmdline} ${release_raspbian} /rootfs ${mirror} --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg 2>&1 | output_filter | sed 's/^/  /'"
 eval cdebootstrap-static --arch=armhf "${cdebootstrap_cmdline}" "${release_raspbian}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg 2>&1 | output_filter | sed 's/^/  /'
 cdebootstrap_exitcode="${PIPESTATUS[0]}"
 unset http_proxy
@@ -1891,6 +1948,10 @@ if [ "${kernel_module}" = true ]; then
 	unset DEBIAN_FRONTEND
 fi
 
+# enable systemd
+echo "enable systemd"
+chroot /rootfs ln -s /lib/systemd/systemd /sbin/init
+
 echo "Preserving original config.txt and kernels..."
 mkdir -p /rootfs/boot/raspberrypi-ua-netinst/reinstall
 cp /bootfs/config.txt /rootfs/boot/raspberrypi-ua-netinst/reinstall/config.txt
@@ -2168,9 +2229,15 @@ if [ "${final_action}" != "console" ]; then
 	for sysfolder in /dev/pts /proc /sys; do
 		umount "/rootfs${sysfolder}"
 	done
+	sync
+	sync
 	umount /rootfs/boot
-	umount /rootfs
+	umount -l /rootfs
 	echo "OK"
+	sync
+	sync
+	sleep 5
+	reboot
 fi
 
 case ${final_action} in
@@ -2188,11 +2255,3 @@ case ${final_action} in
 		final_action=reboot
 esac
 
-if [ "${final_action}" != "console" ]; then
-	for i in $(seq 5 -1 1); do
-		sleep 1
-		echo -n "${i}.. "
-	done
-	echo "0"
-	${final_action}
-fi
