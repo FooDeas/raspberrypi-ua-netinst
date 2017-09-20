@@ -11,3 +11,5 @@
 /raspberrypi-ua-netinst-*.img
 /raspberrypi-ua-netinst-*.img.xz
 /raspberrypi-ua-netinst-*.img.bz2
+.DS_Sore
+.DS_Store
