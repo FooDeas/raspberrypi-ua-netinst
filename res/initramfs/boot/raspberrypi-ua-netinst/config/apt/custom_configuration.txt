@@ -1,0 +1,5 @@
+# Custom APT configuration:
+# To add a configuration file:
+#   Place a file with the extension ".conf" in this folder containing the APT configuration.
+#   It will be placed in "/etc/apt/apt.conf.d/" by the installer.
+#   If you use the string "__RELEASE__" in this file, it will be replaced with the content of the "release" option.

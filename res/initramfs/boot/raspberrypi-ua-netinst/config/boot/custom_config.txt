@@ -1,0 +1,3 @@
+# To use a custom base config.txt:
+# Place the config.txt in this folder.
+# It will be used as base for the further customization by installer-config.txt.

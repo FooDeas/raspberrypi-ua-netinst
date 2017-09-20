@@ -1,0 +1,14 @@
+# To customize the raspberrypi-unattended-installer:
+#
+# Place your settings in this file as described in the README.md or in the advanced documentation.
+
+preset=minimal
+mirror=192.168.1.1/raspbian
+release=stretch
+rootfstype=ext4
+username=pi
+userpw=raspberry
+keyboard_layout=de
+timezone=Europe/Berlin
+userperms_admin=1
+packages="ansible"

@@ -1,0 +1,15 @@
+# Custom package sources:
+# To add another package source:
+#   Place a file with the extension ".list" in this folder containing the package sources.
+#   It will be placed in "/etc/apt/sources.list.d/" by the installer.
+#   If you use the string "__RELEASE__" in this file, it will be replaced with the content of the "release" option.
+# To add a preference file:
+#   Place a file with the extension ".pref" in this folder containing the package preferences.
+#   It will be placed in "/etc/apt/preferences.d/" by the installer.
+#   If you use the string "__RELEASE__" in this file, it will be replaced with the content of the "release" option.
+# To add a key:
+#   Place a file with the extension ".key" in this folder containing the key.
+#   It will be imported by the installer.
+# To add a gpg:
+#   Place a file with the extension ".gpg" in this folder containing the keyring.
+#   It will be placed in "/etc/apt/trusted.gpg.d/" by the installer.
