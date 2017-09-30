@@ -16,7 +16,7 @@ mirror_raspbian=http://mirrordirector.raspbian.org/raspbian
 mirror_raspberrypi=http://archive.raspberrypi.org/debian
 declare mirror_raspbian_cache
 declare mirror_raspberrypi_cache
-release=jessie
+release=stretch
 
 packages=()
 
@@ -25,6 +25,7 @@ packages+=("raspberrypi-bootloader")
 packages+=("raspberrypi-kernel")
 packages+=("firmware-brcm80211")
 packages+=("btrfs-tools")
+packages+=("btrfs-progs")
 packages+=("busybox")
 packages+=("bash-static")
 packages+=("cdebootstrap-static")
@@ -48,6 +49,9 @@ packages+=("util-linux")
 packages+=("wpasupplicant")
 packages+=("libraspberrypi-bin")
 packages+=("vim-common")
+packages+=("xxd")
+packages+=("udev")
+packages+=("curl")
 
 # libraries
 packages+=("libacl1")
@@ -76,11 +80,38 @@ packages+=("libpcsclite1")
 packages+=("libselinux1")
 packages+=("libslang2")
 packages+=("libsmartcols1")
-packages+=("libssl1.0.0")
+packages+=("libssl1.0.2")
 packages+=("libtinfo5")
 packages+=("libuuid1")
 packages+=("zlib1g")
 packages+=("libraspberrypi0")
+packages+=("libf2fs0")
+packages+=("libfdisk1")
+packages+=("libudev1")
+packages+=("libcurl3")
+packages+=("libnghttp2-14")
+packages+=("libidn2-0")
+packages+=("librtmp1")
+packages+=("libssh2-1")
+packages+=("libpsl5")
+packages+=("libgssapi-krb5-2")
+packages+=("libkrb5-3")
+packages+=("libk5crypto3")
+packages+=("libldap-2.4-2")
+packages+=("libunistring0")
+packages+=("libgnutls30")
+packages+=("libhogweed4")
+packages+=("libnettle6")
+packages+=("libgmp10")
+packages+=("libgcrypt20")
+packages+=("libkrb5support0")
+packages+=("libkeyutils1")
+packages+=("libsasl2-2")
+packages+=("libp11-kit0")
+packages+=("libidn11")
+packages+=("libtasn1-6")
+packages+=("libgpg-error0")
+packages+=("libffi6")
 
 packages_debs=
 packages_sha256=
