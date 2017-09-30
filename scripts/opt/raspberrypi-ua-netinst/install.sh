@@ -121,7 +121,7 @@ variables_set_defaults() {
 	# set config defaults
 	variable_set "preset" "server"
 	variable_set "mirror" "http://mirrordirector.raspbian.org/raspbian/"
-	variable_set "release" "jessie"
+	variable_set "release" "stretch"
 	variable_set "hostname" "pi"
 	variable_set "rootpw" "raspbian"
 	variable_set "root_ssh_pwlogin" "1"
@@ -972,7 +972,7 @@ fi
 
 # determine available releases
 mirror_base=http://archive.raspberrypi.org/debian/dists/
-release_fallback=jessie
+release_fallback=stretch
 release_base="${release}"
 release_raspbian="${release}"
 if ! wget --spider "${mirror_base}/${release}/" &> /dev/null; then
@@ -2190,6 +2190,7 @@ if [ "${final_action}" != "console" ]; then
 	for sysfolder in /dev/pts /proc /sys; do
 		umount "/rootfs${sysfolder}"
 	done
+	sync
 	umount /rootfs/boot
 	umount /rootfs
 	echo "OK"
