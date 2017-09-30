@@ -19,7 +19,7 @@
 | `firmware_packages` | `0` | `0`/`1` | Set to "1" to install common firmware packages (Atheros, Broadcom, Libertas, Ralink and Realtek). |
 | `mirror` | `http:// mirrordirector.raspbian.org/ raspbian/` |  |  |
 | `mirror_cache` |  |  | Set address and port for HTTP apt-cacher or apt-cacher-ng (e.g. "192.168.0.1:3142"). If set, the cacher will be used to cache packages during installation downloaded from the repository set in `mirror` as well as "http://archive.raspberrypi.org/debian". |
-| `release` | `jessie` |  | Raspbian release name |
+| `release` | `stretch` |  | Raspbian release name |
 
 ### Description: Presets
 
