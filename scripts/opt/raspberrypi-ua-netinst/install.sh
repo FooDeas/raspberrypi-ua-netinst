@@ -1050,9 +1050,12 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	fi
 
 	# server
-	server_packages="vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,less,man-db,logrotate,bash-completion,console-setup,apt-utils"
+	server_packages="vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,tzdata,less,man-db,logrotate,bash-completion,console-setup,apt-utils"
 	server_packages_postinstall="libraspberrypi-bin,raspi-copies-and-fills"
 	server_packages_postinstall="${minimal_packages_postinstall},${server_packages_postinstall}"
+	if [ "${init_system}" = "systemd" ]; then
+		server_packages="${server_packages},systemd-sysv"
+	fi
 
 	# cleanup package variables used by cdebootstrap_cmdline
 	variable_sanitize base_packages
@@ -1420,6 +1423,11 @@ echo "Configuring installed system:"
 for sysfolder in /dev /dev/pts /proc /sys; do
 	mount --bind "${sysfolder}" "/rootfs${sysfolder}"
 done
+# set init system
+if [ "${init_system}" = "systemd" ]; then
+	ln -s /lib/systemd/systemd /rootfs/sbin/init
+fi
+
 # configure root login
 if [ -n "${rootpw}" ]; then
 	echo -n "  Setting root password... "
@@ -1643,12 +1651,18 @@ fi
 echo "OK"
 
 # set timezone and reconfigure tzdata package
-echo -n "  Configuring tzdata, setting timezone to ${timezone}... "
-echo "${timezone}" > /rootfs/etc/timezone
-if chroot /rootfs /usr/sbin/dpkg-reconfigure -f noninteractive tzdata &> /dev/null; then
-	echo "OK"
-else
-	echo "FAILED !"
+if [ -n "${timezone}" ]; then
+	echo -n "  Configuring tzdata (timezone \"${timezone}\")... "
+	if [ -e "/rootfs/usr/share/zoneinfo/${timezone}" ]; then
+		ln -sf "/usr/share/zoneinfo/${timezone}" /rootfs/etc/localtime
+		if chroot /rootfs /usr/sbin/dpkg-reconfigure -f noninteractive tzdata &> /dev/null; then
+			echo "OK"
+		else
+			echo "FAILED !"
+		fi
+	else
+		echo "INVALID !"
+	fi
 fi
 
 # generate locale data
