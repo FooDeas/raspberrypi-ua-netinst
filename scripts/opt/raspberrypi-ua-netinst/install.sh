@@ -165,12 +165,15 @@ variables_set_defaults() {
 led_sos() {
 	local led0=/sys/class/leds/led0 # Power LED
 	local led1=/sys/class/leds/led1 # Activity LED
-	local led_on=1
-	local led_off=0
+	local led_on
+	local led_off
 
 	# Setting leds on and off works the other way round on Pi Zero and Pi Zero W
 	# Also led0 (the only led on the Zeros) is the activity led
-	if [ "${rpi_hardware_version:0:4}" = "Zero" ]; then
+	if [ "${rpi_hardware_version:0:4}" != "Zero" ]; then
+		led_on=1
+		led_off=0
+	else
 		led_on=0
 		led_off=1
 	fi
