@@ -1,5 +1,14 @@
 # Changelog
 
+## raspberrypi-ua-netinst v2.0.0
+
+- support for Debian 9 (stretch) - used by default
+- support boot or/and install from USB mass storage
+
+**Bugfixes:**
+
+- visual LED notification on Raspberry Pi Zero (W)
+
 ## raspberrypi-ua-netinst v1.5.2
 
 - support for Raspberry Pi Zero W
