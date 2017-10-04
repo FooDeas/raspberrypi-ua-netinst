@@ -2,8 +2,10 @@
 
 ## raspberrypi-ua-netinst v2.0.0
 
-- support for Debian 9 (stretch) - used by default
+- support for Debian 9 (stretch)
 - support boot or/and install from USB mass storage
+- added or changed configuration variables
+  - `release` is set to "stretch" by default
 
 **Bugfixes:**
 
