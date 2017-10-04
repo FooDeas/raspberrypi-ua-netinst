@@ -62,6 +62,7 @@ variables_reset() {
 	ip_broadcast=
 	ip_gateway=
 	ip_nameservers=
+	ip_ipv6=
 	drivers_to_load=
 	online_config=
 	gpu_mem=
@@ -137,6 +138,7 @@ variables_set_defaults() {
 	variable_set "ip_netmask" "0.0.0.0"
 	variable_set "ip_broadcast" "0.0.0.0"
 	variable_set "ip_gateway" "0.0.0.0"
+	variable_set "ip_ipv6" "1"
 	variable_set "hdmi_tv_res" "1080p"
 	variable_set "hdmi_monitor_res" "1024x768"
 	variable_set "hdmi_disable_overscan" "0"
@@ -1202,6 +1204,7 @@ echo "  keyboard_layout = ${keyboard_layout}"
 echo "  locales = ${locales}"
 echo "  system_default_locale = ${system_default_locale}"
 echo "  wlan_country = ${wlan_country}"
+echo "  ip_ipv6 = ${ip_ipv6}"
 echo "  cmdline = ${cmdline}"
 echo "  drivers_to_load = ${drivers_to_load}"
 echo "  gpu_mem = ${gpu_mem}"
@@ -1614,6 +1617,12 @@ echo "OK"
 
 # networking
 echo -n "  Configuring network settings... "
+
+if [ "${ip_ipv6}" = "0" ]; then
+	mkdir -p /rootfs/etc/sysctl.d
+	echo "net.ipv6.conf.all.disable_ipv6 = 1" > /rootfs/etc/sysctl.d/01-disable-ipv6.conf
+fi
+
 touch /rootfs/etc/network/interfaces || fail
 # lo interface may already be there, so first check for it
 if ! grep -q "auto lo" /rootfs/etc/network/interfaces; then

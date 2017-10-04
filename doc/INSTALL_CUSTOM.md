@@ -82,6 +82,7 @@
 | `ip_broadcast` | `0.0.0.0` |  | Broadcast address |
 | `ip_gateway` | `0.0.0.0` |  | Gateway address (e.g. 192.168.2.1) |
 | `ip_nameservers` |  |  | DNS nameservers (e.g. 8.8.8.8) |
+| `ip_ipv6` | `1` | `0`/`1` | Set to "0" to disable IPv6. |
 
 ## Localization
 

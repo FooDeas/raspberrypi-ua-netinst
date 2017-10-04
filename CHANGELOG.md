@@ -6,6 +6,7 @@
 - support boot or/and install from USB mass storage
 - added or changed configuration variables
   - `release` is set to "stretch" by default
+  - disable IPv6
 
 **Bugfixes:**
 
