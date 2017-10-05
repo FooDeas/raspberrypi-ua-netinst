@@ -373,7 +373,7 @@ output_filter() {
 	filterstring+="|^: $"
 
 	read -r line
-	if [[ "$line" =~ "${filterstring}" ]] then ; :
+	if [[ "$line" =~ "${filterstring}" ]] ; then :
 	else echo "$line"
 	fi	
 }
