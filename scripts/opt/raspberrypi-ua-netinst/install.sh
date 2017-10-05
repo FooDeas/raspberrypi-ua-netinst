@@ -358,13 +358,24 @@ output_filter() {
 	filterstring+="|^debconf: delaying package configuration, since apt-utils is not installed$"
 	filterstring+="|^\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*$"
 	filterstring+="|^All rc\.d operations denied by policy$"
-	filterstring+="|^E: Can not write log \(Is \/dev\/pts mounted\?\) - posix_openpt \(2: No such file or directory\)$"
+	filterstring+="|^[:space:]*E[:space:]*$"
+	filterstring+="|^[:space:]*:[:space:]*$"
+	filterstring+="|Can not write log \(Is \/dev\/pts mounted\?\) - posix_openpt \(19: No such device\)$"
+	filterstring+="|Can not write log \(Is \/dev\/pts mounted\?\) - posix_openpt \(2: No such file or directory\)$"
 	filterstring+="|^update-rc\.d: warning: start and stop actions are no longer supported; falling back to defaults$"
 	filterstring+="|^invoke-rc\.d: policy-rc\.d denied execution of start\.$"
 	filterstring+="|^Failed to set capabilities on file \`\S.*' \(Invalid argument\)$"
 	filterstring+="|^The value of the capability argument is not permitted for a file\. Or the file is not a regular \(non-symlink\) file$"
 	filterstring+="|^Failed to read \S.*\. Ignoring: No such file or directory$"
-	grep -Ev "${filterstring}"
+	filterstring+="|\(Reading database \.\.\. $"
+	filterstring+="|\(Reading database \.\.\. [0..9]{1,3}\%"
+	filterstring+="|^E$"
+	filterstring+="|^: $"
+
+	read -r line
+	if [[ "$line" =~ "${filterstring}" ]] then ; :
+	else echo "$line"
+	fi	
 }
 
 line_add() {
