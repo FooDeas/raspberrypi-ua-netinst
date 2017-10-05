@@ -452,10 +452,6 @@ rootdev=/dev/mmcblk0
 wlan_configfile=/bootfs/raspberrypi-ua-netinst/config/wpa_supplicant.conf
 final_action=reboot
 
-# set screen blank period to an hour
-# hopefully the install should be done by then
-echo -en '\033[9;60]'
-
 mkdir -p /proc
 mkdir -p /sys
 mkdir -p /boot
@@ -487,6 +483,12 @@ mdev -s
 
 klogd -c 1
 sleep 3s
+
+# set screen blank period to an hour unless consoleblank=0 on cmdline
+# hopefully the install should be done by then
+if grep -qv  "consoleblank=0" /proc/cmdline; then
+    echo -en '\033[9;60]'
+fi
 
 # Config serial output device
 echo
