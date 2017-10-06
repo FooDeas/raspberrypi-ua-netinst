@@ -1912,7 +1912,7 @@ if [ "${kernel_module}" = true ]; then
 
 	echo
 	echo "Installing kernel, bootloader (=firmware) and user packages..."
-	eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y install "${packages_postinstall}" 2>&1 | output_filter | sed 's/^/  /'
+	eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y install "${packages_postinstall}" 2>&1 | output_filter
 	if [ "${PIPESTATUS[0]}" -eq 0 ]; then
 		echo "OK"
 	else
