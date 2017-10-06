@@ -372,10 +372,13 @@ output_filter() {
 	filterstring+="|^E$"
 	filterstring+="|^: $"
 
-	read -r line
-	if [[ "$line" =~ "${filterstring}" ]] ; then :
-	else echo "$line"
-	fi	
+	while IFS= read -r line ; do
+		if [[ "$line" =~ "${filterstring}" ]] ; then
+			:
+		else
+			echo "  $line"
+		fi
+	done
 }
 
 line_add() {
@@ -1416,7 +1419,7 @@ echo "Starting install process..."
 if [ -n "${mirror_cache}" ]; then
 	export http_proxy="http://${mirror_cache}/"
 fi
-eval cdebootstrap-static --arch=armhf "${cdebootstrap_cmdline}" "${release_raspbian}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg 2>&1 | output_filter | sed 's/^/  /'
+eval cdebootstrap-static --arch=armhf "${cdebootstrap_cmdline}" "${release_raspbian}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg 2>&1 | output_filter
 cdebootstrap_exitcode="${PIPESTATUS[0]}"
 unset http_proxy
 if [ "${cdebootstrap_exitcode}" -ne 0 ]; then
@@ -1892,7 +1895,7 @@ if [ "${kernel_module}" = true ]; then
 	echo
 	echo "Downloading packages..."
 	for i in $(seq 1 3); do
-		eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y -d install "${packages_postinstall}" 2>&1 | output_filter | sed 's/^/  /'
+		eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y -d install "${packages_postinstall}" 2>&1 | output_filter
 		download_exitcode="${PIPESTATUS[0]}"
 		if [ "${download_exitcode}" -eq 0 ]; then
 			echo "OK"
