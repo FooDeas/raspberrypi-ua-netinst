@@ -361,13 +361,27 @@ output_filter() {
 	filterstring+="|^debconf: delaying package configuration, since apt-utils is not installed$"
 	filterstring+="|^\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*$"
 	filterstring+="|^All rc\.d operations denied by policy$"
-	filterstring+="|^E: Can not write log \(Is \/dev\/pts mounted\?\) - posix_openpt \(2: No such file or directory\)$"
+	filterstring+="|^[:space:]*E[:space:]*$"
+	filterstring+="|^[:space:]*:[:space:]*$"
+	filterstring+="|Can not write log \(Is \/dev\/pts mounted\?\) - posix_openpt \(19: No such device\)$"
+	filterstring+="|Can not write log \(Is \/dev\/pts mounted\?\) - posix_openpt \(2: No such file or directory\)$"
 	filterstring+="|^update-rc\.d: warning: start and stop actions are no longer supported; falling back to defaults$"
 	filterstring+="|^invoke-rc\.d: policy-rc\.d denied execution of start\.$"
 	filterstring+="|^Failed to set capabilities on file \`\S.*' \(Invalid argument\)$"
 	filterstring+="|^The value of the capability argument is not permitted for a file\. Or the file is not a regular \(non-symlink\) file$"
 	filterstring+="|^Failed to read \S.*\. Ignoring: No such file or directory$"
-	grep -Ev "${filterstring}"
+	filterstring+="|\(Reading database \.\.\. $"
+	filterstring+="|\(Reading database \.\.\. [0..9]{1,3}\%"
+	filterstring+="|^E$"
+	filterstring+="|^: $"
+
+	while IFS= read -r line ; do
+		if [[ "$line" =~ "${filterstring}" ]] ; then
+			:
+		else
+			echo "  $line"
+		fi
+	done
 }
 
 line_add() {
@@ -1410,7 +1424,7 @@ echo "Starting install process..."
 if [ -n "${mirror_cache}" ]; then
 	export http_proxy="http://${mirror_cache}/"
 fi
-eval cdebootstrap-static --arch=armhf "${cdebootstrap_cmdline}" "${release_raspbian}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg 2>&1 | output_filter | sed 's/^/  /'
+eval cdebootstrap-static --arch=armhf "${cdebootstrap_cmdline}" "${release_raspbian}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg 2>&1 | output_filter
 cdebootstrap_exitcode="${PIPESTATUS[0]}"
 unset http_proxy
 if [ "${cdebootstrap_exitcode}" -ne 0 ]; then
@@ -1886,7 +1900,7 @@ if [ "${kernel_module}" = true ]; then
 	echo
 	echo "Downloading packages..."
 	for i in $(seq 1 3); do
-		eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y -d install "${packages_postinstall}" 2>&1 | output_filter | sed 's/^/  /'
+		eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y -d install "${packages_postinstall}" 2>&1 | output_filter
 		download_exitcode="${PIPESTATUS[0]}"
 		if [ "${download_exitcode}" -eq 0 ]; then
 			echo "OK"
@@ -1903,7 +1917,7 @@ if [ "${kernel_module}" = true ]; then
 
 	echo
 	echo "Installing kernel, bootloader (=firmware) and user packages..."
-	eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y install "${packages_postinstall}" 2>&1 | output_filter | sed 's/^/  /'
+	eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y install "${packages_postinstall}" 2>&1 | output_filter
 	if [ "${PIPESTATUS[0]}" -eq 0 ]; then
 		echo "OK"
 	else
