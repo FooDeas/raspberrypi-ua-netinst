@@ -1443,7 +1443,7 @@ for sysfolder in /dev /dev/pts /proc /sys; do
 	mount --bind "${sysfolder}" "/rootfs${sysfolder}"
 done
 # set init system
-if [ "${init_system}" = "systemd" ]; then
+if [ "${init_system}" = "systemd" ] && [ ! -e /rootfs/sbin/init ]; then
 	ln -s /lib/systemd/systemd /rootfs/sbin/init
 fi
 
