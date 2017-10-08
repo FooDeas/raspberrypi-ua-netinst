@@ -11,6 +11,8 @@
 **Bugfixes:**
 
 - visual LED notification on Raspberry Pi Zero (W)
+- fix log output chopping
+- leave screen always on during installation
 
 ## raspberrypi-ua-netinst v1.5.2
 
