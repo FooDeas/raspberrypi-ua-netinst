@@ -178,35 +178,35 @@ led_sos() {
 		led_off=1
 	fi
 
-	if [ -e /sys/class/leds/led0 ]; then (echo none > /sys/class/leds/led0/trigger) &> /dev/null; else led0=; fi
-	if [ -e /sys/class/leds/led1 ]; then (echo none > /sys/class/leds/led1/trigger) &> /dev/null; else led1=; fi
+	if [ -e /sys/class/leds/led0 ]; then (echo none > /sys/class/leds/led0/trigger || true) &> /dev/null; else led0=; fi
+	if [ -e /sys/class/leds/led1 ]; then (echo none > /sys/class/leds/led1/trigger || true) &> /dev/null; else led1=; fi
 	for i in $(seq 1 3); do
-		if [ -n "$led0" ]; then (echo ${led_on} > "${led0}"/brightness) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo ${led_on} > "${led1}"/brightness) &> /dev/null; fi
-		sleep 0.3s;
-		if [ -n "$led0" ]; then (echo ${led_off} > "${led0}"/brightness) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo ${led_off} > "${led1}"/brightness) &> /dev/null; fi
-		sleep 0.2s;
+		if [ -n "$led0" ]; then (echo ${led_on} > "${led0}"/brightness || true) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo ${led_on} > "${led1}"/brightness || true) &> /dev/null; fi
+		sleep 0.225s;
+		if [ -n "$led0" ]; then (echo ${led_off} > "${led0}"/brightness || true) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo ${led_off} > "${led1}"/brightness || true) &> /dev/null; fi
+		sleep 0.15s;
 	done
-	sleep 0.1s;
+	sleep 0.075s;
 	for i in $(seq 1 3); do
-		if [ -n "$led0" ]; then (echo ${led_on} > "${led0}"/brightness) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo ${led_on} > "${led1}"/brightness) &> /dev/null; fi
-		sleep 0.8s;
-		if [ -n "$led0" ]; then (echo ${led_off} > "${led0}"/brightness) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo ${led_off} > "${led1}"/brightness) &> /dev/null; fi
-		sleep 0.2s;
+		if [ -n "$led0" ]; then (echo ${led_on} > "${led0}"/brightness || true) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo ${led_on} > "${led1}"/brightness || true) &> /dev/null; fi
+		sleep 0.6s;
+		if [ -n "$led0" ]; then (echo ${led_off} > "${led0}"/brightness || true) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo ${led_off} > "${led1}"/brightness || true) &> /dev/null; fi
+		sleep 0.15s;
 	done
-	sleep 0.1s;
+	sleep 0.075s;
 	for i in $(seq 1 3); do
-		if [ -n "$led0" ]; then (echo ${led_on} > "${led0}"/brightness) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo ${led_on} > "${led1}"/brightness) &> /dev/null; fi
-		sleep 0.3s;
-		if [ -n "$led0" ]; then (echo ${led_off} > "${led0}"/brightness) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo ${led_off} > "${led1}"/brightness) &> /dev/null; fi
-		sleep 0.2s;
+		if [ -n "$led0" ]; then (echo ${led_on} > "${led0}"/brightness || true) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo ${led_on} > "${led1}"/brightness || true) &> /dev/null; fi
+		sleep 0.225s;
+		if [ -n "$led0" ]; then (echo ${led_off} > "${led0}"/brightness || true) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo ${led_off} > "${led1}"/brightness || true) &> /dev/null; fi
+		sleep 0.15s;
 	done
-	sleep 1.5s;
+	sleep 1.225s;
 }
 
 inputfile_sanitize() {
@@ -361,13 +361,27 @@ output_filter() {
 	filterstring+="|^debconf: delaying package configuration, since apt-utils is not installed$"
 	filterstring+="|^\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*$"
 	filterstring+="|^All rc\.d operations denied by policy$"
-	filterstring+="|^E: Can not write log \(Is \/dev\/pts mounted\?\) - posix_openpt \(2: No such file or directory\)$"
+	filterstring+="|^[:space:]*E[:space:]*$"
+	filterstring+="|^[:space:]*:[:space:]*$"
+	filterstring+="|Can not write log \(Is \/dev\/pts mounted\?\) - posix_openpt \(19: No such device\)$"
+	filterstring+="|Can not write log \(Is \/dev\/pts mounted\?\) - posix_openpt \(2: No such file or directory\)$"
 	filterstring+="|^update-rc\.d: warning: start and stop actions are no longer supported; falling back to defaults$"
 	filterstring+="|^invoke-rc\.d: policy-rc\.d denied execution of start\.$"
 	filterstring+="|^Failed to set capabilities on file \`\S.*' \(Invalid argument\)$"
 	filterstring+="|^The value of the capability argument is not permitted for a file\. Or the file is not a regular \(non-symlink\) file$"
 	filterstring+="|^Failed to read \S.*\. Ignoring: No such file or directory$"
-	grep -Ev "${filterstring}"
+	filterstring+="|\(Reading database \.\.\. $"
+	filterstring+="|\(Reading database \.\.\. [0..9]{1,3}\%"
+	filterstring+="|^E$"
+	filterstring+="|^: $"
+
+	while IFS= read -r line ; do
+		if [[ "$line" =~ "${filterstring}" ]] ; then
+			:
+		else
+			echo "  $line"
+		fi
+	done
 }
 
 line_add() {
@@ -455,10 +469,6 @@ rootdev=/dev/mmcblk0
 wlan_configfile=/bootfs/raspberrypi-ua-netinst/config/wpa_supplicant.conf
 final_action=reboot
 
-# set screen blank period to an hour
-# hopefully the install should be done by then
-echo -en '\033[9;60]'
-
 mkdir -p /proc
 mkdir -p /sys
 mkdir -p /boot
@@ -490,6 +500,12 @@ mdev -s
 
 klogd -c 1
 sleep 3s
+
+# set screen blank period to an hour unless consoleblank=0 on cmdline
+# hopefully the install should be done by then
+if grep -qv  "consoleblank=0" /proc/cmdline; then
+    echo -en '\033[9;60]'
+fi
 
 # Config serial output device
 echo
@@ -1411,7 +1427,7 @@ echo "Starting install process..."
 if [ -n "${mirror_cache}" ]; then
 	export http_proxy="http://${mirror_cache}/"
 fi
-eval cdebootstrap-static --arch=armhf "${cdebootstrap_cmdline}" "${release_raspbian}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg 2>&1 | output_filter | sed 's/^/  /'
+eval cdebootstrap-static --arch=armhf "${cdebootstrap_cmdline}" "${release_raspbian}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg 2>&1 | output_filter
 cdebootstrap_exitcode="${PIPESTATUS[0]}"
 unset http_proxy
 if [ "${cdebootstrap_exitcode}" -ne 0 ]; then
@@ -1898,7 +1914,7 @@ if [ "${kernel_module}" = true ]; then
 	echo
 	echo "Downloading packages..."
 	for i in $(seq 1 3); do
-		eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y -d install "${packages_postinstall}" 2>&1 | output_filter | sed 's/^/  /'
+		eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y -d install "${packages_postinstall}" 2>&1 | output_filter
 		download_exitcode="${PIPESTATUS[0]}"
 		if [ "${download_exitcode}" -eq 0 ]; then
 			echo "OK"
@@ -1915,7 +1931,7 @@ if [ "${kernel_module}" = true ]; then
 
 	echo
 	echo "Installing kernel, bootloader (=firmware) and user packages..."
-	eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y install "${packages_postinstall}" 2>&1 | output_filter | sed 's/^/  /'
+	eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y install "${packages_postinstall}" 2>&1 | output_filter
 	if [ "${PIPESTATUS[0]}" -eq 0 ]; then
 		echo "OK"
 	else
