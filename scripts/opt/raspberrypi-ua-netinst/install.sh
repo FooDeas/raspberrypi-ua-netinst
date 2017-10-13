@@ -14,6 +14,7 @@ variables_reset() {
 	rootpartition=
 	wlan_configfile=
 	installer_retries=
+	installer_fail_blocking=
 	cmdline_custom=
 
 	# config variables
@@ -61,6 +62,7 @@ variables_reset() {
 	ip_broadcast=
 	ip_gateway=
 	ip_nameservers=
+	ip_ipv6=
 	drivers_to_load=
 	online_config=
 	gpu_mem=
@@ -120,7 +122,7 @@ variables_set_defaults() {
 	# set config defaults
 	variable_set "preset" "server"
 	variable_set "mirror" "http://mirrordirector.raspbian.org/raspbian/"
-	variable_set "release" "jessie"
+	variable_set "release" "stretch"
 	variable_set "hostname" "pi"
 	variable_set "rootpw" "raspbian"
 	variable_set "root_ssh_pwlogin" "1"
@@ -136,6 +138,7 @@ variables_set_defaults() {
 	variable_set "ip_netmask" "0.0.0.0"
 	variable_set "ip_broadcast" "0.0.0.0"
 	variable_set "ip_gateway" "0.0.0.0"
+	variable_set "ip_ipv6" "1"
 	variable_set "hdmi_tv_res" "1080p"
 	variable_set "hdmi_monitor_res" "1024x768"
 	variable_set "hdmi_disable_overscan" "0"
@@ -164,36 +167,48 @@ variables_set_defaults() {
 led_sos() {
 	local led0=/sys/class/leds/led0 # Power LED
 	local led1=/sys/class/leds/led1 # Activity LED
+	local led_on
+	local led_off
 
-	if [ -e /sys/class/leds/led0 ]; then (echo none > /sys/class/leds/led0/trigger) &> /dev/null; else led0=; fi
-	if [ -e /sys/class/leds/led1 ]; then (echo none > /sys/class/leds/led1/trigger) &> /dev/null; else led1=; fi
+	# Setting leds on and off works the other way round on Pi Zero and Pi Zero W
+	# Also led0 (the only led on the Zeros) is the activity led
+	if [ "${rpi_hardware_version:0:4}" != "Zero" ]; then
+		led_on=1
+		led_off=0
+	else
+		led_on=0
+		led_off=1
+	fi
+
+	if [ -e /sys/class/leds/led0 ]; then (echo none > /sys/class/leds/led0/trigger || true) &> /dev/null; else led0=; fi
+	if [ -e /sys/class/leds/led1 ]; then (echo none > /sys/class/leds/led1/trigger || true) &> /dev/null; else led1=; fi
 	for i in $(seq 1 3); do
-		if [ -n "$led0" ]; then (echo 1 > "${led0}"/brightness) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo 1 > "${led1}"/brightness) &> /dev/null; fi
-		sleep 0.3s;
-		if [ -n "$led0" ]; then (echo 0 > "${led0}"/brightness) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo 0 > "${led1}"/brightness) &> /dev/null; fi
-		sleep 0.2s;
+		if [ -n "$led0" ]; then (echo ${led_on} > "${led0}"/brightness || true) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo ${led_on} > "${led1}"/brightness || true) &> /dev/null; fi
+		sleep 0.225s;
+		if [ -n "$led0" ]; then (echo ${led_off} > "${led0}"/brightness || true) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo ${led_off} > "${led1}"/brightness || true) &> /dev/null; fi
+		sleep 0.15s;
 	done
-	sleep 0.1s;
+	sleep 0.075s;
 	for i in $(seq 1 3); do
-		if [ -n "$led0" ]; then (echo 1 > "${led0}"/brightness) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo 1 > "${led1}"/brightness) &> /dev/null; fi
-		sleep 0.8s;
-		if [ -n "$led0" ]; then (echo 0 > "${led0}"/brightness) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo 0 > "${led1}"/brightness) &> /dev/null; fi
-		sleep 0.2s;
+		if [ -n "$led0" ]; then (echo ${led_on} > "${led0}"/brightness || true) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo ${led_on} > "${led1}"/brightness || true) &> /dev/null; fi
+		sleep 0.6s;
+		if [ -n "$led0" ]; then (echo ${led_off} > "${led0}"/brightness || true) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo ${led_off} > "${led1}"/brightness || true) &> /dev/null; fi
+		sleep 0.15s;
 	done
-	sleep 0.1s;
+	sleep 0.075s;
 	for i in $(seq 1 3); do
-		if [ -n "$led0" ]; then (echo 1 > "${led0}"/brightness) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo 1 > "${led1}"/brightness) &> /dev/null; fi
-		sleep 0.3s;
-		if [ -n "$led0" ]; then (echo 0 > "${led0}"/brightness) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo 0 > "${led1}"/brightness) &> /dev/null; fi
-		sleep 0.2s;
+		if [ -n "$led0" ]; then (echo ${led_on} > "${led0}"/brightness || true) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo ${led_on} > "${led1}"/brightness || true) &> /dev/null; fi
+		sleep 0.225s;
+		if [ -n "$led0" ]; then (echo ${led_off} > "${led0}"/brightness || true) &> /dev/null; fi
+		if [ -n "$led1" ]; then (echo ${led_off} > "${led1}"/brightness || true) &> /dev/null; fi
+		sleep 0.15s;
 	done
-	sleep 1.5s;
+	sleep 1.225s;
 }
 
 inputfile_sanitize() {
@@ -211,6 +226,11 @@ inputfile_sanitize() {
 	fi
 }
 
+fail_blocking() {
+	installer_fail_blocking=1
+	fail
+}
+
 fail() {
 	local fail_boot_mounted
 	echo
@@ -224,7 +244,7 @@ fail() {
 	fi
 	cp "${logfile}" "/boot/raspberrypi-ua-netinst/error-$(date +%Y%m%dT%H%M%S).log"
 	sync
-	
+
 	if [ -e "/boot/raspberrypi-ua-netinst/config/installer-retries.txt" ]; then
 		inputfile_sanitize /boot/raspberrypi-ua-netinst/config/installer-retries.txt
 		# shellcheck disable=SC1091
@@ -236,9 +256,11 @@ fail() {
 		echo "installer_retries=${installer_retries}" > /boot/raspberrypi-ua-netinst/config/installer-retries.txt
 		sync
 	fi
-	if [ "${installer_retries}" -le "0" ]; then
-		echo "  The maximum number of retries is reached!"
-		echo "  Check the logfiles for errors. Then delete or edit \"installer-retries.txt\" in installer config folder to (re)set the counter."
+	if [ "${installer_retries}" -le "0" ] || [ "${installer_fail_blocking}" = "1" ]; then
+		if [ "${installer_retries}" -le "0" ]; then
+			echo "  The maximum number of retries is reached!"
+			echo "  Check the logfiles for errors. Then delete or edit \"installer-retries.txt\" in installer config folder to (re)set the counter."
+		fi
 		echo "  The system is stopped to prevent an infinite loop."
 		while true; do
 			led_sos
@@ -341,13 +363,27 @@ output_filter() {
 	filterstring+="|^debconf: delaying package configuration, since apt-utils is not installed$"
 	filterstring+="|^\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*$"
 	filterstring+="|^All rc\.d operations denied by policy$"
-	filterstring+="|^E: Can not write log \(Is \/dev\/pts mounted\?\) - posix_openpt \(2: No such file or directory\)$"
+	filterstring+="|^[:space:]*E[:space:]*$"
+	filterstring+="|^[:space:]*:[:space:]*$"
+	filterstring+="|Can not write log \(Is \/dev\/pts mounted\?\) - posix_openpt \(19: No such device\)$"
+	filterstring+="|Can not write log \(Is \/dev\/pts mounted\?\) - posix_openpt \(2: No such file or directory\)$"
 	filterstring+="|^update-rc\.d: warning: start and stop actions are no longer supported; falling back to defaults$"
 	filterstring+="|^invoke-rc\.d: policy-rc\.d denied execution of start\.$"
 	filterstring+="|^Failed to set capabilities on file \`\S.*' \(Invalid argument\)$"
 	filterstring+="|^The value of the capability argument is not permitted for a file\. Or the file is not a regular \(non-symlink\) file$"
 	filterstring+="|^Failed to read \S.*\. Ignoring: No such file or directory$"
-	grep -Ev "${filterstring}"
+	filterstring+="|\(Reading database \.\.\. $"
+	filterstring+="|\(Reading database \.\.\. [0..9]{1,3}\%"
+	filterstring+="|^E$"
+	filterstring+="|^: $"
+
+	while IFS= read -r line ; do
+		if [[ "$line" =~ "${filterstring}" ]] ; then
+			:
+		else
+			echo "  $line"
+		fi
+	done
 }
 
 line_add() {
@@ -410,9 +446,15 @@ config_set() {
 dtoverlay_enable() {
 	local configfile="${1}"
 	local dtoverlay="${2}"
-	sed -i "s/^#\(dtoverlay=${dtoverlay}\)/\1/" "${configfile}"
+	local value="${3}"
+	sed -i "s/^#\(dtoverlay=${dtoverlay}=${value}\)/\1/" "${configfile}"
 	if [ "$(grep -c "^dtoverlay=${dtoverlay}" "${configfile}")" -ne 1 ]; then
-		echo "dtoverlay=${dtoverlay}" >> "${configfile}"
+		sed -i "s/^\(dtoverlay=${dtoverlay}\)/#\1/" "${configfile}"
+		if [ -z "${value}" ]; then
+			echo "dtoverlay=${dtoverlay}" >> "${configfile}"
+		else
+			echo "dtoverlay=${dtoverlay}=${value}" >> "${configfile}"
+		fi
 	fi
 }
 
@@ -428,10 +470,6 @@ logfile=/tmp/raspberrypi-ua-netinst.log
 rootdev=/dev/mmcblk0
 wlan_configfile=/bootfs/raspberrypi-ua-netinst/config/wpa_supplicant.conf
 final_action=reboot
-
-# set screen blank period to an hour
-# hopefully the install should be done by then
-echo -en '\033[9;60]'
 
 mkdir -p /proc
 mkdir -p /sys
@@ -464,6 +502,12 @@ mdev -s
 
 klogd -c 1
 sleep 3s
+
+# set screen blank period to an hour unless consoleblank=0 on cmdline
+# hopefully the install should be done by then
+if grep -qv  "consoleblank=0" /proc/cmdline; then
+    echo -en '\033[9;60]'
+fi
 
 # Config serial output device
 echo
@@ -678,6 +722,26 @@ if [ -n "${rtc}" ] ; then
 	if ! grep -q "^dtoverlay=i2c-rtc,${rtc}\>" /boot/config.txt; then
 		echo -e "\ndtoverlay=i2c-rtc,${rtc}" >> /boot/config.txt
 		preinstall_reboot=1
+	fi
+	echo "OK"
+fi
+# MSD boot
+if [ "${usbboot}" = "1" ] ; then
+	echo -n "  Checking USB boot flag... "
+	msd_boot_enabled="$(vcgencmd otp_dump | grep 17: | cut -b 4-5)"
+	msd_boot_enabled="$(printf "%s" "${msd_boot_enabled}" | xxd -r -p | xxd -b | cut -d' ' -f2 | cut -b 3)"
+	if [ "${msd_boot_enabled}" = "0" ]; then
+		if ! config_check "/boot/config.txt" "program_usb_boot_mode" "1"; then
+			echo -e "\n    Set flag to allow USB boot on next reboot. "
+			config_set "/boot/config.txt" "program_usb_boot_mode" "1"
+			preinstall_reboot=1;
+		else
+			echo -e "\n    Enabling USB boot flag failed!"
+			echo "    Your device does not allow booting from USB. Disable booting from USB in installer-config.txt to proceed."
+			fail_blocking
+		fi
+	else
+		sed -i "/^program_usb_boot_mode=1/d" "/boot/config.txt"
 	fi
 	echo "OK"
 fi
@@ -929,7 +993,7 @@ fi
 
 # determine available releases
 mirror_base=http://archive.raspberrypi.org/debian/dists/
-release_fallback=jessie
+release_fallback=stretch
 release_base="${release}"
 release_raspbian="${release}"
 if ! wget --spider "${mirror_base}/${release}/" &> /dev/null; then
@@ -1007,9 +1071,12 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	fi
 
 	# server
-	server_packages="vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,less,man-db,logrotate,bash-completion,console-setup,apt-utils"
+	server_packages="vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,tzdata,less,man-db,logrotate,bash-completion,console-setup,apt-utils"
 	server_packages_postinstall="libraspberrypi-bin,raspi-copies-and-fills"
 	server_packages_postinstall="${minimal_packages_postinstall},${server_packages_postinstall}"
+	if [ "${init_system}" = "systemd" ]; then
+		server_packages="${server_packages},systemd-sysv"
+	fi
 
 	# cleanup package variables used by cdebootstrap_cmdline
 	variable_sanitize base_packages
@@ -1051,57 +1118,31 @@ else
 	preset=none
 fi
 
-if [ "${usbboot}" != "1" ]; then
-	bootdev=/dev/mmcblk0
-	bootpartition=/dev/mmcblk0p1
-else
-	msd_boot_enabled="$(vcgencmd otp_dump | grep 17: | cut -b 4-5)"
-	msd_boot_enabled="$(printf "%s" "${msd_boot_enabled}" | xxd -r -p | xxd -b | cut -d' ' -f2 | cut -b 3)"
-
-	if [ "${msd_boot_enabled}" != "1" ]; then
-		echo "================================================================"
-		echo "                    !!! IMPORTANT NOTICE !!!"
-		echo "Booting from USB mass storage device is disabled!"
-		echo "Read the manual to enable it in \"config.txt\"."
+if [ "${usbboot}" = "1" ]; then
+	if [ "${bootdev}" = "/dev/mmcblk0" ]; then
 		echo
-		echo "For this reason, only the system is installed on the USB device!"
+		echo "============================================================================================="
+		echo "                                  !!! IMPORTANT NOTICE !!!"
+		echo "Because you are installing from SD card and want to boot from USB,"
+		echo "the system will POWERED OFF after installation."
+		echo "After finishing the installation, you must REMOVE the SD card and reboot the system MANUALLY."
 		echo
 		echo "The installation will continue in 15 seconds..."
-		echo "================================================================"
-		usbboot=0
+		echo "============================================================================================="
 		sleep 15s
-	else
-		echo "Booting from USB mass storage device is enabled."
-		if [ "${bootdev}" = "/dev/mmcblk0" ]; then
-			echo
-			echo "============================================================================================="
-			echo "                                  !!! IMPORTANT NOTICE !!!"
-			echo "Because you are installing from SD card and want to boot from USB,"
-			echo "the system will POWERED OFF after installation."
-			echo "After finishing the installation, you must REMOVE the SD card and reboot the system MANUALLY."
-			echo
-			echo "The installation will continue in 15 seconds..."
-			echo "============================================================================================="
-			sleep 15s
-			final_action=halt
-		fi
-		bootdev=/dev/sda
-		bootpartition=/dev/sda1
+		final_action=halt
 	fi
-	echo
-	usbroot=1
-fi
-
-if [ "${usbroot}" = "1" ]; then
-	rootdev=/dev/sda
+	bootdev=/dev/sda
+	bootpartition=/dev/sda1
 fi
 
 if [ -z "${rootpartition}" ]; then
-	if [ "${rootdev}" = "/dev/sda" ]; then
-		if [ "${usbboot}" != "1" ]; then
-			rootpartition=/dev/sda1
-		else
+	if [ "${usbroot}" = "1" ]; then
+		rootdev=/dev/sda
+		if [ "${usbboot}" = "1" ]; then
 			rootpartition=/dev/sda2
+		else
+			rootpartition=/dev/sda1
 		fi
 	else
 		rootpartition=/dev/mmcblk0p2
@@ -1163,6 +1204,7 @@ echo "  keyboard_layout = ${keyboard_layout}"
 echo "  locales = ${locales}"
 echo "  system_default_locale = ${system_default_locale}"
 echo "  wlan_country = ${wlan_country}"
+echo "  ip_ipv6 = ${ip_ipv6}"
 echo "  cmdline = ${cmdline}"
 echo "  drivers_to_load = ${drivers_to_load}"
 echo "  gpu_mem = ${gpu_mem}"
@@ -1345,9 +1387,9 @@ mdev -s
 
 echo -n "Initializing /boot as vfat... "
 if [ -z "${boot_volume_label}" ]; then
-  mkfs.vfat "${bootpartition}" &>/dev/null || fail
+	mkfs.vfat "${bootpartition}" &>/dev/null || fail
 else
-  mkfs.vfat -n "${boot_volume_label}" "${bootpartition}" &>/dev/null || fail
+	mkfs.vfat -n "${boot_volume_label}" "${bootpartition}" &>/dev/null || fail
 fi
 echo "OK"
 
@@ -1388,7 +1430,7 @@ echo "Starting install process..."
 if [ -n "${mirror_cache}" ]; then
 	export http_proxy="http://${mirror_cache}/"
 fi
-eval cdebootstrap-static --arch=armhf "${cdebootstrap_cmdline}" "${release_raspbian}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg 2>&1 | output_filter | sed 's/^/  /'
+eval cdebootstrap-static --arch=armhf "${cdebootstrap_cmdline}" "${release_raspbian}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg 2>&1 | output_filter
 cdebootstrap_exitcode="${PIPESTATUS[0]}"
 unset http_proxy
 if [ "${cdebootstrap_exitcode}" -ne 0 ]; then
@@ -1403,6 +1445,11 @@ echo "Configuring installed system:"
 for sysfolder in /dev /dev/pts /proc /sys; do
 	mount --bind "${sysfolder}" "/rootfs${sysfolder}"
 done
+# set init system
+if [ "${init_system}" = "systemd" ] && [ ! -e /rootfs/sbin/init ]; then
+	ln -s /lib/systemd/systemd /rootfs/sbin/init
+fi
+
 # configure root login
 if [ -n "${rootpw}" ]; then
 	echo -n "  Setting root password... "
@@ -1570,6 +1617,12 @@ echo "OK"
 
 # networking
 echo -n "  Configuring network settings... "
+
+if [ "${ip_ipv6}" = "0" ]; then
+	mkdir -p /rootfs/etc/sysctl.d
+	echo "net.ipv6.conf.all.disable_ipv6 = 1" > /rootfs/etc/sysctl.d/01-disable-ipv6.conf
+fi
+
 touch /rootfs/etc/network/interfaces || fail
 # lo interface may already be there, so first check for it
 if ! grep -q "auto lo" /rootfs/etc/network/interfaces; then
@@ -1626,12 +1679,18 @@ fi
 echo "OK"
 
 # set timezone and reconfigure tzdata package
-echo -n "  Configuring tzdata, setting timezone to ${timezone}... "
-echo "${timezone}" > /rootfs/etc/timezone
-if chroot /rootfs /usr/sbin/dpkg-reconfigure -f noninteractive tzdata &> /dev/null; then
-	echo "OK"
-else
-	echo "FAILED !"
+if [ -n "${timezone}" ]; then
+	echo -n "  Configuring tzdata (timezone \"${timezone}\")... "
+	if [ -e "/rootfs/usr/share/zoneinfo/${timezone}" ]; then
+		ln -sf "/usr/share/zoneinfo/${timezone}" /rootfs/etc/localtime
+		if chroot /rootfs /usr/sbin/dpkg-reconfigure -f noninteractive tzdata &> /dev/null; then
+			echo "OK"
+		else
+			echo "FAILED !"
+		fi
+	else
+		echo "INVALID !"
+	fi
 fi
 
 # generate locale data
@@ -1864,7 +1923,7 @@ if [ "${kernel_module}" = true ]; then
 	echo
 	echo "Downloading packages..."
 	for i in $(seq 1 3); do
-		eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y -d install "${packages_postinstall}" 2>&1 | output_filter | sed 's/^/  /'
+		eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y -d install "${packages_postinstall}" 2>&1 | output_filter
 		download_exitcode="${PIPESTATUS[0]}"
 		if [ "${download_exitcode}" -eq 0 ]; then
 			echo "OK"
@@ -1881,7 +1940,7 @@ if [ "${kernel_module}" = true ]; then
 
 	echo
 	echo "Installing kernel, bootloader (=firmware) and user packages..."
-	eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y install "${packages_postinstall}" 2>&1 | output_filter | sed 's/^/  /'
+	eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y install "${packages_postinstall}" 2>&1 | output_filter
 	if [ "${PIPESTATUS[0]}" -eq 0 ]; then
 		echo "OK"
 	else
@@ -2101,6 +2160,11 @@ if [ "${sound_enable}" = "1" ] && [ "${sound_usb_enable}" = "1" ] && [ "${sound_
 	} > /etc/asound.conf
 fi
 
+# set mmc1 (USB) as default trigger for activity led
+if [ "${usbroot}" = "1" ]; then
+	dtoverlay_enable "/rootfs/boot/config.txt" "act_led_trigger" "mmc1"
+fi
+
 # iterate through all the file lists and call the install_files method for them
 old_dir=$(pwd)
 cd /rootfs/boot/raspberrypi-ua-netinst/config/files/ || fail
@@ -2168,6 +2232,7 @@ if [ "${final_action}" != "console" ]; then
 	for sysfolder in /dev/pts /proc /sys; do
 		umount "/rootfs${sysfolder}"
 	done
+	sync
 	umount /rootfs/boot
 	umount /rootfs
 	echo "OK"
