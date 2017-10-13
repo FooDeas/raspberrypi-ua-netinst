@@ -1481,7 +1481,7 @@ if [ "${root_ssh_pwlogin}" = "1" ]; then
 	if [ "${release_raspbian}" != "wheezy" ]; then
 		if [ -f /rootfs/etc/ssh/sshd_config ]; then
 			echo -n "  Allowing root to login with password... "
-			sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /rootfs/etc/ssh/sshd_config || fail
+			sed -i '/PermitRootLogin/s/.*/PermitRootLogin yes/' /rootfs/etc/ssh/sshd_config || fail
 			echo "OK"
 		fi
 	fi
