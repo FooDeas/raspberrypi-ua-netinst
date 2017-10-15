@@ -378,7 +378,7 @@ output_filter() {
 	filterstring+="|^: $"
 
 	while IFS= read -r line ; do
-		if [[ "$line" =~ "${filterstring}" ]] ; then
+		if [[ "$line" =~ ${filterstring} ]] ; then
 			:
 		else
 			echo "  $line"
