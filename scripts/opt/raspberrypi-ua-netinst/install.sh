@@ -1865,8 +1865,11 @@ done
 for keyfile in ./*.key
 do
 	if [ -e "${keyfile}" ]; then
-		echo -n "  Adding key '${keyfile}' to apt."
-		(chroot /rootfs /usr/bin/apt-key add -) < "${keyfile}" || fail
+		echo "  Adding key '${keyfile}' to apt..."
+		(chroot /rootfs /usr/bin/apt-key add - 2>&1) < "${keyfile}" | sed 's/^/    /'
+		if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+			fail
+		fi
 		echo "OK"
 	fi
 done
@@ -1986,8 +1989,8 @@ fi
 
 # enable spi if specified in the configuration file
 if [ "${spi_enable}" = "1" ]; then
-	sed -i "s/^#\(dtparam=spi=on\)/\1/" /rootfs/boot/config.txt
 	if [ "$(grep -c "^dtparam=spi=.*" /rootfs/boot/config.txt)" -ne 1 ]; then
+	sed -i "s/^#\(dtparam=spi=on\)/\1/" /rootfs/boot/config.txt
 		sed -i "s/^\(dtparam=spi=.*\)/#\1/" /rootfs/boot/config.txt
 		echo "dtparam=spi=on" >> /rootfs/boot/config.txt
 	fi
