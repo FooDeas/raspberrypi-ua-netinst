@@ -7,6 +7,9 @@
 - added or changed configuration variables:
   - `release` is set to "stretch" by default
   - ability to disable IPv6
+- retry debootstrap 3 times
+- increased network configuration timeout to 15 seconds
+- increased package download retries to 5
 
 **Bugfixes:**
 
