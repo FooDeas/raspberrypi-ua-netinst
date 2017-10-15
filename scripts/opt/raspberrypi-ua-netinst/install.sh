@@ -1427,17 +1427,26 @@ fi
 
 echo
 echo "Starting install process..."
-if [ -n "${mirror_cache}" ]; then
-	export http_proxy="http://${mirror_cache}/"
-fi
-eval cdebootstrap-static --arch=armhf "${cdebootstrap_cmdline}" "${release_raspbian}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg 2>&1 | output_filter
-cdebootstrap_exitcode="${PIPESTATUS[0]}"
-unset http_proxy
-if [ "${cdebootstrap_exitcode}" -ne 0 ]; then
-	echo
-	echo "  ERROR: ${cdebootstrap_exitcode}"
-	fail
-fi
+for i in $(seq 1 3); do
+	if [ -n "${mirror_cache}" ]; then
+		export http_proxy="http://${mirror_cache}/"
+	fi
+	eval cdebootstrap-static --arch=armhf "${cdebootstrap_cmdline}" "${release_raspbian}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg 2>&1 | output_filter
+	cdebootstrap_exitcode="${PIPESTATUS[0]}"
+	if [ "${cdebootstrap_exitcode}" -eq 0 ]; then
+		unset http_proxy
+		break
+	else
+		unset http_proxy
+		if [ "${i}" -eq 3 ]; then
+			echo
+			echo "  ERROR: ${cdebootstrap_exitcode}"
+			fail
+		else
+			echo "  ERROR: ${cdebootstrap_exitcode}, trying again ($((i+1))/3)..."
+		fi
+	fi
+done
 
 echo
 echo "Configuring installed system:"
@@ -1900,7 +1909,7 @@ cd "${old_dir}" || fail
 echo
 echo -n "Updating package lists... "
 for i in $(seq 1 3); do
-	if chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" update &>/dev/null ; then
+	if chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" update &>/dev/null; then
 		echo "OK"
 		break
 	else
@@ -1936,7 +1945,7 @@ if [ "${kernel_module}" = true ]; then
 				echo "ERROR: ${download_exitcode}, FAILED !"
 				fail
 			else
-				echo -n "ERROR: ${download_exitcode}, trying again ($((i+1))/3)... "
+				echo -n "ERROR: ${download_exitcode}, trying again ($((i+1))/5)... "
 			fi
 		fi
 	done
