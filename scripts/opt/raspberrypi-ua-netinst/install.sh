@@ -813,7 +813,7 @@ if [ -n "${drivers_to_load}" ]; then
 fi
 
 echo -n "Waiting for ${ifname}... "
-for i in $(seq 1 10); do
+for i in $(seq 1 15); do
 	if ifconfig "${ifname}" &>/dev/null; then
 		break
 	fi
