@@ -1922,7 +1922,7 @@ if [ "${kernel_module}" = true ]; then
 
 	echo
 	echo "Downloading packages..."
-	for i in $(seq 1 3); do
+	for i in $(seq 1 5); do
 		eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y -d install "${packages_postinstall}" 2>&1 | output_filter
 		download_exitcode="${PIPESTATUS[0]}"
 		if [ "${download_exitcode}" -eq 0 ]; then
