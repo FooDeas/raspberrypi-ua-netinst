@@ -19,7 +19,7 @@
 | `firmware_packages` | `0` | `0`/`1` | Set to "1" to install common firmware packages (Atheros, Broadcom, Libertas, Ralink and Realtek). |
 | `mirror` | `http:// mirrordirector.raspbian.org/ raspbian/` |  |  |
 | `mirror_cache` |  |  | Set address and port for HTTP apt-cacher or apt-cacher-ng (e.g. "192.168.0.1:3142"). If set, the cacher will be used to cache packages during installation downloaded from the repository set in `mirror` as well as "http://archive.raspberrypi.org/debian". |
-| `release` | `jessie` |  | Raspbian release name |
+| `release` | `stretch` |  | Raspbian release name |
 
 ### Description: Presets
 
@@ -27,7 +27,7 @@
 |---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `base` | _\<essential\>,apt,cpufrequtils,kmod,raspbian-archive-keyring_ |
 | `minimal` | _\<base\>,fake-hwclock,ifupdown,net-tools,ntp,openssh-server,dosfstools,raspberrypi-sys-mods_ |
-| `server` | _\<minimal\>,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,less,man-db,logrotate,bash-completion,console-setup,apt-utils,libraspberrypi-bin,raspi-copies-and-fills_ |
+| `server` | _\<minimal\>,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,tzdata,less,man-db,logrotate,bash-completion,console-setup,apt-utils,libraspberrypi-bin,raspi-copies-and-fills_ |
 
 ## Device / peripheral
 
@@ -82,6 +82,7 @@
 | `ip_broadcast` | `0.0.0.0` |  | Broadcast address |
 | `ip_gateway` | `0.0.0.0` |  | Gateway address (e.g. 192.168.2.1) |
 | `ip_nameservers` |  |  | DNS nameservers (e.g. 8.8.8.8) |
+| `ip_ipv6` | `1` | `0`/`1` | Set to "0" to disable IPv6. |
 
 ## Localization
 
@@ -107,8 +108,9 @@
 ## Partitioning / Filesystem
 
 | Parameter | Default | Options | Description |
-|-------------------|---------|-----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|---------------------|---------|---------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `usbroot` | `0` | `0`/`1` | Set to "1" to install to first USB disk. |
+| `usbboot` | `0` | `0`/`1` | Set to "1" to boot from first USB disk. This is usually used with 'usbroot=1' and works with model 3 (BCM2837) only. If this is used for the first time, it has to be done from SD-card and the system will shut down after success. Then the SD-card has to be removed before rebooting. |
 | `rootfstype` | f2fs | `ext4`/  `f2fs`/  `btrfs` | Sets the file system of the root partition. |
 | `boot_volume_label` |  |  | Sets the volume name of the boot partition. The volume name can be up to 11 characters long. The label is used by most OSes (Windows, Mac OSX and Linux) to identify the SD-card on the desktop and can be useful when using multiple SD-cards. |
 | `bootsize` | `+128M` |  | /boot partition size in megabytes, provide it in the form '+\<number\>M' (without quotes) |

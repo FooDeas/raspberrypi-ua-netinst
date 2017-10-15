@@ -1,5 +1,22 @@
 # Changelog
 
+## raspberrypi-ua-netinst v2.0.0
+
+- support for Debian 9 (stretch)
+- support boot or/and install from USB mass storage
+- added or changed configuration variables:
+  - `release` is set to "stretch" by default
+  - ability to disable IPv6
+- retry debootstrap 3 times
+- increased network configuration timeout to 15 seconds
+- increased package download retries to 5
+
+**Bugfixes:**
+
+- visual LED notification on Raspberry Pi Zero (W)
+- fix log output chopping
+- leave screen always on during installation
+
 ## raspberrypi-ua-netinst v1.5.2
 
 - support for Raspberry Pi Zero W
