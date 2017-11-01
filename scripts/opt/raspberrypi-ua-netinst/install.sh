@@ -1625,67 +1625,67 @@ fi
 echo "OK"
 
 # networking
-echo -n "  Configuring network settings... "
-
-if [ "${ip_ipv6}" = "0" ]; then
-	mkdir -p /rootfs/etc/sysctl.d
-	echo "net.ipv6.conf.all.disable_ipv6 = 1" > /rootfs/etc/sysctl.d/01-disable-ipv6.conf
-fi
-
-touch /rootfs/etc/network/interfaces || fail
-# lo interface may already be there, so first check for it
-if ! grep -q "auto lo" /rootfs/etc/network/interfaces; then
-	echo "auto lo" >> /rootfs/etc/network/interfaces
-	echo "iface lo inet loopback" >> /rootfs/etc/network/interfaces
-fi
-
-# configured interface
-echo >> /rootfs/etc/network/interfaces
-echo "allow-hotplug ${ifname}" >> /rootfs/etc/network/interfaces
-if [ "${ip_addr}" = "dhcp" ]; then
-	echo "iface ${ifname} inet dhcp" >> /rootfs/etc/network/interfaces
-else
-	{
-		echo "iface ${ifname} inet static"
-		echo "    address ${ip_addr}"
-		echo "    netmask ${ip_netmask}"
-		echo "    broadcast ${ip_broadcast}"
-		echo "    gateway ${ip_gateway}"
-	} >> /rootfs/etc/network/interfaces
-fi
-
-# wlan config
-if echo "${ifname}" | grep -q "wlan"; then
-	if [ -e "${wlan_configfile}" ]; then
-		# copy the installer version of `wpa_supplicant.conf`
-		mkdir -p /rootfs/etc/wpa_supplicant
-		cp "${wlan_configfile}" /rootfs/etc/wpa_supplicant/
-		chmod 600 /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
-		echo "    wpa-conf /etc/wpa_supplicant/wpa_supplicant.conf" >> /rootfs/etc/network/interfaces
+if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "ifupdown"; then
+	echo -n "  Configuring network settings... "
+	
+	if [ "${ip_ipv6}" = "0" ]; then
+		mkdir -p /rootfs/etc/sysctl.d
+		echo "net.ipv6.conf.all.disable_ipv6 = 1" > /rootfs/etc/sysctl.d/01-disable-ipv6.conf
 	fi
-	{
-		echo
-		echo "allow-hotplug eth0"
-		echo "iface eth0 inet dhcp"
-	} >> /rootfs/etc/network/interfaces
+	
+	mkdir -p /rootfs/etc/network
+	touch /rootfs/etc/network/interfaces || fail
+	# lo interface may already be there, so first check for it
+	if ! grep -q "auto lo" /rootfs/etc/network/interfaces; then
+		echo "auto lo" >> /rootfs/etc/network/interfaces
+		echo "iface lo inet loopback" >> /rootfs/etc/network/interfaces
+	fi
+	
+	# configured interface
+	echo >> /rootfs/etc/network/interfaces
+	echo "allow-hotplug ${ifname}" >> /rootfs/etc/network/interfaces
+	if [ "${ip_addr}" = "dhcp" ]; then
+		echo "iface ${ifname} inet dhcp" >> /rootfs/etc/network/interfaces
+	else
+		{
+			echo "iface ${ifname} inet static"
+			echo "    address ${ip_addr}"
+			echo "    netmask ${ip_netmask}"
+			echo "    broadcast ${ip_broadcast}"
+			echo "    gateway ${ip_gateway}"
+		} >> /rootfs/etc/network/interfaces
+	fi
+	
+	# wlan config
+	if echo "${ifname}" | grep -q "wlan"; then
+		if [ -e "${wlan_configfile}" ]; then
+			# copy the installer version of `wpa_supplicant.conf`
+			mkdir -p /rootfs/etc/wpa_supplicant
+			cp "${wlan_configfile}" /rootfs/etc/wpa_supplicant/
+			chmod 600 /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
+			echo "    wpa-conf /etc/wpa_supplicant/wpa_supplicant.conf" >> /rootfs/etc/network/interfaces
+		fi
+		{
+			echo
+			echo "allow-hotplug eth0"
+			echo "iface eth0 inet dhcp"
+		} >> /rootfs/etc/network/interfaces
+	fi
+	
+	# Customize cmdline.txt
+	if [ "${disable_predictable_nin}" = "1" ]; then
+		# as described here: https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames
+		# adding net.ifnames=0 to /boot/cmdline and disabling the persistent-net-generator.rules
+		line_add cmdline_custom "net.ifnames=0"
+		ln -s /dev/null /rootfs/etc/udev/rules.d/75-persistent-net-generator.rules
+	fi
+	
+	if [ "${ip_addr}" != "dhcp" ]; then
+		cp /etc/resolv.conf /rootfs/etc/ || fail
+	fi
+	
+	echo "OK"
 fi
-
-# Customize cmdline.txt
-if [ "${disable_predictable_nin}" = "1" ]; then
-	# as described here: https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames
-	# adding net.ifnames=0 to /boot/cmdline and disabling the persistent-net-generator.rules
-	line_add cmdline_custom "net.ifnames=0"
-	ln -s /dev/null /rootfs/etc/udev/rules.d/75-persistent-net-generator.rules
-fi
-line_add_if_boolean quiet_boot cmdline_custom "quiet" "loglevel=3"
-line_add_if_boolean disable_raspberries cmdline_custom "logo.nologo"
-line_add_if_set console_blank cmdline_custom "consoleblank=${console_blank}"
-
-if [ "${ip_addr}" != "dhcp" ]; then
-	cp /etc/resolv.conf /rootfs/etc/ || fail
-fi
-
-echo "OK"
 
 # set timezone and reconfigure tzdata package
 if [ -n "${timezone}" ]; then
@@ -1985,6 +1985,9 @@ fi
 # create cmdline.txt
 echo -n "Creating cmdline.txt... "
 line_add cmdline "root=${rootpartition} rootfstype=${rootfstype} rootwait"
+line_add_if_boolean quiet_boot cmdline_custom "quiet" "loglevel=3"
+line_add_if_boolean disable_raspberries cmdline_custom "logo.nologo"
+line_add_if_set console_blank cmdline_custom "consoleblank=${console_blank}"
 line_add_if_set cmdline_custom cmdline "${cmdline_custom}"
 echo "${cmdline}" > /rootfs/boot/cmdline.txt
 echo "OK"
