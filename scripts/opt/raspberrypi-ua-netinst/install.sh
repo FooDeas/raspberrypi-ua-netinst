@@ -1625,7 +1625,7 @@ fi
 echo "OK"
 
 # networking
-if [ "${preset}" != "base" ]; then
+if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "ifupdown"; then
 	echo -n "  Configuring network settings... "
 	
 	if [ "${ip_ipv6}" = "0" ]; then
@@ -1633,6 +1633,7 @@ if [ "${preset}" != "base" ]; then
 		echo "net.ipv6.conf.all.disable_ipv6 = 1" > /rootfs/etc/sysctl.d/01-disable-ipv6.conf
 	fi
 	
+	mkdir -p /rootfs/etc/network
 	touch /rootfs/etc/network/interfaces || fail
 	# lo interface may already be there, so first check for it
 	if ! grep -q "auto lo" /rootfs/etc/network/interfaces; then
