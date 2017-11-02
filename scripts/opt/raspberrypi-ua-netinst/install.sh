@@ -408,6 +408,18 @@ line_add_if_boolean() {
 	fi
 }
 
+line_add_if_boolean_not() {
+	local variable="${1}"
+	local target="${2}"
+	local value="${3}"
+	local value_else="${4}"
+	if [ "${!variable}" = "0" ]; then
+		line_add "${target}" "${value}"
+	else
+		line_add "${target}" "${value_else}"
+	fi
+}
+
 line_add_if_set() {
 	local variable="${1}"
 	local target="${2}"
@@ -1985,9 +1997,7 @@ line_add_if_boolean quiet_boot cmdline_custom "quiet" "loglevel=3"
 line_add_if_boolean disable_raspberries cmdline_custom "logo.nologo"
 line_add_if_set console_blank cmdline_custom "consoleblank=${console_blank}"
 line_add_if_set cmdline_custom cmdline "${cmdline_custom}"
-if [ "${ip_ipv6}" = "0" ]; then
-	line_add cmdline "ipv6.disable=1"
-fi
+line_add_if_boolean_not ip_ipv6 cmdline "ipv6.disable=1"
 echo "${cmdline}" > /rootfs/boot/cmdline.txt
 echo "OK"
 
