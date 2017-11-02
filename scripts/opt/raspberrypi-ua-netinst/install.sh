@@ -1629,12 +1629,6 @@ echo "OK"
 # networking
 if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "ifupdown"; then
 	echo -n "  Configuring network settings... "
-	
-	if [ "${ip_ipv6}" = "0" ]; then
-		mkdir -p /rootfs/etc/sysctl.d
-		echo "net.ipv6.conf.all.disable_ipv6 = 1" > /rootfs/etc/sysctl.d/01-disable-ipv6.conf
-	fi
-	
 	mkdir -p /rootfs/etc/network
 	touch /rootfs/etc/network/interfaces || fail
 	# lo interface may already be there, so first check for it
@@ -1991,6 +1985,9 @@ line_add_if_boolean quiet_boot cmdline_custom "quiet" "loglevel=3"
 line_add_if_boolean disable_raspberries cmdline_custom "logo.nologo"
 line_add_if_set console_blank cmdline_custom "consoleblank=${console_blank}"
 line_add_if_set cmdline_custom cmdline "${cmdline_custom}"
+if [ "${ip_ipv6}" = "0" ]; then
+	line_add cmdline "ipv6.disable=1"
+fi
 echo "${cmdline}" > /rootfs/boot/cmdline.txt
 echo "OK"
 
