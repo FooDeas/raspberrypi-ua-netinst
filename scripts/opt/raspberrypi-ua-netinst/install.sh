@@ -1103,15 +1103,17 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 			;;
 	esac
 
-	dhcp_client_package="isc-dhcp-client"
-	# add IPv4 DHCP client if needed
-	if [ "${ip_addr}" = "dhcp" ]; then
-		cdebootstrap_cmdline="${cdebootstrap_cmdline},${dhcp_client_package}"
-	fi
-
 	# add user defined syspackages
 	if [ -n "${syspackages}" ]; then
 		cdebootstrap_cmdline="${cdebootstrap_cmdline},${syspackages}"
+	fi
+
+	# add IPv4 DHCP client if needed
+	dhcp_client_package="isc-dhcp-client"
+	if [ "${ip_addr}" = "dhcp" ]; then
+		if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "ifupdown"; then
+			cdebootstrap_cmdline="${cdebootstrap_cmdline},${dhcp_client_package}"
+		fi
 	fi
 
 else
