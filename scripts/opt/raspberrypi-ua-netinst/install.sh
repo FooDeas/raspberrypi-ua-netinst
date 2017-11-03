@@ -2222,8 +2222,7 @@ if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "fake-hwcloc
 	sync # synchronize before saving time to make it "more accurate"
 	date +"%Y-%m-%d %H:%M:%S" > /rootfs/etc/fake-hwclock.data
 	echo "OK"
-fi
-if [ -n "${rtc}" ]; then
+elif [ -n "${rtc}" ]; then
 	echo -n "Saving current time to RTC... "
 	/opt/busybox/bin/hwclock --systohc || fail
 	echo "OK"
