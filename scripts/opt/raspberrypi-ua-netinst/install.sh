@@ -1996,8 +1996,8 @@ line_add cmdline "root=${rootpartition} rootfstype=${rootfstype} rootwait"
 line_add_if_boolean quiet_boot cmdline_custom "quiet" "loglevel=3"
 line_add_if_boolean disable_raspberries cmdline_custom "logo.nologo"
 line_add_if_set console_blank cmdline_custom "consoleblank=${console_blank}"
+line_add_if_boolean_not ip_ipv6 cmdline_custom "ipv6.disable=1"
 line_add_if_set cmdline_custom cmdline "${cmdline_custom}"
-line_add_if_boolean_not ip_ipv6 cmdline "ipv6.disable=1"
 echo "${cmdline}" > /rootfs/boot/cmdline.txt
 echo "OK"
 
