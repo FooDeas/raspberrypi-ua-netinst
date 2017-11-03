@@ -2217,12 +2217,13 @@ chroot /rootfs /usr/bin/dpkg -r cdebootstrap-helper-rc.d &>/dev/null || fail
 echo "OK"
 
 # save current time
-if [ -z "${rtc}" ]; then
+if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "fake-hwclock"; then
 	echo -n "Saving current time for fake-hwclock... "
 	sync # synchronize before saving time to make it "more accurate"
 	date +"%Y-%m-%d %H:%M:%S" > /rootfs/etc/fake-hwclock.data
 	echo "OK"
-else
+fi
+if [ -n "${rtc}" ]; then
 	echo -n "Saving current time to RTC... "
 	/opt/busybox/bin/hwclock --systohc || fail
 	echo "OK"
