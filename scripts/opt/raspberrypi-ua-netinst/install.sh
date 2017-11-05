@@ -242,7 +242,8 @@ fail() {
 		mount "${bootpartition}" /boot
 		fail_boot_mounted=true
 	fi
-	cp "${logfile}" "/boot/raspberrypi-ua-netinst/error-$(date +%Y%m%dT%H%M%S).log"
+	# root and user passwords are deleted from logfile before it is written to the filesystem
+	sed '/rootpw/d;/userpw/d' ${logfile} > /boot/raspberrypi-ua-netinst/error-$(date +%Y%m%dT%H%M%S).log
 	sync
 
 	if [ -e "/boot/raspberrypi-ua-netinst/config/installer-retries.txt" ]; then
@@ -2239,7 +2240,8 @@ if [ "${cleanup_logfiles}" = "1" ]; then
 	rm -f /rootfs/boot/raspberrypi-ua-netinst/error-*.log
 else
 	sleep 1
-	cp "${logfile}" /rootfs/var/log/raspberrypi-ua-netinst.log
+	# root and user passwords are deleted from logfile before it is written to the filesystem
+	sed '/rootpw/d;/userpw/d' ${logfile} > /rootfs/var/log/raspberrypi-ua-netinst.log
 	chmod 0640 /rootfs/var/log/raspberrypi-ua-netinst.log
 fi
 
