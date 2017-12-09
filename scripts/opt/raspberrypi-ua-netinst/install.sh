@@ -1971,6 +1971,11 @@ if [ "${kernel_module}" = true ]; then
 	unset DEBIAN_FRONTEND
 fi
 
+# remove cdebootstrap-helper-rc.d which prevents rc.d scripts from running
+echo -n "Removing cdebootstrap-helper-rc.d... "
+chroot /rootfs /usr/bin/dpkg -r cdebootstrap-helper-rc.d &>/dev/null || fail
+echo "OK"
+
 echo "Preserving original config.txt and kernels..."
 mkdir -p /rootfs/boot/raspberrypi-ua-netinst/reinstall
 cp /bootfs/config.txt /rootfs/boot/raspberrypi-ua-netinst/reinstall/config.txt
@@ -2211,11 +2216,6 @@ if [ -e "/bootfs/raspberrypi-ua-netinst/config/post-install.txt" ]; then
 	echo "=== Finished executing post-install.txt. ==="
 	echo "================================================="
 fi
-
-# remove cdebootstrap-helper-rc.d which prevents rc.d scripts from running
-echo -n "Removing cdebootstrap-helper-rc.d... "
-chroot /rootfs /usr/bin/dpkg -r cdebootstrap-helper-rc.d &>/dev/null || fail
-echo "OK"
 
 # save current time
 if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "fake-hwclock"; then
