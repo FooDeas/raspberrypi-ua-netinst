@@ -1050,7 +1050,7 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	fi
 
 	# base
-	base_packages="cpufrequtils,kmod,raspbian-archive-keyring"
+	base_packages="kmod"
 	base_packages="${custom_packages},${base_packages}"
 	base_packages_postinstall=raspberrypi-bootloader
 	if [ "${release}" != "wheezy" ]; then
@@ -1068,7 +1068,7 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	fi
 	
 	# minimal
-	minimal_packages="ifupdown,net-tools,openssh-server,dosfstools"
+	minimal_packages="cpufrequtils,ifupdown,net-tools,openssh-server,dosfstools"
 	if [ "${init_system}" != "systemd" ]; then
 		minimal_packages="${minimal_packages},ntp"
 	fi

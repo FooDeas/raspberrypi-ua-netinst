@@ -25,8 +25,8 @@
 
 | Preset | Packages |
 |---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `base` | _\<essential\>,apt,cpufrequtils,kmod,raspbian-archive-keyring_ |
-| `minimal` | _\<base\>,fake-hwclock,ifupdown,net-tools,ntp,openssh-server,dosfstools,raspberrypi-sys-mods_ |
+| `base` | _\<essential\>,apt,kmod_ |
+| `minimal` | _\<base\>,cpufrequtils,fake-hwclock,ifupdown,net-tools,ntp,openssh-server,dosfstools,raspberrypi-sys-mods_ |
 | `server` | _\<minimal\>,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,tzdata,less,man-db,logrotate,bash-completion,console-setup,apt-utils,libraspberrypi-bin,raspi-copies-and-fills_ |
 
 ## Device / peripheral
