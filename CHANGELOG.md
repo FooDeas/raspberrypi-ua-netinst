@@ -1,5 +1,11 @@
 # Changelog
 
+## raspberrypi-ua-netinst v2.0.1
+
+**Bugfixes:**
+
+- fix RTC support
+
 ## raspberrypi-ua-netinst v2.0.0
 
 - support for Debian 9 (stretch)
