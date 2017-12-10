@@ -2,6 +2,8 @@
 
 ## raspberrypi-ua-netinst v2.0.1
 
+- moved `cpufrequtils` from base to minimal preset
+
 **Bugfixes:**
 
 - fix RTC support
