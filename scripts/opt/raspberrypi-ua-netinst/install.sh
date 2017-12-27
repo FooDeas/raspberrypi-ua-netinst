@@ -331,15 +331,15 @@ convert_listvariable() {
 install_files() {
 	local file_to_read="${1}"
 	echo "Adding files & folders listed in /boot/raspberrypi-ua-netinst/config/files/${file_to_read}..."
-	inputfile_sanitize "/bootfs/raspberrypi-ua-netinst/config/files/${file_to_read}"
-	grep -v "^[[:space:]]*#\|^[[:space:]]*$" "/bootfs/raspberrypi-ua-netinst/config/files/${file_to_read}" | while read -r line; do
+	inputfile_sanitize "/rootfs/boot/raspberrypi-ua-netinst/config/files/${file_to_read}"
+	grep -v "^[[:space:]]*#\|^[[:space:]]*$" "/rootfs/boot/raspberrypi-ua-netinst/config/files/${file_to_read}" | while read -r line; do
 		owner=$(echo "${line}" | awk '{ print $1 }')
 		perms=$(echo "${line}" | awk '{ print $2 }')
 		file=$(echo "${line}" | awk '{ print $3 }')
 		echo "  ${file}"
-		if [ ! -d "/bootfs/raspberrypi-ua-netinst/config/files/root${file}" ]; then
+		if [ ! -d "/rootfs/boot/raspberrypi-ua-netinst/config/files/root${file}" ]; then
 			mkdir -p "/rootfs$(dirname "${file}")"
-			cp "/bootfs/raspberrypi-ua-netinst/config/files/root${file}" "/rootfs${file}"
+			cp "/rootfs/boot/raspberrypi-ua-netinst/config/files/root${file}" "/rootfs${file}"
 		else
 			mkdir -p "/rootfs/${file}"
 		fi
@@ -481,7 +481,8 @@ variables_reset
 # preset installer variables
 logfile=/tmp/raspberrypi-ua-netinst.log
 rootdev=/dev/mmcblk0
-wlan_configfile=/bootfs/raspberrypi-ua-netinst/config/wpa_supplicant.conf
+tmp_bootfs=/tmp/bootfs
+wlan_configfile=/rootfs/boot/raspberrypi-ua-netinst/config/wpa_supplicant.conf
 final_action=reboot
 
 mkdir -p /proc
@@ -492,9 +493,9 @@ mkdir -p /usr/sbin
 mkdir -p /var/run
 mkdir -p /etc/raspberrypi-ua-netinst
 mkdir -p /rootfs/boot
-mkdir -p /bootfs
-mkdir -p /tmp/
-mkdir -p /opt/busybox/bin/
+mkdir -p /tmp
+mkdir -p "${tmp_bootfs}"
+mkdir -p /opt/busybox/bin
 
 /bin/busybox --install /opt/busybox/bin/
 ln -s /opt/busybox/bin/sh /bin/sh
@@ -519,7 +520,7 @@ sleep 3s
 # set screen blank period to an hour unless consoleblank=0 on cmdline
 # hopefully the install should be done by then
 if grep -qv  "consoleblank=0" /proc/cmdline; then
-    echo -en '\033[9;60]'
+	echo -en '\033[9;60]'
 fi
 
 # Config serial output device
@@ -670,15 +671,15 @@ echo "OK"
 
 # copy boot data to safety
 echo -n "Copying boot files... "
-cp -r /boot/* /bootfs/ || fail
+cp -r /boot/* "${tmp_bootfs}"/ || fail
 echo "OK"
 
 # Read installer-config.txt
-if [ -e "/bootfs/raspberrypi-ua-netinst/config/installer-config.txt" ]; then
+if [ -e "${tmp_bootfs}"/raspberrypi-ua-netinst/config/installer-config.txt ]; then
 	echo "Executing installer-config.txt..."
-	inputfile_sanitize /bootfs/raspberrypi-ua-netinst/config/installer-config.txt
+	inputfile_sanitize "${tmp_bootfs}"/raspberrypi-ua-netinst/config/installer-config.txt
 	# shellcheck disable=SC1091
-	source /bootfs/raspberrypi-ua-netinst/config/installer-config.txt
+	source "${tmp_bootfs}"/raspberrypi-ua-netinst/config/installer-config.txt
 	echo "OK"
 fi
 
@@ -1063,7 +1064,7 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	if [ "${hwrng_support}" = "1" ]; then
 		base_packages="${base_packages},rng-tools"
 	fi
-	if [ "$(find /bootfs/raspberrypi-ua-netinst/config/apt/ -maxdepth 1 -type f -name "*.list" 2>/dev/null | wc -l)" != 0 ]; then
+	if [ "$(find "${tmp_bootfs}"/raspberrypi-ua-netinst/config/apt/ -maxdepth 1 -type f -name "*.list" 2>/dev/null | wc -l)" != 0 ]; then
 		base_packages="${base_packages},apt-transport-https"
 	fi
 	
@@ -1410,17 +1411,18 @@ echo "OK"
 
 echo -n "Copying /boot files in... "
 mount "${bootpartition}" /boot || fail
-cp -r /bootfs/* /boot || fail
+cp -r "${tmp_bootfs}"/* /boot/ || fail
 sync
 umount /boot || fail
+rm -rf "${tmp_bootfs:?}"/ || fail
 echo "OK"
 
 if [ "${kernel_module}" = true ]; then
-  if [ "${rootfstype}" != "ext4" ]; then
-	echo -n "Loading ${rootfstype} module... "
-	modprobe "${rootfstype}" &> /dev/null || fail
-	echo "OK"
-  fi
+	if [ "${rootfstype}" != "ext4" ]; then
+		echo -n "Loading ${rootfstype} module... "
+		modprobe "${rootfstype}" &> /dev/null || fail
+		echo "OK"
+	fi
 fi
 
 echo -n "Initializing / as ${rootfstype}... "
@@ -1434,10 +1436,10 @@ mount "${bootpartition}" /rootfs/boot || fail
 echo "OK"
 
 if [ "${kernel_module}" = true ]; then
-  if [ "${rootfstype}" != "ext4" ]; then
-	mkdir -p /rootfs/etc/initramfs-tools
-	echo "${rootfstype}" >> /rootfs/etc/initramfs-tools/modules
-  fi
+	if [ "${rootfstype}" != "ext4" ]; then
+		mkdir -p /rootfs/etc/initramfs-tools
+		echo "${rootfstype}" >> /rootfs/etc/initramfs-tools/modules
+	fi
 fi
 
 echo
@@ -1484,9 +1486,9 @@ fi
 if [ -n "${root_ssh_pubkey}" ]; then
 	echo -n "  Setting root SSH key"
 	if mkdir -p /rootfs/root/.ssh && chmod 700 /rootfs/root/.ssh; then
-		if [ -f "/bootfs/raspberrypi-ua-netinst/config/files/${root_ssh_pubkey}" ]; then
+		if [ -f "/rootfs/boot/raspberrypi-ua-netinst/config/files/${root_ssh_pubkey}" ]; then
 			echo -n " from file '${root_ssh_pubkey}'... "
-			cp "/bootfs/raspberrypi-ua-netinst/config/files/${root_ssh_pubkey}" /rootfs/root/.ssh/authorized_keys || fail
+			cp "/rootfs/boot/raspberrypi-ua-netinst/config/files/${root_ssh_pubkey}" /rootfs/root/.ssh/authorized_keys || fail
 			echo "OK"
 		else
 			echo -n "... "
@@ -1533,9 +1535,9 @@ if [ -n "${username}" ]; then
 	if [ -n "${user_ssh_pubkey}" ]; then
 		echo -n "  Setting SSH key for '${username}'"
 		if mkdir -p "/rootfs/home/${username}/.ssh" && chmod 700 "/rootfs/home/${username}/.ssh"; then
-			if [ -f "/bootfs/raspberrypi-ua-netinst/config/files/${user_ssh_pubkey}" ]; then
+			if [ -f "/rootfs/boot/raspberrypi-ua-netinst/config/files/${user_ssh_pubkey}" ]; then
 				echo -n " from file '${user_ssh_pubkey}'... "
-				cp "/bootfs/raspberrypi-ua-netinst/config/files/${user_ssh_pubkey}" "/rootfs/home/${username}/.ssh/authorized_keys" || fail
+				cp "/rootfs/boot/raspberrypi-ua-netinst/config/files/${user_ssh_pubkey}" "/rootfs/home/${username}/.ssh/authorized_keys" || fail
 				echo "OK"
 			else
 				echo -n "... "
@@ -1822,9 +1824,9 @@ fi
 # copy apt's sources.list to the target system
 echo "Configuring apt:"
 echo -n "  Configuring Raspbian repository... "
-if [ -e "/bootfs/raspberrypi-ua-netinst/config/apt/sources.list" ]; then
-	sed "s/__RELEASE__/${release_raspbian}/g" "/bootfs/raspberrypi-ua-netinst/config/apt/sources.list" > "/rootfs/etc/apt/sources.list" || fail
-	cp /bootfs/raspberrypi-ua-netinst/config/apt/sources.list /rootfs/etc/apt/sources.list || fail
+if [ -e "/rootfs/boot/raspberrypi-ua-netinst/config/apt/sources.list" ]; then
+	sed "s/__RELEASE__/${release_raspbian}/g" "/rootfs/boot/raspberrypi-ua-netinst/config/apt/sources.list" > "/rootfs/etc/apt/sources.list" || fail
+	cp /rootfs/boot/raspberrypi-ua-netinst/config/apt/sources.list /rootfs/etc/apt/sources.list || fail
 else
 	sed "s/__RELEASE__/${release_raspbian}/g" "/opt/raspberrypi-ua-netinst/res/etc/apt/sources.list" > "/rootfs/etc/apt/sources.list" || fail
 fi
@@ -1841,15 +1843,15 @@ echo -n "  Adding raspberrypi.org GPG key to apt-key... "
 echo "OK"
 
 echo -n "  Configuring RaspberryPi repository... "
-if [ -e "/bootfs/raspberrypi-ua-netinst/config/apt/raspberrypi.org.list" ]; then
-	sed "s/__RELEASE__/${release_base}/g" "/bootfs/raspberrypi-ua-netinst/config/apt/raspberrypi.org.list" > "/rootfs/etc/apt/sources.list.d/raspberrypi.org.list" || fail
+if [ -e "/rootfs/boot/raspberrypi-ua-netinst/config/apt/raspberrypi.org.list" ]; then
+	sed "s/__RELEASE__/${release_base}/g" "/rootfs/boot/raspberrypi-ua-netinst/config/apt/raspberrypi.org.list" > "/rootfs/etc/apt/sources.list.d/raspberrypi.org.list" || fail
 else
 	sed "s/__RELEASE__/${release_base}/g" "/opt/raspberrypi-ua-netinst/res/etc/apt/raspberrypi.org.list" > "/rootfs/etc/apt/sources.list.d/raspberrypi.org.list" || fail
 fi
 echo "OK"
 echo -n "  Configuring RaspberryPi preference... "
-if [ -e "/bootfs/raspberrypi-ua-netinst/config/apt/archive_raspberrypi_org.pref" ]; then
-	sed "s/__RELEASE__/${release_base}/g" "/bootfs/raspberrypi-ua-netinst/config/apt/archive_raspberrypi_org.pref" > "/rootfs/etc/apt/preferences.d/archive_raspberrypi_org.pref" || fail
+if [ -e "/rootfs/boot/raspberrypi-ua-netinst/config/apt/archive_raspberrypi_org.pref" ]; then
+	sed "s/__RELEASE__/${release_base}/g" "/rootfs/boot/raspberrypi-ua-netinst/config/apt/archive_raspberrypi_org.pref" > "/rootfs/etc/apt/preferences.d/archive_raspberrypi_org.pref" || fail
 else
 	sed "s/__RELEASE__/${release_base}/g" "/opt/raspberrypi-ua-netinst/res/etc/apt/archive_raspberrypi_org.pref" > "/rootfs/etc/apt/preferences.d/archive_raspberrypi_org.pref" || fail
 fi
@@ -1978,12 +1980,12 @@ echo "OK"
 
 echo "Preserving original config.txt and kernels..."
 mkdir -p /rootfs/boot/raspberrypi-ua-netinst/reinstall
-cp /bootfs/config.txt /rootfs/boot/raspberrypi-ua-netinst/reinstall/config.txt
-cp /bootfs/kernel.img /rootfs/boot/raspberrypi-ua-netinst/reinstall/kernel.img
-cp /bootfs/kernel7.img /rootfs/boot/raspberrypi-ua-netinst/reinstall/kernel7.img
+cp /rootfs/boot/config.txt /rootfs/boot/raspberrypi-ua-netinst/reinstall/config.txt
+cp /rootfs/boot/kernel.img /rootfs/boot/raspberrypi-ua-netinst/reinstall/kernel.img
+cp /rootfs/boot/kernel7.img /rootfs/boot/raspberrypi-ua-netinst/reinstall/kernel7.img
 echo "Configuring bootloader to start the installed system..."
-if [ -e "/bootfs/raspberrypi-ua-netinst/config/boot/config.txt" ]; then
-	cp /bootfs/raspberrypi-ua-netinst/config/boot/config.txt /rootfs/boot/config.txt
+if [ -e "/rootfs/boot/raspberrypi-ua-netinst/config/boot/config.txt" ]; then
+	cp /rootfs/boot/raspberrypi-ua-netinst/config/boot/config.txt /rootfs/boot/config.txt
 else
 	cp /opt/raspberrypi-ua-netinst/res/boot/config.txt /rootfs/boot/config.txt
 fi
@@ -2207,12 +2209,12 @@ done
 cd "${old_dir}" || fail
 
 # run post install script if exists
-if [ -e "/bootfs/raspberrypi-ua-netinst/config/post-install.txt" ]; then
+if [ -e "/rootfs/boot/raspberrypi-ua-netinst/config/post-install.txt" ]; then
 	echo "================================================="
 	echo "=== Start executing post-install.txt. ==="
-	inputfile_sanitize /bootfs/raspberrypi-ua-netinst/config/post-install.txt
+	inputfile_sanitize /rootfs/boot/raspberrypi-ua-netinst/config/post-install.txt
 	# shellcheck disable=SC1091
-	source /bootfs/raspberrypi-ua-netinst/config/post-install.txt
+	source /rootfs/boot/raspberrypi-ua-netinst/config/post-install.txt
 	echo "=== Finished executing post-install.txt. ==="
 	echo "================================================="
 fi
