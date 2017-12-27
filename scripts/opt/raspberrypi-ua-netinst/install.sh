@@ -482,7 +482,7 @@ variables_reset
 logfile=/tmp/raspberrypi-ua-netinst.log
 rootdev=/dev/mmcblk0
 tmp_bootfs=/tmp/bootfs
-wlan_configfile=/rootfs/boot/raspberrypi-ua-netinst/config/wpa_supplicant.conf
+wlan_configfile=/boot/raspberrypi-ua-netinst/config/wpa_supplicant.conf
 final_action=reboot
 
 mkdir -p /proc
@@ -774,8 +774,8 @@ echo -n "Unmounting boot partition... "
 umount /boot || fail
 echo "OK"
 
-if [ -e "${wlan_configfile}" ]; then
-	inputfile_sanitize "${wlan_configfile}"
+if [ -e "${tmp_bootfs}"/"${wlan_configfile}" ]; then
+	inputfile_sanitize "${tmp_bootfs}"/"${wlan_configfile}"
 fi
 
 echo
@@ -791,7 +791,7 @@ if [ "${ip_addr}" != "dhcp" ]; then
 fi
 
 if echo "${ifname}" | grep -q "wlan"; then
-	if [ ! -e "${wlan_configfile}" ]; then
+	if [ ! -e "${tmp_bootfs}/${wlan_configfile}" ]; then
 		wlan_configfile=/tmp/wpa_supplicant.conf
 		echo "  wlan_ssid = ${wlan_ssid}"
 		echo "  wlan_psk = ${wlan_psk}"
@@ -803,8 +803,8 @@ if echo "${ifname}" | grep -q "wlan"; then
 			echo "}"
 		} > ${wlan_configfile}
 	fi
-	if [ -n "${wlan_country}" ] && ! grep -q "country=" ${wlan_configfile}; then
-		echo "country=${wlan_country}" >> ${wlan_configfile}
+	if [ -n "${wlan_country}" ] && ! grep -q "country=" "${wlan_configfile}"; then
+		echo "country=${wlan_country}" >> "${wlan_configfile}"
 	fi
 fi
 
