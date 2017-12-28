@@ -13,7 +13,6 @@ variables_reset() {
 	rootdev=
 	rootpartition=
 	wlan_configfile=
-	installer_retries=
 	installer_fail_blocking=
 	cmdline_custom=
 
@@ -78,6 +77,10 @@ variables_reset() {
 	cmdline=
 	rootfstype=
 	final_action=
+	installer_retries=
+	installer_networktimeout=
+	installer_pkg_updateretries=
+	installer_pkg_downloadretries=
 	hwrng_support=
 	watchdog_enable=
 	quiet_boot=
@@ -149,6 +152,10 @@ variables_set_defaults() {
 	variable_set "cmdline" "dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 elevator=deadline fsck.repair=yes"
 	variable_set "rootfstype" "f2fs"
 	variable_set "final_action" "reboot"
+	variable_set "installer_retries" "3"
+	variable_set "installer_networktimeout" "15"
+	variable_set "installer_pkg_updateretries" "3"
+	variable_set "installer_pkg_downloadretries" "5"
 	variable_set "hwrng_support" "1"
 	variable_set "watchdog_enable" "0"
 	variable_set "quiet_boot" "0"
@@ -247,21 +254,21 @@ fail() {
 	sed '/rootpw/d;/userpw/d' ${logfile} > /boot/raspberrypi-ua-netinst/error-$(date +%Y%m%dT%H%M%S).log
 	sync
 
-	if [ -e "/boot/raspberrypi-ua-netinst/config/installer-retries.txt" ]; then
-		inputfile_sanitize /boot/raspberrypi-ua-netinst/config/installer-retries.txt
+	if [ -e "${installer_retriesfile}" ]; then
+		inputfile_sanitize "${installer_retriesfile}"
 		# shellcheck disable=SC1091
-		source /boot/raspberrypi-ua-netinst/config/installer-retries.txt
+		source "${installer_retriesfile}"
 	fi
 	variable_set "installer_retries" "3"
 	installer_retries=$((installer_retries-1))
 	if [ "${installer_retries}" -ge "0" ]; then
-		echo "installer_retries=${installer_retries}" > /boot/raspberrypi-ua-netinst/config/installer-retries.txt
+		echo "installer_retries=${installer_retries}" > "${installer_retriesfile}"
 		sync
 	fi
 	if [ "${installer_retries}" -le "0" ] || [ "${installer_fail_blocking}" = "1" ]; then
 		if [ "${installer_retries}" -le "0" ]; then
 			echo "  The maximum number of retries is reached!"
-			echo "  Check the logfiles for errors. Then delete or edit \"installer-retries.txt\" in installer config folder to (re)set the counter."
+			echo "  Check the logfiles for errors. Then delete or edit \"installer-retries.txt\" in installer folder to (re)set the counter."
 		fi
 		echo "  The system is stopped to prevent an infinite loop."
 		while true; do
@@ -481,6 +488,7 @@ variables_reset
 
 # preset installer variables
 logfile=/tmp/raspberrypi-ua-netinst.log
+installer_retriesfile=/boot/raspberrypi-ua-netinst/installer-retries.txt
 rootdev=/dev/mmcblk0
 tmp_bootfs=/tmp/bootfs
 wlan_configfile=/boot/raspberrypi-ua-netinst/config/wpa_supplicant.conf
@@ -828,11 +836,11 @@ if [ -n "${drivers_to_load}" ]; then
 fi
 
 echo -n "Waiting for ${ifname}... "
-for i in $(seq 1 15); do
+for i in $(seq 1 "${installer_networktimeout}"); do
 	if ifconfig "${ifname}" &>/dev/null; then
 		break
 	fi
-	if [ "${i}" -eq 10 ]; then
+	if [ "${i}" -eq "${installer_networktimeout}" ]; then
 		echo "FAILED"
 		fail
 	fi
@@ -1464,7 +1472,7 @@ fi
 
 echo
 echo "Starting install process..."
-for i in $(seq 1 3); do
+for i in $(seq 1 "${installer_pkg_downloadretries}"); do
 	if [ -n "${mirror_cache}" ]; then
 		export http_proxy="http://${mirror_cache}/"
 	fi
@@ -1475,12 +1483,12 @@ for i in $(seq 1 3); do
 		break
 	else
 		unset http_proxy
-		if [ "${i}" -eq 3 ]; then
+		if [ "${i}" -eq "${installer_pkg_downloadretries}" ]; then
 			echo
 			echo "  ERROR: ${cdebootstrap_exitcode}"
 			fail
 		else
-			echo "  ERROR: ${cdebootstrap_exitcode}, trying again ($((i+1))/3)..."
+			echo "  ERROR: ${cdebootstrap_exitcode}, trying again ($((i+1))/${installer_pkg_downloadretries})..."
 		fi
 	fi
 done
@@ -1939,17 +1947,17 @@ cd "${old_dir}" || fail
 
 echo
 echo -n "Updating package lists... "
-for i in $(seq 1 3); do
+for i in $(seq 1 "${installer_pkg_updateretries}"); do
 	if chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" update &>/dev/null; then
 		echo "OK"
 		break
 	else
 		update_exitcode="${?}"
-		if [ "${i}" -eq 3 ]; then
+		if [ "${i}" -eq "${installer_pkg_updateretries}" ]; then
 			echo "ERROR: ${update_exitcode}, FAILED !"
 			fail
 		else
-			echo -n "ERROR: ${update_exitcode}, trying again ($((i+1))/3)... "
+			echo -n "ERROR: ${update_exitcode}, trying again ($((i+1))/${installer_pkg_updateretries})... "
 		fi
 	fi
 done
@@ -1965,18 +1973,18 @@ if [ "${kernel_module}" = true ]; then
 
 	echo
 	echo "Downloading packages..."
-	for i in $(seq 1 5); do
+	for i in $(seq 1 "${installer_pkg_downloadretries}"); do
 		eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y -d install "${packages_postinstall}" 2>&1 | output_filter
 		download_exitcode="${PIPESTATUS[0]}"
 		if [ "${download_exitcode}" -eq 0 ]; then
 			echo "OK"
 			break
 		else
-			if [ "${i}" -eq 3 ]; then
+			if [ "${i}" -eq "${installer_pkg_downloadretries}" ]; then
 				echo "ERROR: ${download_exitcode}, FAILED !"
 				fail
 			else
-				echo -n "ERROR: ${download_exitcode}, trying again ($((i+1))/5)... "
+				echo -n "ERROR: ${download_exitcode}, trying again ($((i+1))/${installer_pkg_downloadretries})... "
 			fi
 		fi
 	done
@@ -2268,7 +2276,7 @@ else
 fi
 
 # Cleanup installer files
-echo "installer_retries=3" > /rootfs/boot/raspberrypi-ua-netinst/config/installer-retries.txt
+rm -f "/rootfs${installer_retriesfile}"
 if [ "${cleanup}" = "1" ]; then
 	echo -n "Removing installer files... "
 	rm -rf /rootfs/boot/raspberrypi-ua-netinst/

@@ -111,7 +111,7 @@
 |---------------------|---------|---------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `usbroot` | `0` | `0`/`1` | Set to "1" to install to first USB disk. |
 | `usbboot` | `0` | `0`/`1` | Set to "1" to boot from first USB disk. This is usually used with 'usbroot=1' and works with model 3 (BCM2837) only. If this is used for the first time, it has to be done from SD-card and the system will shut down after success. Then the SD-card has to be removed before rebooting. |
-| `rootfstype` | f2fs | `ext4`/  `f2fs`/  `btrfs` | Sets the file system of the root partition. |
+| `rootfstype` | `f2fs` | `ext4`/  `f2fs`/  `btrfs` | Sets the file system of the root partition. |
 | `boot_volume_label` |  |  | Sets the volume name of the boot partition. The volume name can be up to 11 characters long. The label is used by most OSes (Windows, Mac OSX and Linux) to identify the SD-card on the desktop and can be useful when using multiple SD-cards. |
 | `root_volume_label` |  |  | Sets the volume name of the root partition. The volume name can be up to 16 characters long. |
 | `bootsize` | `+128M` |  | /boot partition size in megabytes, provide it in the form '+\<number\>M' (without quotes) |
@@ -130,6 +130,10 @@
 | `rootfs_install_mount_options` |  |  |  |
 | `rootfs_mount_options` |  |  |  |
 | `final_action` | `reboot` | `reboot`/  `poweroff`/  `halt`/  `console` | Action at the end of install. |
+| `installer_retries` | `3` |  | Number of retries if installation fails. |
+| `installer_networktimeout` | `15` |  | Timeout in seconds for network interface initialization. |
+| `installer_pkg_updateretries` | `3` |  | Number of retries if package update fails. |
+| `installer_pkg_downloadretries` | `5` |  | Number of retries if package download fails. |
 | `hwrng_support` | `1` | `0`/`1` | Install support for the ARM hardware random number generator. The default is enabled (1) on all presets. Users requiring a `base` install are advised that `hwrng_support=0` must be added in `installer-config.txt` if HWRNG support is undesirable. |
 | `watchdog_enable` | `0` | `0`/`1` | Set to "1" to enable and use the hardware watchdog. |
 | `cdebootstrap_cmdline` |  |  |  |
