@@ -113,6 +113,7 @@
 | `usbboot` | `0` | `0`/`1` | Set to "1" to boot from first USB disk. This is usually used with 'usbroot=1' and works with model 3 (BCM2837) only. If this is used for the first time, it has to be done from SD-card and the system will shut down after success. Then the SD-card has to be removed before rebooting. |
 | `rootfstype` | f2fs | `ext4`/  `f2fs`/  `btrfs` | Sets the file system of the root partition. |
 | `boot_volume_label` |  |  | Sets the volume name of the boot partition. The volume name can be up to 11 characters long. The label is used by most OSes (Windows, Mac OSX and Linux) to identify the SD-card on the desktop and can be useful when using multiple SD-cards. |
+| `root_volume_label` |  |  | Sets the volume name of the root partition. The volume name can be up to 16 characters long. |
 | `bootsize` | `+128M` |  | /boot partition size in megabytes, provide it in the form '+\<number\>M' (without quotes) |
 | `bootoffset` | `8192` |  | position in sectors where the boot partition should start. Valid values are > 2048. a bootoffset of 8192 is equal to 4MB and that should make for proper alignment |
 

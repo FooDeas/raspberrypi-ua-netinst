@@ -26,6 +26,7 @@ variables_reset() {
 	release=
 	hostname=
 	boot_volume_label=
+	root_volume_label=
 	domainname=
 	rootpw=
 	user_ssh_pubkey=
@@ -961,25 +962,43 @@ if [ -n "${online_config}" ]; then
 	echo "OK"
 fi
 
-# prepare rootfs mount options
+# prepare rootfs options
 case "${rootfstype}" in
 	"btrfs")
 		kernel_module=true
-		rootfs_mkfs_options=${rootfs_mkfs_options:-'-f'}
-		rootfs_install_mount_options=${rootfs_install_mount_options:-'noatime'}
-		rootfs_mount_options=${rootfs_mount_options:-'noatime'}
+		if [ -z "${rootfs_mkfs_options}" ]; then
+			if [ -n "${root_volume_label}" ]; then
+				rootfs_mkfs_options="-L ${root_volume_label} -f"
+			else
+				rootfs_mkfs_options="-f"
+			fi
+		fi
+		rootfs_install_mount_options="noatime"
+		rootfs_mount_options="noatime"
 	;;
 	"ext4")
 		kernel_module=true
-		rootfs_mkfs_options=${rootfs_mkfs_options:-''}
-		rootfs_install_mount_options=${rootfs_install_mount_options:-'noatime,data=writeback,nobarrier,noinit_itable'}
-		rootfs_mount_options=${rootfs_mount_options:-'errors=remount-ro,noatime'}
+		if [ -z "${rootfs_mkfs_options}" ]; then
+			if [ -n "${root_volume_label}" ]; then
+				rootfs_mkfs_options="-L ${root_volume_label}"
+			else
+				rootfs_mkfs_options=
+			fi
+		fi
+		rootfs_install_mount_options="noatime,data=writeback,nobarrier,noinit_itable"
+		rootfs_mount_options="errors=remount-ro,noatime"
 	;;
 	"f2fs")
 		kernel_module=true
-		rootfs_mkfs_options=${rootfs_mkfs_options:-''}
-		rootfs_install_mount_options=${rootfs_install_mount_options:-'noatime'}
-		rootfs_mount_options=${rootfs_mount_options:-'noatime'}
+		if [ -z "${rootfs_mkfs_options}" ]; then
+			if [ -n "${root_volume_label}" ]; then
+				rootfs_mkfs_options="-l ${root_volume_label}"
+			else
+				rootfs_mkfs_options=
+			fi
+		fi
+		rootfs_install_mount_options="noatime"
+		rootfs_mount_options="noatime"
 	;;
 	*)
 		echo "Unknown filesystem specified: ${rootfstype}"
@@ -1209,6 +1228,7 @@ echo "  userperms_sound = ${userperms_sound}"
 echo "  cdebootstrap_cmdline = ${cdebootstrap_cmdline}"
 echo "  packages_postinstall = ${packages_postinstall}"
 echo "  boot_volume_label = ${boot_volume_label}"
+echo "  root_volume_label = ${root_volume_label}"
 echo "  bootsize = ${bootsize}"
 echo "  bootoffset = ${bootoffset}"
 echo "  rootsize = ${rootsize}"
