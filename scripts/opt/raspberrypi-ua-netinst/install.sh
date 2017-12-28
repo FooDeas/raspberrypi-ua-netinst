@@ -251,12 +251,12 @@ fail() {
 		fail_boot_mounted=true
 	fi
 	# root and user passwords are deleted from logfile before it is written to the filesystem
-	sed '/rootpw/d;/userpw/d' ${logfile} > /boot/raspberrypi-ua-netinst/error-$(date +%Y%m%dT%H%M%S).log
+	sed "/rootpw/d;/userpw/d" "${logfile}" > /boot/raspberrypi-ua-netinst/error-"$(date +%Y%m%dT%H%M%S)".log
 	sync
 
 	if [ -e "${installer_retriesfile}" ]; then
 		inputfile_sanitize "${installer_retriesfile}"
-		# shellcheck disable=SC1091
+		# shellcheck disable=SC1090
 		source "${installer_retriesfile}"
 	fi
 	variable_set "installer_retries" "3"
@@ -687,7 +687,7 @@ echo "OK"
 if [ -e "${tmp_bootfs}"/raspberrypi-ua-netinst/config/installer-config.txt ]; then
 	echo "Executing installer-config.txt..."
 	inputfile_sanitize "${tmp_bootfs}"/raspberrypi-ua-netinst/config/installer-config.txt
-	# shellcheck disable=SC1091
+	# shellcheck disable=SC1090
 	source "${tmp_bootfs}"/raspberrypi-ua-netinst/config/installer-config.txt
 	echo "OK"
 fi
@@ -800,7 +800,7 @@ if [ "${ip_addr}" != "dhcp" ]; then
 fi
 
 if echo "${ifname}" | grep -q "wlan"; then
-	if [ ! -e "${tmp_bootfs}/${wlan_configfile}" ]; then
+	if [ ! -e "${tmp_bootfs}"/"${wlan_configfile}" ]; then
 		wlan_configfile=/tmp/wpa_supplicant.conf
 		echo "  wlan_ssid = ${wlan_ssid}"
 		echo "  wlan_psk = ${wlan_psk}"
@@ -2271,7 +2271,7 @@ if [ "${cleanup_logfiles}" = "1" ]; then
 else
 	sleep 1
 	# root and user passwords are deleted from logfile before it is written to the filesystem
-	sed '/rootpw/d;/userpw/d' ${logfile} > /rootfs/var/log/raspberrypi-ua-netinst.log
+	sed "/rootpw/d;/userpw/d" "${logfile}" > /rootfs/var/log/raspberrypi-ua-netinst.log
 	chmod 0640 /rootfs/var/log/raspberrypi-ua-netinst.log
 fi
 
@@ -2296,16 +2296,16 @@ fi
 
 case ${final_action} in
 	poweroff)
-		echo -n "Finished! Powering off in 5 seconds..."
+		echo -n "Finished! Powering off in 5 seconds... "
 		;;
 	halt)
-		echo -n "Finished! Halting in 5 seconds..."
+		echo -n "Finished! Halting in 5 seconds... "
 		;;
 	console)
 		echo -n "Finished!"
 		;;
 	*)
-		echo -n "Finished! Rebooting to installed system in 5 seconds..."
+		echo -n "Finished! Rebooting to installed system in 5 seconds... "
 		final_action=reboot
 esac
 
