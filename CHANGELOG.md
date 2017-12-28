@@ -3,10 +3,18 @@
 ## raspberrypi-ua-netinst v2.0.1
 
 - moved `cpufrequtils` from base to minimal preset
+- added or changed configuration variables
+  - set root partition label
+  - set installation retries
+  - set network timeout
+  - set package update retries
+  - set package download retries
+- improved memory usage
 
 **Bugfixes:**
 
 - fix RTC support
+- fix custom wpa_supplicant.conf
 
 ## raspberrypi-ua-netinst v2.0.0
 
