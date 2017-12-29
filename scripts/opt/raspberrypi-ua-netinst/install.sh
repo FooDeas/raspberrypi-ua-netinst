@@ -495,9 +495,9 @@ variables_reset
 logfile=/tmp/raspberrypi-ua-netinst.log
 installer_retriesfile=/boot/raspberrypi-ua-netinst/installer-retries.txt
 installer_swapfile=/installer-swap
+wlan_configfile=/tmp/wpa_supplicant.conf
 rootdev=/dev/mmcblk0
 tmp_bootfs=/tmp/bootfs
-wlan_configfile=/boot/raspberrypi-ua-netinst/config/wpa_supplicant.conf
 final_action=reboot
 
 mkdir -p /proc
@@ -789,10 +789,6 @@ echo -n "Unmounting boot partition... "
 umount /boot || fail
 echo "OK"
 
-if [ -e "${tmp_bootfs}"/"${wlan_configfile}" ]; then
-	inputfile_sanitize "${tmp_bootfs}"/"${wlan_configfile}"
-fi
-
 echo
 echo "Network configuration:"
 echo "  ifname = ${ifname}"
@@ -806,8 +802,10 @@ if [ "${ip_addr}" != "dhcp" ]; then
 fi
 
 if echo "${ifname}" | grep -q "wlan"; then
-	if [ ! -e "${tmp_bootfs}"/"${wlan_configfile}" ]; then
-		wlan_configfile=/tmp/wpa_supplicant.conf
+	if [ -e "${tmp_bootfs}"/raspberrypi-ua-netinst/config/wpa_supplicant.conf ]; then
+		cp "${tmp_bootfs}"/raspberrypi-ua-netinst/config/wpa_supplicant.conf "${wlan_configfile}"
+		inputfile_sanitize "${wlan_configfile}"
+	else
 		echo "  wlan_ssid = ${wlan_ssid}"
 		echo "  wlan_psk = ${wlan_psk}"
 		{
