@@ -1084,11 +1084,6 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	# base
 	base_packages="kmod"
 	base_packages="${custom_packages},${base_packages}"
-	base_packages_postinstall=raspberrypi-bootloader
-	if [ "${release}" != "wheezy" ]; then
-		base_packages_postinstall="${base_packages_postinstall},raspberrypi-kernel"
-	fi
-	base_packages_postinstall="${custom_packages_postinstall},${base_packages_postinstall}"
 	if [ "${init_system}" = "systemd" ]; then
 		base_packages="${base_packages},libpam-systemd"
 	fi
@@ -1098,6 +1093,11 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	if [ "$(find "${tmp_bootfs}"/raspberrypi-ua-netinst/config/apt/ -maxdepth 1 -type f -name "*.list" 2> /dev/null | wc -l)" != 0 ]; then
 		base_packages="${base_packages},apt-transport-https"
 	fi
+	base_packages_postinstall=raspberrypi-bootloader
+	if [ "${release}" != "wheezy" ]; then
+		base_packages_postinstall="${base_packages_postinstall},raspberrypi-kernel"
+	fi
+	base_packages_postinstall="${custom_packages_postinstall},${base_packages_postinstall}"
 	
 	# minimal
 	minimal_packages="cpufrequtils,ifupdown,net-tools,openssh-server,dosfstools"
@@ -1107,21 +1107,21 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	if [ -z "${rtc}" ]; then
 		minimal_packages="${minimal_packages},fake-hwclock"
 	fi
+	minimal_packages_postinstall="${base_packages_postinstall},${minimal_packages_postinstall}"
 	if [ "${release}" != "wheezy" ]; then
 		minimal_packages_postinstall="${minimal_packages_postinstall},raspberrypi-sys-mods"
 	fi
-	minimal_packages_postinstall="${base_packages_postinstall},${minimal_packages_postinstall}"
 	if echo "${ifname}" | grep -q "wlan"; then
 		minimal_packages_postinstall="${minimal_packages_postinstall},firmware-brcm80211"
 	fi
 
 	# server
 	server_packages="vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,tzdata,less,man-db,logrotate,bash-completion,console-setup,apt-utils"
-	server_packages_postinstall="libraspberrypi-bin,raspi-copies-and-fills"
-	server_packages_postinstall="${minimal_packages_postinstall},${server_packages_postinstall}"
 	if [ "${init_system}" = "systemd" ]; then
 		server_packages="${server_packages},systemd-sysv"
 	fi
+	server_packages_postinstall="${minimal_packages_postinstall},${server_packages_postinstall}"
+	server_packages_postinstall="${server_packages_postinstall},libraspberrypi-bin,raspi-copies-and-fills"
 
 	# cleanup package variables used by cdebootstrap_cmdline
 	variable_sanitize base_packages
