@@ -494,7 +494,7 @@ variables_reset
 # preset installer variables
 logfile=/tmp/raspberrypi-ua-netinst.log
 installer_retriesfile=/boot/raspberrypi-ua-netinst/installer-retries.txt
-installer_swapfile=/installer-swap
+installer_swapfile=/rootfs/installer-swap
 wlan_configfile=/tmp/wpa_supplicant.conf
 rootdev=/dev/mmcblk0
 tmp_bootfs=/tmp/bootfs
