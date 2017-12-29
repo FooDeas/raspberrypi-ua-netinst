@@ -728,6 +728,7 @@ mv raspberrypi-ua-netinst.cpio.gz bootfs/raspberrypi-ua-netinst/
 {
 	echo "[all]"
 	echo "initramfs raspberrypi-ua-netinst/raspberrypi-ua-netinst.cpio.gz"
+	echo "gpu_mem=16"
 	echo "[pi3]"
 	echo "enable_uart=1"
 } >> bootfs/config.txt
