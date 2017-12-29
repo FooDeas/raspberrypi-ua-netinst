@@ -1398,7 +1398,7 @@ touch "${FDISK_SCHEME_USB_ROOT}"
 
 echo "Waiting for ${rootdev}... "
 for i in $(seq 1 10); do
-	if fdisk -l "${rootdev}" 2> &1 | grep -F Disk | sed 's/^/  /'; then
+	if fdisk -l "${rootdev}" 2>&1 | grep -F Disk | sed 's/^/  /'; then
 		echo "OK"
 		break
 	fi
@@ -1490,7 +1490,7 @@ for i in $(seq 1 "${installer_pkg_downloadretries}"); do
 	if [ -n "${mirror_cache}" ]; then
 		export http_proxy="http://${mirror_cache}/"
 	fi
-	eval cdebootstrap-static --arch=armhf "${cdebootstrap_cmdline}" "${release_raspbian}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg 2> &1 | output_filter
+	eval cdebootstrap-static --arch=armhf "${cdebootstrap_cmdline}" "${release_raspbian}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg 2>&1 | output_filter
 	cdebootstrap_exitcode="${PIPESTATUS[0]}"
 	if [ "${cdebootstrap_exitcode}" -eq 0 ]; then
 		unset http_proxy
@@ -1928,7 +1928,7 @@ for keyfile in ./*.key
 do
 	if [ -e "${keyfile}" ]; then
 		echo "  Adding key '${keyfile}' to apt..."
-		(chroot /rootfs /usr/bin/apt-key add - 2> &1) < "${keyfile}" | sed 's/^/    /'
+		(chroot /rootfs /usr/bin/apt-key add - 2>&1) < "${keyfile}" | sed 's/^/    /'
 		if [ "${PIPESTATUS[0]}" -ne 0 ]; then
 			fail
 		fi
@@ -1988,7 +1988,7 @@ if [ "${kernel_module}" = true ]; then
 	echo
 	echo "Downloading packages..."
 	for i in $(seq 1 "${installer_pkg_downloadretries}"); do
-		eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y -d install "${packages_postinstall}" 2> &1 | output_filter
+		eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y -d install "${packages_postinstall}" 2>&1 | output_filter
 		download_exitcode="${PIPESTATUS[0]}"
 		if [ "${download_exitcode}" -eq 0 ]; then
 			echo "OK"
@@ -2005,7 +2005,7 @@ if [ "${kernel_module}" = true ]; then
 
 	echo
 	echo "Installing kernel, bootloader (=firmware) and user packages..."
-	eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y install "${packages_postinstall}" 2> &1 | output_filter
+	eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y install "${packages_postinstall}" 2>&1 | output_filter
 	if [ "${PIPESTATUS[0]}" -eq 0 ]; then
 		echo "OK"
 	else
