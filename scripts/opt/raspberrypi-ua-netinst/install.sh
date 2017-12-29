@@ -1467,12 +1467,15 @@ mkdir /rootfs/boot || fail
 mount "${bootpartition}" /rootfs/boot || fail
 echo "OK"
 
-echo -n "Creating temporary swap file... "
-dd if=/dev/zero of="${installer_swapfile}" status=none bs=4096 count=65536 || fail
-chmod 600 "${installer_swapfile}"
-mkswap "${installer_swapfile}" > /dev/null
-swapon "${installer_swapfile}" || fail
-echo "OK"
+# use 256MB file based swap during installation if needed
+if [ "$(free -m | awk '/^Mem:/{print $2}')" -lt "384" ]; then
+	echo -n "Creating temporary swap file... "
+	dd if=/dev/zero of="${installer_swapfile}" status=none bs=4096 count=65536 || fail
+	chmod 600 "${installer_swapfile}"
+	mkswap "${installer_swapfile}" > /dev/null
+	swapon "${installer_swapfile}" || fail
+	echo "OK"
+fi
 
 if [ "${kernel_module}" = true ]; then
 	if [ "${rootfstype}" != "ext4" ]; then
@@ -2288,8 +2291,10 @@ fi
 
 # Cleanup installer files
 rm -f "/rootfs${installer_retriesfile}"
-swapoff "${installer_swapfile}"
-rm -f "${installer_swapfile}"
+if [ -e "${installer_swapfile}" ]; then
+	swapoff "${installer_swapfile}"
+	rm -f "${installer_swapfile}"
+fi
 if [ "${cleanup}" = "1" ]; then
 	echo -n "Removing installer files... "
 	rm -rf /rootfs/boot/raspberrypi-ua-netinst/
