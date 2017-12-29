@@ -279,7 +279,7 @@ fail() {
 	fi
 
 	if [ -e "${installer_swapfile}" ]; then
-		swapoff "${installer_swapfile}" 2>/dev/null
+		swapoff "${installer_swapfile}" 2> /dev/null
 		rm -f "${installer_swapfile}"
 	fi
 
@@ -843,7 +843,7 @@ fi
 
 echo -n "Waiting for ${ifname}... "
 for i in $(seq 1 "${installer_networktimeout}"); do
-	if ifconfig "${ifname}" &>/dev/null; then
+	if ifconfig "${ifname}" &> /dev/null; then
 		break
 	fi
 	if [ "${i}" -eq "${installer_networktimeout}" ]; then
@@ -876,7 +876,7 @@ fi
 if [ "${ip_addr}" = "dhcp" ]; then
 	echo -n "Configuring ${ifname} with DHCP... "
 
-	if udhcpc -i "${ifname}" &>/dev/null; then
+	if udhcpc -i "${ifname}" &> /dev/null; then
 		ifconfig "${ifname}" | grep -F addr: | awk '{print $2}' | cut -d: -f2
 	else
 		echo "FAILED"
@@ -900,7 +900,7 @@ date_set=false
 if [ "${date_set}" = "false" ]; then
 	# set time with ntpdate
 	echo -n "Set time using ntpdate... "
-	if ntpdate-debian -b &>/dev/null; then
+	if ntpdate-debian -b &> /dev/null; then
 		echo "OK"
 		date_set=true
 	fi
@@ -921,7 +921,7 @@ if [ "${date_set}" = "false" ]; then
 		echo -n "Set time using timeserver "
 		for ts in ${timeservers}; do
 			echo -n "'${ts}'... "
-			if rdate "${ts}" &>/dev/null; then
+			if rdate "${ts}" &> /dev/null; then
 				echo "OK"
 				date_set=true
 				break
@@ -940,7 +940,7 @@ if [ "${date_set}" = "false" ]; then
 		for ts_http in ${timeservers_http}; do
 			echo -n "'${ts_http}'... "
 			http_time="$(wget -q -O - "${ts_http}")"
-			if date -u -s "${http_time}" &>/dev/null; then
+			if date -u -s "${http_time}" &> /dev/null; then
 				echo "OK"
 				date_set=true
 				break
@@ -965,7 +965,7 @@ echo
 
 if [ -n "${online_config}" ]; then
 	echo -n "Downloading online config from ${online_config}... "
-	wget -q -O /opt/raspberrypi-ua-netinst/installer-config_online.txt "${online_config}" &>/dev/null || fail
+	wget -q -O /opt/raspberrypi-ua-netinst/installer-config_online.txt "${online_config}" &> /dev/null || fail
 	echo "OK"
 
 	echo -n "Executing online-config.txt... "
@@ -1097,7 +1097,7 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	if [ "${hwrng_support}" = "1" ]; then
 		base_packages="${base_packages},rng-tools"
 	fi
-	if [ "$(find "${tmp_bootfs}"/raspberrypi-ua-netinst/config/apt/ -maxdepth 1 -type f -name "*.list" 2>/dev/null | wc -l)" != 0 ]; then
+	if [ "$(find "${tmp_bootfs}"/raspberrypi-ua-netinst/config/apt/ -maxdepth 1 -type f -name "*.list" 2> /dev/null | wc -l)" != 0 ]; then
 		base_packages="${base_packages},apt-transport-https"
 	fi
 	
@@ -1300,7 +1300,7 @@ echo
 
 if [ -n "${rtc}" ] ; then
 	echo -n "Checking hardware clock access... "
-	/opt/busybox/bin/hwclock --show &>/dev/null || fail
+	/opt/busybox/bin/hwclock --show &> /dev/null || fail
 	echo "OK"
 	echo
 fi
@@ -1400,7 +1400,7 @@ touch "${FDISK_SCHEME_USB_ROOT}"
 
 echo "Waiting for ${rootdev}... "
 for i in $(seq 1 10); do
-	if fdisk -l "${rootdev}" 2>&1 | grep -F Disk | sed 's/^/  /'; then
+	if fdisk -l "${rootdev}" 2> &1 | grep -F Disk | sed 's/^/  /'; then
 		echo "OK"
 		break
 	fi
@@ -1417,18 +1417,18 @@ done
 
 if [ "${rootdev}" = "${bootdev}" ]; then
 	echo -n "Applying new partition table... "
-	dd if=/dev/zero of="${bootdev}" bs=512 count=1 &>/dev/null
-	fdisk "${bootdev}" &>/dev/null < "${FDISK_SCHEME_SD_ONLY}"
+	dd if=/dev/zero of="${bootdev}" status=none bs=512 count=1
+	fdisk "${bootdev}" &> /dev/null < "${FDISK_SCHEME_SD_ONLY}"
 	echo "OK"
 else
 	echo -n "Applying new partition table for ${bootdev}... "
-	dd if=/dev/zero of="${bootdev}" bs=512 count=1 &>/dev/null
-	fdisk "${bootdev}" &>/dev/null < "${FDISK_SCHEME_SD_BOOT}"
+	dd if=/dev/zero of="${bootdev}" status=none bs=512 count=1
+	fdisk "${bootdev}" &> /dev/null < "${FDISK_SCHEME_SD_BOOT}"
 	echo "OK"
 
 	echo -n "Applying new partition table for ${rootdev}... "
-	dd if=/dev/zero of="${rootdev}" bs=512 count=1 &>/dev/null
-	fdisk "${rootdev}" &>/dev/null < "${FDISK_SCHEME_USB_ROOT}"
+	dd if=/dev/zero of="${rootdev}" status=none bs=512 count=1
+	fdisk "${rootdev}" &> /dev/null < "${FDISK_SCHEME_USB_ROOT}"
 	echo "OK"
 fi
 
@@ -1437,9 +1437,9 @@ mdev -s
 
 echo -n "Initializing /boot as vfat... "
 if [ -z "${boot_volume_label}" ]; then
-	mkfs.vfat "${bootpartition}" &>/dev/null || fail
+	mkfs.vfat "${bootpartition}" &> /dev/null || fail
 else
-	mkfs.vfat -n "${boot_volume_label}" "${bootpartition}" &>/dev/null || fail
+	mkfs.vfat -n "${boot_volume_label}" "${bootpartition}" &> /dev/null || fail
 fi
 echo "OK"
 
@@ -1489,7 +1489,7 @@ for i in $(seq 1 "${installer_pkg_downloadretries}"); do
 	if [ -n "${mirror_cache}" ]; then
 		export http_proxy="http://${mirror_cache}/"
 	fi
-	eval cdebootstrap-static --arch=armhf "${cdebootstrap_cmdline}" "${release_raspbian}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg 2>&1 | output_filter
+	eval cdebootstrap-static --arch=armhf "${cdebootstrap_cmdline}" "${release_raspbian}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg 2> &1 | output_filter
 	cdebootstrap_exitcode="${PIPESTATUS[0]}"
 	if [ "${cdebootstrap_exitcode}" -eq 0 ]; then
 		unset http_proxy
@@ -1874,13 +1874,13 @@ fi
 echo "OK"
 # if __RELEASE__ is still present, something went wrong
 echo -n "  Checking Raspbian repository entry... "
-if grep -l '__RELEASE__' /rootfs/etc/apt/sources.list >/dev/null; then
+if grep -l '__RELEASE__' /rootfs/etc/apt/sources.list > /dev/null; then
 	fail
 else
 	echo "OK"
 fi
 echo -n "  Adding raspberrypi.org GPG key to apt-key... "
-(chroot /rootfs /usr/bin/apt-key add - &>/dev/null) < /usr/share/keyrings/raspberrypi.gpg.key || fail
+(chroot /rootfs /usr/bin/apt-key add - &> /dev/null) < /usr/share/keyrings/raspberrypi.gpg.key || fail
 echo "OK"
 
 echo -n "  Configuring RaspberryPi repository... "
@@ -1927,7 +1927,7 @@ for keyfile in ./*.key
 do
 	if [ -e "${keyfile}" ]; then
 		echo "  Adding key '${keyfile}' to apt..."
-		(chroot /rootfs /usr/bin/apt-key add - 2>&1) < "${keyfile}" | sed 's/^/    /'
+		(chroot /rootfs /usr/bin/apt-key add - 2> &1) < "${keyfile}" | sed 's/^/    /'
 		if [ "${PIPESTATUS[0]}" -ne 0 ]; then
 			fail
 		fi
@@ -1961,7 +1961,7 @@ cd "${old_dir}" || fail
 echo
 echo -n "Updating package lists... "
 for i in $(seq 1 "${installer_pkg_updateretries}"); do
-	if chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" update &>/dev/null; then
+	if chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" update &> /dev/null; then
 		echo "OK"
 		break
 	else
@@ -1987,7 +1987,7 @@ if [ "${kernel_module}" = true ]; then
 	echo
 	echo "Downloading packages..."
 	for i in $(seq 1 "${installer_pkg_downloadretries}"); do
-		eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y -d install "${packages_postinstall}" 2>&1 | output_filter
+		eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y -d install "${packages_postinstall}" 2> &1 | output_filter
 		download_exitcode="${PIPESTATUS[0]}"
 		if [ "${download_exitcode}" -eq 0 ]; then
 			echo "OK"
@@ -2004,7 +2004,7 @@ if [ "${kernel_module}" = true ]; then
 
 	echo
 	echo "Installing kernel, bootloader (=firmware) and user packages..."
-	eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y install "${packages_postinstall}" 2>&1 | output_filter
+	eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y install "${packages_postinstall}" 2> &1 | output_filter
 	if [ "${PIPESTATUS[0]}" -eq 0 ]; then
 		echo "OK"
 	else
@@ -2016,7 +2016,7 @@ fi
 
 # remove cdebootstrap-helper-rc.d which prevents rc.d scripts from running
 echo -n "Removing cdebootstrap-helper-rc.d... "
-chroot /rootfs /usr/bin/dpkg -r cdebootstrap-helper-rc.d &>/dev/null || fail
+chroot /rootfs /usr/bin/dpkg -r cdebootstrap-helper-rc.d &> /dev/null || fail
 echo "OK"
 
 echo "Preserving original config.txt and kernels..."
