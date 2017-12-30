@@ -77,11 +77,10 @@
 | `wlan_country` |  | [ref: doc/wlan_country.txt](/doc/wlan_country.txt) | Sets the country code for the WiFi interface. |
 | `wlan_ssid` |  |  | Sets SSID for WiFi authentication if no 'wpa_supplicant.conf' is provided. |
 | `wlan_psk` |  |  | Sets PSK for Wifi authentication if no 'wpa_supplicant.conf' is provided. |
-| `ip_addr` | `dhcp` |  | Use "dhcp" to let the network DHCP server dynamically assign an IP-address or specify a static IP-address (e.g. 192.168.2.50). |
-| `ip_netmask` | `0.0.0.0` |  | Network mask (e.g. 255.255.255.0) |
-| `ip_broadcast` | `0.0.0.0` |  | Broadcast address |
-| `ip_gateway` | `0.0.0.0` |  | Gateway address (e.g. 192.168.2.1) |
-| `ip_nameservers` |  |  | DNS nameservers (e.g. 8.8.8.8) |
+| `ip_addr` | `dhcp` |  | Use "dhcp" to let the network DHCP server dynamically assign an IP-address or specify a static IP-address (e.g. '192.168.2.50'). |
+| `ip_netmask` |  |  | Network mask (e.g. '255.255.255.0') |
+| `ip_gateway` |  |  | Gateway address (e.g. '192.168.2.1') |
+| `ip_nameservers` |  |  | DNS nameservers (e.g. '8.8.8.8') |
 | `ip_ipv6` | `1` | `0`/`1` | Set to "0" to disable IPv6. |
 
 ## Localization

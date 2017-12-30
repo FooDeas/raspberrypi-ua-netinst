@@ -122,6 +122,9 @@ variables_set_defaults() {
 	variable_set_deprecated enable_watchdog watchdog_enable
 	variable_set_deprecated root_ssh_allow root_ssh_pwlogin
 	variable_set_deprecated user_is_admin userperms_admin
+	if [ -n "${ip_broadcast}" ]; then
+		echo "  Variable 'ip_broadcast' is deprecated. This variable will be ignored!"
+	fi
 
 	# set config defaults
 	variable_set "preset" "server"
@@ -139,9 +142,6 @@ variables_set_defaults() {
 	variable_set "disable_predictable_nin" "1"
 	variable_set "ifname" "eth0"
 	variable_set "ip_addr" "dhcp"
-	variable_set "ip_netmask" "0.0.0.0"
-	variable_set "ip_broadcast" "0.0.0.0"
-	variable_set "ip_gateway" "0.0.0.0"
 	variable_set "ip_ipv6" "1"
 	variable_set "hdmi_tv_res" "1080p"
 	variable_set "hdmi_monitor_res" "1024x768"
@@ -795,18 +795,22 @@ echo "  ifname = ${ifname}"
 echo "  ip_addr = ${ip_addr}"
 
 if [ "${ip_addr}" != "dhcp" ]; then
+	ip_addr_o1="$(echo "${ip_addr}" | awk -F. '{print $1}')"
+	ip_addr_o2="$(echo "${ip_addr}" | awk -F. '{print $2}')"
+	ip_addr_o3="$(echo "${ip_addr}" | awk -F. '{print $3}')"
+	ip_addr_o4="$(echo "${ip_addr}" | awk -F. '{print $4}')"
 	if [ -z "${ip_netmask}" ]; then
-		if [ "$(echo "${ip_addr}" | cut -c-3)" = "10." ]; then
+		if [ "${ip_addr_o1}" = "10" ]; then
 			ip_netmask="255.0.0.0"
-		elif [ "$(echo "${ip_addr}" | cut -c-4)" = "172." ]; then
+		elif [ "${ip_addr_o1}" = "172" ]; then
 			if [ "$(echo "${ip_addr}" | cut -c7)" = "." ]; then
-				ip_netmask_subnet="$(($(echo "${ip_addr}" | cut -c5-6)-16))"
+				ip_netmask_subnet="$((ip_addr_o2-16))"
 				if [ "${ip_netmask_subnet}" -ge 0 ] && [ "${ip_netmask_subnet}" -lt 16 ]; then
 					ip_netmask="255.255.0.0"
 				fi
 				ip_netmask_subnet=
 			fi
-		elif [ "$(echo "${ip_addr}" | cut -c-8)" = "192.168." ]; then
+		elif [ "${ip_addr_o1}" = "192" ] &&  [ "${ip_addr_o2}" = "168" ]; then
 			ip_netmask="255.255.255.0"
 		fi
 		if [ -n "${ip_netmask}" ]; then
@@ -818,7 +822,23 @@ if [ "${ip_addr}" != "dhcp" ]; then
 		echo "  ip_netmask = ${ip_netmask}"
 	fi
 
-	echo "  ip_broadcast = ${ip_broadcast}"
+	if [ -n "${ip_netmask}" ]; then
+		ip_netmask_o1="$(echo "${ip_netmask}" | awk -F. '{print $1}')"
+		ip_netmask_o2="$(echo "${ip_netmask}" | awk -F. '{print $2}')"
+		ip_netmask_o3="$(echo "${ip_netmask}" | awk -F. '{print $3}')"
+		ip_netmask_o4="$(echo "${ip_netmask}" | awk -F. '{print $4}')"
+		ip_netmask_oi1="$((0xFF ^ ip_netmask_o1))"
+		ip_netmask_oi2="$((0xFF ^ ip_netmask_o2))"
+		ip_netmask_oi3="$((0xFF ^ ip_netmask_o3))"
+		ip_netmask_oi4="$((0xFF ^ ip_netmask_o4))"
+		ip_broadcast_o1="$((ip_addr_o1 & ip_netmask_o1 | ip_netmask_oi1))"
+		ip_broadcast_o2="$((ip_addr_o2 & ip_netmask_o2 | ip_netmask_oi2))"
+		ip_broadcast_o3="$((ip_addr_o3 & ip_netmask_o3 | ip_netmask_oi3))"
+		ip_broadcast_o4="$((ip_addr_o4 & ip_netmask_o4 | ip_netmask_oi4))"
+		ip_broadcast="${ip_broadcast_o1}"."${ip_broadcast_o2}"."${ip_broadcast_o3}"."${ip_broadcast_o4}"
+		echo "  ip_broadcast = ${ip_broadcast} (autodetected)"
+	fi
+
 	if [ -n "${ip_gateway}" ]; then
 		echo "  ip_gateway = ${ip_gateway}"
 	else
