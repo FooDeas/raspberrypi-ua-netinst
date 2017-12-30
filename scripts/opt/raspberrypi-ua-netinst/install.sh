@@ -795,10 +795,40 @@ echo "  ifname = ${ifname}"
 echo "  ip_addr = ${ip_addr}"
 
 if [ "${ip_addr}" != "dhcp" ]; then
-	echo "  ip_netmask = ${ip_netmask}"
+	if [ -z "${ip_netmask}" ]; then
+		if [ "$(echo "${ip_addr}" | cut -c-3)" = "10." ]; then
+			ip_netmask="255.0.0.0"
+		elif [ "$(echo "${ip_addr}" | cut -c-4)" = "172." ]; then
+			if [ "$(echo "${ip_addr}" | cut -c7)" = "." ]; then
+				ip_netmask_subnet="$(($(echo "${ip_addr}" | cut -c5-6)-16))"
+				if [ "${ip_netmask_subnet}" -ge 0 ] && [ "${ip_netmask_subnet}" -lt 16 ]; then
+					ip_netmask="255.255.0.0"
+				fi
+				ip_netmask_subnet=
+			fi
+		elif [ "$(echo "${ip_addr}" | cut -c-8)" = "192.168." ]; then
+			ip_netmask="255.255.255.0"
+		fi
+		if [ -n "${ip_netmask}" ]; then
+			echo "  ip_netmask = ${ip_netmask} (autodetected)"
+		else
+			echo "  ip_netmask = missing!"
+		fi
+	else
+		echo "  ip_netmask = ${ip_netmask}"
+	fi
+
 	echo "  ip_broadcast = ${ip_broadcast}"
-	echo "  ip_gateway = ${ip_gateway}"
-	echo "  ip_nameservers = ${ip_nameservers}"
+	if [ -n "${ip_gateway}" ]; then
+		echo "  ip_gateway = ${ip_gateway}"
+	else
+		echo "  ip_gateway = missing!"
+	fi
+	if [ -n "${ip_nameservers}" ]; then
+		echo "  ip_nameservers = ${ip_nameservers}"
+	else
+		echo "  ip_nameservers = missing!"
+	fi
 fi
 
 if echo "${ifname}" | grep -q "wlan"; then
