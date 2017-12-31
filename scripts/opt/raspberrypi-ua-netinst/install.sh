@@ -803,13 +803,11 @@ if [ "${ip_addr}" != "dhcp" ]; then
 		if [ "${ip_addr_o1}" = "10" ]; then
 			ip_netmask="255.0.0.0"
 		elif [ "${ip_addr_o1}" = "172" ]; then
-			if [ "$(echo "${ip_addr}" | cut -c7)" = "." ]; then
-				ip_netmask_subnet="$((ip_addr_o2-16))"
-				if [ "${ip_netmask_subnet}" -ge 0 ] && [ "${ip_netmask_subnet}" -lt 16 ]; then
-					ip_netmask="255.255.0.0"
-				fi
-				ip_netmask_subnet=
+			ip_netmask_subnet="$((ip_addr_o2-16))"
+			if [ "${ip_netmask_subnet}" -ge 0 ] && [ "${ip_netmask_subnet}" -lt 16 ]; then
+				ip_netmask="255.255.0.0"
 			fi
+			ip_netmask_subnet=
 		elif [ "${ip_addr_o1}" = "192" ] &&  [ "${ip_addr_o2}" = "168" ]; then
 			ip_netmask="255.255.255.0"
 		fi
