@@ -2012,17 +2012,20 @@ cd "${old_dir}" || fail
 echo
 echo -n "Updating package lists... "
 for i in $(seq 1 "${installer_pkg_updateretries}"); do
-	if chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" update &> /dev/null; then
+	if [ -z "${mirror_cache}" ]; then
+		chroot /rootfs /usr/bin/apt-get update &> /dev/null
+	else
+		chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" update &> /dev/null
+	fi
+	update_exitcode="${?}"
+	if [ "${update_exitcode}" -eq 0 ]; then
 		echo "OK"
 		break
+	elif [ "${i}" -eq "${installer_pkg_updateretries}" ]; then
+		echo "ERROR: ${update_exitcode}, FAILED !"
+		fail
 	else
-		update_exitcode="${?}"
-		if [ "${i}" -eq "${installer_pkg_updateretries}" ]; then
-			echo "ERROR: ${update_exitcode}, FAILED !"
-			fail
-		else
-			echo -n "ERROR: ${update_exitcode}, trying again ($((i+1))/${installer_pkg_updateretries})... "
-		fi
+		echo -n "ERROR: ${update_exitcode}, trying again ($((i+1))/${installer_pkg_updateretries})... "
 	fi
 done
 
@@ -2038,24 +2041,26 @@ if [ "${kernel_module}" = true ]; then
 	echo
 	echo "Downloading packages..."
 	for i in $(seq 1 "${installer_pkg_downloadretries}"); do
-		eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y -d install "${packages_postinstall}" 2>&1 | output_filter
+		if [ -z "${mirror_cache}" ]; then
+			eval chroot /rootfs /usr/bin/apt-get -y -d install "${packages_postinstall}" 2>&1 | output_filter
+		else
+			eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y -d install "${packages_postinstall}" 2>&1 | output_filter
+		fi
 		download_exitcode="${PIPESTATUS[0]}"
 		if [ "${download_exitcode}" -eq 0 ]; then
 			echo "OK"
 			break
+		elif [ "${i}" -eq "${installer_pkg_downloadretries}" ]; then
+			echo "ERROR: ${download_exitcode}, FAILED !"
+			fail
 		else
-			if [ "${i}" -eq "${installer_pkg_downloadretries}" ]; then
-				echo "ERROR: ${download_exitcode}, FAILED !"
-				fail
-			else
-				echo -n "ERROR: ${download_exitcode}, trying again ($((i+1))/${installer_pkg_downloadretries})... "
-			fi
+			echo -n "ERROR: ${download_exitcode}, trying again ($((i+1))/${installer_pkg_downloadretries})... "
 		fi
 	done
 
 	echo
 	echo "Installing kernel, bootloader (=firmware) and user packages..."
-	eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y install "${packages_postinstall}" 2>&1 | output_filter
+	eval chroot /rootfs /usr/bin/apt-get -y install "${packages_postinstall}" 2>&1 | output_filter
 	if [ "${PIPESTATUS[0]}" -eq 0 ]; then
 		echo "OK"
 	else
