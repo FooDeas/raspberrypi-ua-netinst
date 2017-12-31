@@ -25,9 +25,9 @@
 
 | Preset | Packages |
 |---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `base` | _\<essential\>,apt,cpufrequtils,kmod,raspbian-archive-keyring_ |
-| `minimal` | _\<base\>,fake-hwclock,ifupdown,net-tools,ntp,openssh-server,dosfstools,raspberrypi-sys-mods_ |
-| `server` | _\<minimal\>,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,tzdata,less,man-db,logrotate,bash-completion,console-setup,apt-utils,libraspberrypi-bin,raspi-copies-and-fills_ |
+| `base` | _\<essential\>,apt,kmod_ |
+| `minimal` | _\<base\>,cpufrequtils,fake-hwclock,ifupdown,net-tools,ntp,openssh-server,dosfstools,raspberrypi-sys-mods_ |
+| `server` | _\<minimal\>,systemd-sysv,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,tzdata,less,man-db,logrotate,bash-completion,console-setup,apt-utils,libraspberrypi-bin,raspi-copies-and-fills_ |
 
 ## Device / peripheral
 
@@ -77,11 +77,10 @@
 | `wlan_country` |  | [ref: doc/wlan_country.txt](/doc/wlan_country.txt) | Sets the country code for the WiFi interface. |
 | `wlan_ssid` |  |  | Sets SSID for WiFi authentication if no 'wpa_supplicant.conf' is provided. |
 | `wlan_psk` |  |  | Sets PSK for Wifi authentication if no 'wpa_supplicant.conf' is provided. |
-| `ip_addr` | `dhcp` |  | Use "dhcp" to let the network DHCP server dynamically assign an IP-address or specify a static IP-address (e.g. 192.168.2.50). |
-| `ip_netmask` | `0.0.0.0` |  | Network mask (e.g. 255.255.255.0) |
-| `ip_broadcast` | `0.0.0.0` |  | Broadcast address |
-| `ip_gateway` | `0.0.0.0` |  | Gateway address (e.g. 192.168.2.1) |
-| `ip_nameservers` |  |  | DNS nameservers (e.g. 8.8.8.8) |
+| `ip_addr` | `dhcp` |  | Use "dhcp" to let the network DHCP server dynamically assign an IP-address or specify a static IP-address (e.g. '192.168.2.50'). |
+| `ip_netmask` |  |  | Network mask (e.g. '255.255.255.0') |
+| `ip_gateway` |  |  | Gateway address (e.g. '192.168.2.1') |
+| `ip_nameservers` |  |  | DNS nameservers (e.g. '8.8.8.8') |
 | `ip_ipv6` | `1` | `0`/`1` | Set to "0" to disable IPv6. |
 
 ## Localization
@@ -111,8 +110,9 @@
 |---------------------|---------|---------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `usbroot` | `0` | `0`/`1` | Set to "1" to install to first USB disk. |
 | `usbboot` | `0` | `0`/`1` | Set to "1" to boot from first USB disk. This is usually used with 'usbroot=1' and works with model 3 (BCM2837) only. If this is used for the first time, it has to be done from SD-card and the system will shut down after success. Then the SD-card has to be removed before rebooting. |
-| `rootfstype` | f2fs | `ext4`/  `f2fs`/  `btrfs` | Sets the file system of the root partition. |
+| `rootfstype` | `f2fs` | `ext4`/  `f2fs`/  `btrfs` | Sets the file system of the root partition. |
 | `boot_volume_label` |  |  | Sets the volume name of the boot partition. The volume name can be up to 11 characters long. The label is used by most OSes (Windows, Mac OSX and Linux) to identify the SD-card on the desktop and can be useful when using multiple SD-cards. |
+| `root_volume_label` |  |  | Sets the volume name of the root partition. The volume name can be up to 16 characters long. |
 | `bootsize` | `+128M` |  | /boot partition size in megabytes, provide it in the form '+\<number\>M' (without quotes) |
 | `bootoffset` | `8192` |  | position in sectors where the boot partition should start. Valid values are > 2048. a bootoffset of 8192 is equal to 4MB and that should make for proper alignment |
 
@@ -129,6 +129,10 @@
 | `rootfs_install_mount_options` |  |  |  |
 | `rootfs_mount_options` |  |  |  |
 | `final_action` | `reboot` | `reboot`/  `poweroff`/  `halt`/  `console` | Action at the end of install. |
+| `installer_retries` | `3` |  | Number of retries if installation fails. |
+| `installer_networktimeout` | `15` |  | Timeout in seconds for network interface initialization. |
+| `installer_pkg_updateretries` | `3` |  | Number of retries if package update fails. |
+| `installer_pkg_downloadretries` | `5` |  | Number of retries if package download fails. |
 | `hwrng_support` | `1` | `0`/`1` | Install support for the ARM hardware random number generator. The default is enabled (1) on all presets. Users requiring a `base` install are advised that `hwrng_support=0` must be added in `installer-config.txt` if HWRNG support is undesirable. |
 | `watchdog_enable` | `0` | `0`/`1` | Set to "1" to enable and use the hardware watchdog. |
 | `cdebootstrap_cmdline` |  |  |  |

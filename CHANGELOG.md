@@ -1,5 +1,24 @@
 # Changelog
 
+## raspberrypi-ua-netinst v2.1.0
+
+- moved `cpufrequtils` from base to minimal preset
+- added or changed configuration variables
+  - set root partition label
+  - set installation retries
+  - set network timeout
+  - set package update retries
+  - set package download retries
+  - **removed** `ip_broadcast` will be calculated from `ip_addr` and `ip_netmask`
+- improved memory usage
+- fix compatibility with 1B models with only 256 MB memory (revision 0002)
+- detect and assign missing `ip_netmask` if `ip_addr` is in a private subnet
+
+**Bugfixes:**
+
+- fix RTC support
+- fix custom wpa_supplicant.conf
+
 ## raspberrypi-ua-netinst v2.0.0
 
 - support for Debian 9 (stretch)

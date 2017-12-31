@@ -194,12 +194,15 @@ function create_cpio {
 		mkdir -p "rootfs/lib/modules/${kernel}/kernel/drivers/i2c/busses"
 	done
 	cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/i2c/busses/i2c-bcm2708.ko rootfs/lib/modules/kernel*/kernel/drivers/i2c/busses/
+	cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/i2c/busses/i2c-bcm2835.ko rootfs/lib/modules/kernel*/kernel/drivers/i2c/busses/
 
 	# copy rtc drivers
 	for kernel in "${kernels[@]}"; do
 		mkdir -p "rootfs/lib/modules/${kernel}/kernel/drivers"
+		mkdir -p "rootfs/lib/modules/${kernel}/kernel/drivers/hwmon"
 	done
 	cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/rtc rootfs/lib/modules/kernel*/kernel/drivers/
+	cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/hwmon/hwmon.ko rootfs/lib/modules/kernel*/kernel/drivers/hwmon/
 
 	# create dependency lists
 	for kernel in "${kernels[@]}"; do
@@ -725,6 +728,7 @@ mv raspberrypi-ua-netinst.cpio.gz bootfs/raspberrypi-ua-netinst/
 {
 	echo "[all]"
 	echo "initramfs raspberrypi-ua-netinst/raspberrypi-ua-netinst.cpio.gz"
+	echo "gpu_mem=16"
 	echo "[pi3]"
 	echo "enable_uart=1"
 } >> bootfs/config.txt

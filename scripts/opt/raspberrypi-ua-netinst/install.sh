@@ -13,7 +13,6 @@ variables_reset() {
 	rootdev=
 	rootpartition=
 	wlan_configfile=
-	installer_retries=
 	installer_fail_blocking=
 	cmdline_custom=
 
@@ -26,6 +25,7 @@ variables_reset() {
 	release=
 	hostname=
 	boot_volume_label=
+	root_volume_label=
 	domainname=
 	rootpw=
 	user_ssh_pubkey=
@@ -77,6 +77,10 @@ variables_reset() {
 	cmdline=
 	rootfstype=
 	final_action=
+	installer_retries=
+	installer_networktimeout=
+	installer_pkg_updateretries=
+	installer_pkg_downloadretries=
 	hwrng_support=
 	watchdog_enable=
 	quiet_boot=
@@ -118,6 +122,9 @@ variables_set_defaults() {
 	variable_set_deprecated enable_watchdog watchdog_enable
 	variable_set_deprecated root_ssh_allow root_ssh_pwlogin
 	variable_set_deprecated user_is_admin userperms_admin
+	if [ -n "${ip_broadcast}" ]; then
+		echo "  Variable 'ip_broadcast' is deprecated. This variable will be ignored!"
+	fi
 
 	# set config defaults
 	variable_set "preset" "server"
@@ -135,9 +142,6 @@ variables_set_defaults() {
 	variable_set "disable_predictable_nin" "1"
 	variable_set "ifname" "eth0"
 	variable_set "ip_addr" "dhcp"
-	variable_set "ip_netmask" "0.0.0.0"
-	variable_set "ip_broadcast" "0.0.0.0"
-	variable_set "ip_gateway" "0.0.0.0"
 	variable_set "ip_ipv6" "1"
 	variable_set "hdmi_tv_res" "1080p"
 	variable_set "hdmi_monitor_res" "1024x768"
@@ -148,6 +152,10 @@ variables_set_defaults() {
 	variable_set "cmdline" "dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 elevator=deadline fsck.repair=yes"
 	variable_set "rootfstype" "f2fs"
 	variable_set "final_action" "reboot"
+	variable_set "installer_retries" "3"
+	variable_set "installer_networktimeout" "15"
+	variable_set "installer_pkg_updateretries" "3"
+	variable_set "installer_pkg_downloadretries" "5"
 	variable_set "hwrng_support" "1"
 	variable_set "watchdog_enable" "0"
 	variable_set "quiet_boot" "0"
@@ -242,24 +250,25 @@ fail() {
 		mount "${bootpartition}" /boot
 		fail_boot_mounted=true
 	fi
-	cp "${logfile}" "/boot/raspberrypi-ua-netinst/error-$(date +%Y%m%dT%H%M%S).log"
+	# root and user passwords are deleted from logfile before it is written to the filesystem
+	sed "/rootpw/d;/userpw/d" "${logfile}" > /boot/raspberrypi-ua-netinst/error-"$(date +%Y%m%dT%H%M%S)".log
 	sync
 
-	if [ -e "/boot/raspberrypi-ua-netinst/config/installer-retries.txt" ]; then
-		inputfile_sanitize /boot/raspberrypi-ua-netinst/config/installer-retries.txt
-		# shellcheck disable=SC1091
-		source /boot/raspberrypi-ua-netinst/config/installer-retries.txt
+	if [ -e "${installer_retriesfile}" ]; then
+		inputfile_sanitize "${installer_retriesfile}"
+		# shellcheck disable=SC1090
+		source "${installer_retriesfile}"
 	fi
 	variable_set "installer_retries" "3"
 	installer_retries=$((installer_retries-1))
 	if [ "${installer_retries}" -ge "0" ]; then
-		echo "installer_retries=${installer_retries}" > /boot/raspberrypi-ua-netinst/config/installer-retries.txt
+		echo "installer_retries=${installer_retries}" > "${installer_retriesfile}"
 		sync
 	fi
 	if [ "${installer_retries}" -le "0" ] || [ "${installer_fail_blocking}" = "1" ]; then
 		if [ "${installer_retries}" -le "0" ]; then
 			echo "  The maximum number of retries is reached!"
-			echo "  Check the logfiles for errors. Then delete or edit \"installer-retries.txt\" in installer config folder to (re)set the counter."
+			echo "  Check the logfiles for errors. Then delete or edit \"installer-retries.txt\" in installer folder to (re)set the counter."
 		fi
 		echo "  The system is stopped to prevent an infinite loop."
 		while true; do
@@ -267,6 +276,11 @@ fail() {
 		done
 	else
 		echo "  ${installer_retries} retries left."
+	fi
+
+	if [ -e "${installer_swapfile}" ]; then
+		swapoff "${installer_swapfile}" 2> /dev/null
+		rm -f "${installer_swapfile}"
 	fi
 
 	# if we mounted /boot in the fail command, unmount it.
@@ -330,15 +344,15 @@ convert_listvariable() {
 install_files() {
 	local file_to_read="${1}"
 	echo "Adding files & folders listed in /boot/raspberrypi-ua-netinst/config/files/${file_to_read}..."
-	inputfile_sanitize "/bootfs/raspberrypi-ua-netinst/config/files/${file_to_read}"
-	grep -v "^[[:space:]]*#\|^[[:space:]]*$" "/bootfs/raspberrypi-ua-netinst/config/files/${file_to_read}" | while read -r line; do
+	inputfile_sanitize "/rootfs/boot/raspberrypi-ua-netinst/config/files/${file_to_read}"
+	grep -v "^[[:space:]]*#\|^[[:space:]]*$" "/rootfs/boot/raspberrypi-ua-netinst/config/files/${file_to_read}" | while read -r line; do
 		owner=$(echo "${line}" | awk '{ print $1 }')
 		perms=$(echo "${line}" | awk '{ print $2 }')
 		file=$(echo "${line}" | awk '{ print $3 }')
 		echo "  ${file}"
-		if [ ! -d "/bootfs/raspberrypi-ua-netinst/config/files/root${file}" ]; then
+		if [ ! -d "/rootfs/boot/raspberrypi-ua-netinst/config/files/root${file}" ]; then
 			mkdir -p "/rootfs$(dirname "${file}")"
-			cp "/bootfs/raspberrypi-ua-netinst/config/files/root${file}" "/rootfs${file}"
+			cp "/rootfs/boot/raspberrypi-ua-netinst/config/files/root${file}" "/rootfs${file}"
 		else
 			mkdir -p "/rootfs/${file}"
 		fi
@@ -408,6 +422,18 @@ line_add_if_boolean() {
 	fi
 }
 
+line_add_if_boolean_not() {
+	local variable="${1}"
+	local target="${2}"
+	local value="${3}"
+	local value_else="${4}"
+	if [ "${!variable}" = "0" ]; then
+		line_add "${target}" "${value}"
+	else
+		line_add "${target}" "${value_else}"
+	fi
+}
+
 line_add_if_set() {
 	local variable="${1}"
 	local target="${2}"
@@ -467,8 +493,11 @@ variables_reset
 
 # preset installer variables
 logfile=/tmp/raspberrypi-ua-netinst.log
+installer_retriesfile=/boot/raspberrypi-ua-netinst/installer-retries.txt
+installer_swapfile=/rootfs/installer-swap
+wlan_configfile=/tmp/wpa_supplicant.conf
 rootdev=/dev/mmcblk0
-wlan_configfile=/bootfs/raspberrypi-ua-netinst/config/wpa_supplicant.conf
+tmp_bootfs=/tmp/bootfs
 final_action=reboot
 
 mkdir -p /proc
@@ -479,9 +508,9 @@ mkdir -p /usr/sbin
 mkdir -p /var/run
 mkdir -p /etc/raspberrypi-ua-netinst
 mkdir -p /rootfs/boot
-mkdir -p /bootfs
-mkdir -p /tmp/
-mkdir -p /opt/busybox/bin/
+mkdir -p /tmp
+mkdir -p "${tmp_bootfs}"
+mkdir -p /opt/busybox/bin
 
 /bin/busybox --install /opt/busybox/bin/
 ln -s /opt/busybox/bin/sh /bin/sh
@@ -506,7 +535,7 @@ sleep 3s
 # set screen blank period to an hour unless consoleblank=0 on cmdline
 # hopefully the install should be done by then
 if grep -qv  "consoleblank=0" /proc/cmdline; then
-    echo -en '\033[9;60]'
+	echo -en '\033[9;60]'
 fi
 
 # Config serial output device
@@ -657,15 +686,15 @@ echo "OK"
 
 # copy boot data to safety
 echo -n "Copying boot files... "
-cp -r /boot/* /bootfs/ || fail
+cp -r /boot/* "${tmp_bootfs}"/ || fail
 echo "OK"
 
 # Read installer-config.txt
-if [ -e "/bootfs/raspberrypi-ua-netinst/config/installer-config.txt" ]; then
+if [ -e "${tmp_bootfs}"/raspberrypi-ua-netinst/config/installer-config.txt ]; then
 	echo "Executing installer-config.txt..."
-	inputfile_sanitize /bootfs/raspberrypi-ua-netinst/config/installer-config.txt
-	# shellcheck disable=SC1091
-	source /bootfs/raspberrypi-ua-netinst/config/installer-config.txt
+	inputfile_sanitize "${tmp_bootfs}"/raspberrypi-ua-netinst/config/installer-config.txt
+	# shellcheck disable=SC1090
+	source "${tmp_bootfs}"/raspberrypi-ua-netinst/config/installer-config.txt
 	echo "OK"
 fi
 
@@ -760,25 +789,71 @@ echo -n "Unmounting boot partition... "
 umount /boot || fail
 echo "OK"
 
-if [ -e "${wlan_configfile}" ]; then
-	inputfile_sanitize "${wlan_configfile}"
-fi
-
 echo
 echo "Network configuration:"
 echo "  ifname = ${ifname}"
 echo "  ip_addr = ${ip_addr}"
 
 if [ "${ip_addr}" != "dhcp" ]; then
-	echo "  ip_netmask = ${ip_netmask}"
-	echo "  ip_broadcast = ${ip_broadcast}"
-	echo "  ip_gateway = ${ip_gateway}"
-	echo "  ip_nameservers = ${ip_nameservers}"
+	ip_addr_o1="$(echo "${ip_addr}" | awk -F. '{print $1}')"
+	ip_addr_o2="$(echo "${ip_addr}" | awk -F. '{print $2}')"
+	ip_addr_o3="$(echo "${ip_addr}" | awk -F. '{print $3}')"
+	ip_addr_o4="$(echo "${ip_addr}" | awk -F. '{print $4}')"
+	if [ -z "${ip_netmask}" ]; then
+		if [ "${ip_addr_o1}" = "10" ]; then
+			ip_netmask="255.0.0.0"
+		elif [ "${ip_addr_o1}" = "172" ]; then
+			ip_netmask_subnet="$((ip_addr_o2-16))"
+			if [ "${ip_netmask_subnet}" -ge 0 ] && [ "${ip_netmask_subnet}" -lt 16 ]; then
+				ip_netmask="255.255.0.0"
+			fi
+			ip_netmask_subnet=
+		elif [ "${ip_addr_o1}" = "192" ] &&  [ "${ip_addr_o2}" = "168" ]; then
+			ip_netmask="255.255.255.0"
+		fi
+		if [ -n "${ip_netmask}" ]; then
+			echo "  ip_netmask = ${ip_netmask} (autodetected)"
+		else
+			echo "  ip_netmask = missing!"
+		fi
+	else
+		echo "  ip_netmask = ${ip_netmask}"
+	fi
+
+	if [ -n "${ip_netmask}" ]; then
+		ip_netmask_o1="$(echo "${ip_netmask}" | awk -F. '{print $1}')"
+		ip_netmask_o2="$(echo "${ip_netmask}" | awk -F. '{print $2}')"
+		ip_netmask_o3="$(echo "${ip_netmask}" | awk -F. '{print $3}')"
+		ip_netmask_o4="$(echo "${ip_netmask}" | awk -F. '{print $4}')"
+		ip_netmask_oi1="$((0xFF ^ ip_netmask_o1))"
+		ip_netmask_oi2="$((0xFF ^ ip_netmask_o2))"
+		ip_netmask_oi3="$((0xFF ^ ip_netmask_o3))"
+		ip_netmask_oi4="$((0xFF ^ ip_netmask_o4))"
+		ip_broadcast_o1="$((ip_addr_o1 & ip_netmask_o1 | ip_netmask_oi1))"
+		ip_broadcast_o2="$((ip_addr_o2 & ip_netmask_o2 | ip_netmask_oi2))"
+		ip_broadcast_o3="$((ip_addr_o3 & ip_netmask_o3 | ip_netmask_oi3))"
+		ip_broadcast_o4="$((ip_addr_o4 & ip_netmask_o4 | ip_netmask_oi4))"
+		ip_broadcast="${ip_broadcast_o1}"."${ip_broadcast_o2}"."${ip_broadcast_o3}"."${ip_broadcast_o4}"
+		echo "  ip_broadcast = ${ip_broadcast} (autodetected)"
+	fi
+
+	if [ -n "${ip_gateway}" ]; then
+		echo "  ip_gateway = ${ip_gateway}"
+	else
+		echo "  ip_gateway = missing!"
+	fi
+	if [ -n "${ip_nameservers}" ]; then
+		echo "  ip_nameservers = ${ip_nameservers}"
+	else
+		echo "  ip_nameservers = missing!"
+	fi
 fi
 
 if echo "${ifname}" | grep -q "wlan"; then
-	if [ ! -e "${wlan_configfile}" ]; then
-		wlan_configfile=/tmp/wpa_supplicant.conf
+	if [ -e "${tmp_bootfs}"/raspberrypi-ua-netinst/config/wpa_supplicant.conf ]; then
+		cp "${tmp_bootfs}"/raspberrypi-ua-netinst/config/wpa_supplicant.conf "${wlan_configfile}"
+		inputfile_sanitize "${wlan_configfile}"
+	else
 		echo "  wlan_ssid = ${wlan_ssid}"
 		echo "  wlan_psk = ${wlan_psk}"
 		{
@@ -789,8 +864,8 @@ if echo "${ifname}" | grep -q "wlan"; then
 			echo "}"
 		} > ${wlan_configfile}
 	fi
-	if [ -n "${wlan_country}" ] && ! grep -q "country=" ${wlan_configfile}; then
-		echo "country=${wlan_country}" >> ${wlan_configfile}
+	if [ -n "${wlan_country}" ] && ! grep -q "country=" "${wlan_configfile}"; then
+		echo "country=${wlan_country}" >> "${wlan_configfile}"
 	fi
 fi
 
@@ -813,11 +888,11 @@ if [ -n "${drivers_to_load}" ]; then
 fi
 
 echo -n "Waiting for ${ifname}... "
-for i in $(seq 1 15); do
-	if ifconfig "${ifname}" &>/dev/null; then
+for i in $(seq 1 "${installer_networktimeout}"); do
+	if ifconfig "${ifname}" &> /dev/null; then
 		break
 	fi
-	if [ "${i}" -eq 10 ]; then
+	if [ "${i}" -eq "${installer_networktimeout}" ]; then
 		echo "FAILED"
 		fail
 	fi
@@ -847,7 +922,7 @@ fi
 if [ "${ip_addr}" = "dhcp" ]; then
 	echo -n "Configuring ${ifname} with DHCP... "
 
-	if udhcpc -i "${ifname}" &>/dev/null; then
+	if udhcpc -i "${ifname}" &> /dev/null; then
 		ifconfig "${ifname}" | grep -F addr: | awk '{print $2}' | cut -d: -f2
 	else
 		echo "FAILED"
@@ -871,7 +946,7 @@ date_set=false
 if [ "${date_set}" = "false" ]; then
 	# set time with ntpdate
 	echo -n "Set time using ntpdate... "
-	if ntpdate-debian -b &>/dev/null; then
+	if ntpdate-debian -b &> /dev/null; then
 		echo "OK"
 		date_set=true
 	fi
@@ -892,7 +967,7 @@ if [ "${date_set}" = "false" ]; then
 		echo -n "Set time using timeserver "
 		for ts in ${timeservers}; do
 			echo -n "'${ts}'... "
-			if rdate "${ts}" &>/dev/null; then
+			if rdate "${ts}" &> /dev/null; then
 				echo "OK"
 				date_set=true
 				break
@@ -911,7 +986,7 @@ if [ "${date_set}" = "false" ]; then
 		for ts_http in ${timeservers_http}; do
 			echo -n "'${ts_http}'... "
 			http_time="$(wget -q -O - "${ts_http}")"
-			if date -u -s "${http_time}" &>/dev/null; then
+			if date -u -s "${http_time}" &> /dev/null; then
 				echo "OK"
 				date_set=true
 				break
@@ -936,7 +1011,7 @@ echo
 
 if [ -n "${online_config}" ]; then
 	echo -n "Downloading online config from ${online_config}... "
-	wget -q -O /opt/raspberrypi-ua-netinst/installer-config_online.txt "${online_config}" &>/dev/null || fail
+	wget -q -O /opt/raspberrypi-ua-netinst/installer-config_online.txt "${online_config}" &> /dev/null || fail
 	echo "OK"
 
 	echo -n "Executing online-config.txt... "
@@ -947,25 +1022,43 @@ if [ -n "${online_config}" ]; then
 	echo "OK"
 fi
 
-# prepare rootfs mount options
+# prepare rootfs options
 case "${rootfstype}" in
 	"btrfs")
 		kernel_module=true
-		rootfs_mkfs_options=${rootfs_mkfs_options:-'-f'}
-		rootfs_install_mount_options=${rootfs_install_mount_options:-'noatime'}
-		rootfs_mount_options=${rootfs_mount_options:-'noatime'}
+		if [ -z "${rootfs_mkfs_options}" ]; then
+			if [ -n "${root_volume_label}" ]; then
+				rootfs_mkfs_options="-L ${root_volume_label} -f"
+			else
+				rootfs_mkfs_options="-f"
+			fi
+		fi
+		rootfs_install_mount_options="noatime"
+		rootfs_mount_options="noatime"
 	;;
 	"ext4")
 		kernel_module=true
-		rootfs_mkfs_options=${rootfs_mkfs_options:-''}
-		rootfs_install_mount_options=${rootfs_install_mount_options:-'noatime,data=writeback,nobarrier,noinit_itable'}
-		rootfs_mount_options=${rootfs_mount_options:-'errors=remount-ro,noatime'}
+		if [ -z "${rootfs_mkfs_options}" ]; then
+			if [ -n "${root_volume_label}" ]; then
+				rootfs_mkfs_options="-L ${root_volume_label}"
+			else
+				rootfs_mkfs_options=
+			fi
+		fi
+		rootfs_install_mount_options="noatime,data=writeback,nobarrier,noinit_itable"
+		rootfs_mount_options="errors=remount-ro,noatime"
 	;;
 	"f2fs")
 		kernel_module=true
-		rootfs_mkfs_options=${rootfs_mkfs_options:-''}
-		rootfs_install_mount_options=${rootfs_install_mount_options:-'noatime'}
-		rootfs_mount_options=${rootfs_mount_options:-'noatime'}
+		if [ -z "${rootfs_mkfs_options}" ]; then
+			if [ -n "${root_volume_label}" ]; then
+				rootfs_mkfs_options="-l ${root_volume_label}"
+			else
+				rootfs_mkfs_options=
+			fi
+		fi
+		rootfs_install_mount_options="noatime"
+		rootfs_mount_options="noatime"
 	;;
 	*)
 		echo "Unknown filesystem specified: ${rootfstype}"
@@ -1037,46 +1130,46 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	fi
 
 	# base
-	base_packages="cpufrequtils,kmod,raspbian-archive-keyring"
+	base_packages="kmod"
 	base_packages="${custom_packages},${base_packages}"
-	base_packages_postinstall=raspberrypi-bootloader
-	if [ "${release}" != "wheezy" ]; then
-		base_packages_postinstall="${base_packages_postinstall},raspberrypi-kernel"
-	fi
-	base_packages_postinstall="${custom_packages_postinstall},${base_packages_postinstall}"
 	if [ "${init_system}" = "systemd" ]; then
 		base_packages="${base_packages},libpam-systemd"
 	fi
 	if [ "${hwrng_support}" = "1" ]; then
 		base_packages="${base_packages},rng-tools"
 	fi
-	if [ "$(find /bootfs/raspberrypi-ua-netinst/config/apt/ -maxdepth 1 -type f -name "*.list" 2>/dev/null | wc -l)" != 0 ]; then
+	if [ "$(find "${tmp_bootfs}"/raspberrypi-ua-netinst/config/apt/ -maxdepth 1 -type f -name "*.list" 2> /dev/null | wc -l)" != 0 ]; then
 		base_packages="${base_packages},apt-transport-https"
 	fi
+	base_packages_postinstall=raspberrypi-bootloader
+	if [ "${release}" != "wheezy" ]; then
+		base_packages_postinstall="${base_packages_postinstall},raspberrypi-kernel"
+	fi
+	base_packages_postinstall="${custom_packages_postinstall},${base_packages_postinstall}"
 	
 	# minimal
-	minimal_packages="ifupdown,net-tools,openssh-server,dosfstools"
+	minimal_packages="cpufrequtils,ifupdown,net-tools,openssh-server,dosfstools"
 	if [ "${init_system}" != "systemd" ]; then
 		minimal_packages="${minimal_packages},ntp"
 	fi
 	if [ -z "${rtc}" ]; then
 		minimal_packages="${minimal_packages},fake-hwclock"
 	fi
+	minimal_packages_postinstall="${base_packages_postinstall},${minimal_packages_postinstall}"
 	if [ "${release}" != "wheezy" ]; then
 		minimal_packages_postinstall="${minimal_packages_postinstall},raspberrypi-sys-mods"
 	fi
-	minimal_packages_postinstall="${base_packages_postinstall},${minimal_packages_postinstall}"
 	if echo "${ifname}" | grep -q "wlan"; then
 		minimal_packages_postinstall="${minimal_packages_postinstall},firmware-brcm80211"
 	fi
 
 	# server
 	server_packages="vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,tzdata,less,man-db,logrotate,bash-completion,console-setup,apt-utils"
-	server_packages_postinstall="libraspberrypi-bin,raspi-copies-and-fills"
-	server_packages_postinstall="${minimal_packages_postinstall},${server_packages_postinstall}"
 	if [ "${init_system}" = "systemd" ]; then
 		server_packages="${server_packages},systemd-sysv"
 	fi
+	server_packages_postinstall="${minimal_packages_postinstall},${server_packages_postinstall}"
+	server_packages_postinstall="${server_packages_postinstall},libraspberrypi-bin,raspi-copies-and-fills"
 
 	# cleanup package variables used by cdebootstrap_cmdline
 	variable_sanitize base_packages
@@ -1103,15 +1196,17 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 			;;
 	esac
 
-	dhcp_client_package="isc-dhcp-client"
-	# add IPv4 DHCP client if needed
-	if [ "${ip_addr}" = "dhcp" ]; then
-		cdebootstrap_cmdline="${cdebootstrap_cmdline},${dhcp_client_package}"
-	fi
-
 	# add user defined syspackages
 	if [ -n "${syspackages}" ]; then
 		cdebootstrap_cmdline="${cdebootstrap_cmdline},${syspackages}"
+	fi
+
+	# add IPv4 DHCP client if needed
+	dhcp_client_package="isc-dhcp-client"
+	if [ "${ip_addr}" = "dhcp" ]; then
+		if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "ifupdown"; then
+			cdebootstrap_cmdline="${cdebootstrap_cmdline},${dhcp_client_package}"
+		fi
 	fi
 
 else
@@ -1193,6 +1288,7 @@ echo "  userperms_sound = ${userperms_sound}"
 echo "  cdebootstrap_cmdline = ${cdebootstrap_cmdline}"
 echo "  packages_postinstall = ${packages_postinstall}"
 echo "  boot_volume_label = ${boot_volume_label}"
+echo "  root_volume_label = ${root_volume_label}"
 echo "  bootsize = ${bootsize}"
 echo "  bootoffset = ${bootoffset}"
 echo "  rootsize = ${rootsize}"
@@ -1250,7 +1346,7 @@ echo
 
 if [ -n "${rtc}" ] ; then
 	echo -n "Checking hardware clock access... "
-	/opt/busybox/bin/hwclock --show &>/dev/null || fail
+	/opt/busybox/bin/hwclock --show &> /dev/null || fail
 	echo "OK"
 	echo
 fi
@@ -1367,18 +1463,18 @@ done
 
 if [ "${rootdev}" = "${bootdev}" ]; then
 	echo -n "Applying new partition table... "
-	dd if=/dev/zero of="${bootdev}" bs=512 count=1 &>/dev/null
-	fdisk "${bootdev}" &>/dev/null < "${FDISK_SCHEME_SD_ONLY}"
+	dd if=/dev/zero of="${bootdev}" status=none bs=512 count=1
+	fdisk "${bootdev}" &> /dev/null < "${FDISK_SCHEME_SD_ONLY}"
 	echo "OK"
 else
 	echo -n "Applying new partition table for ${bootdev}... "
-	dd if=/dev/zero of="${bootdev}" bs=512 count=1 &>/dev/null
-	fdisk "${bootdev}" &>/dev/null < "${FDISK_SCHEME_SD_BOOT}"
+	dd if=/dev/zero of="${bootdev}" status=none bs=512 count=1
+	fdisk "${bootdev}" &> /dev/null < "${FDISK_SCHEME_SD_BOOT}"
 	echo "OK"
 
 	echo -n "Applying new partition table for ${rootdev}... "
-	dd if=/dev/zero of="${rootdev}" bs=512 count=1 &>/dev/null
-	fdisk "${rootdev}" &>/dev/null < "${FDISK_SCHEME_USB_ROOT}"
+	dd if=/dev/zero of="${rootdev}" status=none bs=512 count=1
+	fdisk "${rootdev}" &> /dev/null < "${FDISK_SCHEME_USB_ROOT}"
 	echo "OK"
 fi
 
@@ -1387,25 +1483,26 @@ mdev -s
 
 echo -n "Initializing /boot as vfat... "
 if [ -z "${boot_volume_label}" ]; then
-	mkfs.vfat "${bootpartition}" &>/dev/null || fail
+	mkfs.vfat "${bootpartition}" &> /dev/null || fail
 else
-	mkfs.vfat -n "${boot_volume_label}" "${bootpartition}" &>/dev/null || fail
+	mkfs.vfat -n "${boot_volume_label}" "${bootpartition}" &> /dev/null || fail
 fi
 echo "OK"
 
 echo -n "Copying /boot files in... "
 mount "${bootpartition}" /boot || fail
-cp -r /bootfs/* /boot || fail
+cp -r "${tmp_bootfs}"/* /boot/ || fail
 sync
 umount /boot || fail
+rm -rf "${tmp_bootfs:?}"/ || fail
 echo "OK"
 
 if [ "${kernel_module}" = true ]; then
-  if [ "${rootfstype}" != "ext4" ]; then
-	echo -n "Loading ${rootfstype} module... "
-	modprobe "${rootfstype}" &> /dev/null || fail
-	echo "OK"
-  fi
+	if [ "${rootfstype}" != "ext4" ]; then
+		echo -n "Loading ${rootfstype} module... "
+		modprobe "${rootfstype}" &> /dev/null || fail
+		echo "OK"
+	fi
 fi
 
 echo -n "Initializing / as ${rootfstype}... "
@@ -1418,16 +1515,26 @@ mkdir /rootfs/boot || fail
 mount "${bootpartition}" /rootfs/boot || fail
 echo "OK"
 
+# use 256MB file based swap during installation if needed
+if [ "$(free -m | awk '/^Mem:/{print $2}')" -lt "384" ]; then
+	echo -n "Creating temporary swap file... "
+	dd if=/dev/zero of="${installer_swapfile}" status=none bs=4096 count=65536 || fail
+	chmod 600 "${installer_swapfile}"
+	mkswap "${installer_swapfile}" > /dev/null
+	swapon "${installer_swapfile}" || fail
+	echo "OK"
+fi
+
 if [ "${kernel_module}" = true ]; then
-  if [ "${rootfstype}" != "ext4" ]; then
-	mkdir -p /rootfs/etc/initramfs-tools
-	echo "${rootfstype}" >> /rootfs/etc/initramfs-tools/modules
-  fi
+	if [ "${rootfstype}" != "ext4" ]; then
+		mkdir -p /rootfs/etc/initramfs-tools
+		echo "${rootfstype}" >> /rootfs/etc/initramfs-tools/modules
+	fi
 fi
 
 echo
 echo "Starting install process..."
-for i in $(seq 1 3); do
+for i in $(seq 1 "${installer_pkg_downloadretries}"); do
 	if [ -n "${mirror_cache}" ]; then
 		export http_proxy="http://${mirror_cache}/"
 	fi
@@ -1438,12 +1545,12 @@ for i in $(seq 1 3); do
 		break
 	else
 		unset http_proxy
-		if [ "${i}" -eq 3 ]; then
+		if [ "${i}" -eq "${installer_pkg_downloadretries}" ]; then
 			echo
 			echo "  ERROR: ${cdebootstrap_exitcode}"
 			fail
 		else
-			echo "  ERROR: ${cdebootstrap_exitcode}, trying again ($((i+1))/3)..."
+			echo "  ERROR: ${cdebootstrap_exitcode}, trying again ($((i+1))/${installer_pkg_downloadretries})..."
 		fi
 	fi
 done
@@ -1469,9 +1576,9 @@ fi
 if [ -n "${root_ssh_pubkey}" ]; then
 	echo -n "  Setting root SSH key"
 	if mkdir -p /rootfs/root/.ssh && chmod 700 /rootfs/root/.ssh; then
-		if [ -f "/bootfs/raspberrypi-ua-netinst/config/files/${root_ssh_pubkey}" ]; then
+		if [ -f "/rootfs/boot/raspberrypi-ua-netinst/config/files/${root_ssh_pubkey}" ]; then
 			echo -n " from file '${root_ssh_pubkey}'... "
-			cp "/bootfs/raspberrypi-ua-netinst/config/files/${root_ssh_pubkey}" /rootfs/root/.ssh/authorized_keys || fail
+			cp "/rootfs/boot/raspberrypi-ua-netinst/config/files/${root_ssh_pubkey}" /rootfs/root/.ssh/authorized_keys || fail
 			echo "OK"
 		else
 			echo -n "... "
@@ -1518,9 +1625,9 @@ if [ -n "${username}" ]; then
 	if [ -n "${user_ssh_pubkey}" ]; then
 		echo -n "  Setting SSH key for '${username}'"
 		if mkdir -p "/rootfs/home/${username}/.ssh" && chmod 700 "/rootfs/home/${username}/.ssh"; then
-			if [ -f "/bootfs/raspberrypi-ua-netinst/config/files/${user_ssh_pubkey}" ]; then
+			if [ -f "/rootfs/boot/raspberrypi-ua-netinst/config/files/${user_ssh_pubkey}" ]; then
 				echo -n " from file '${user_ssh_pubkey}'... "
-				cp "/bootfs/raspberrypi-ua-netinst/config/files/${user_ssh_pubkey}" "/rootfs/home/${username}/.ssh/authorized_keys" || fail
+				cp "/rootfs/boot/raspberrypi-ua-netinst/config/files/${user_ssh_pubkey}" "/rootfs/home/${username}/.ssh/authorized_keys" || fail
 				echo "OK"
 			else
 				echo -n "... "
@@ -1625,67 +1732,61 @@ fi
 echo "OK"
 
 # networking
-echo -n "  Configuring network settings... "
-
-if [ "${ip_ipv6}" = "0" ]; then
-	mkdir -p /rootfs/etc/sysctl.d
-	echo "net.ipv6.conf.all.disable_ipv6 = 1" > /rootfs/etc/sysctl.d/01-disable-ipv6.conf
-fi
-
-touch /rootfs/etc/network/interfaces || fail
-# lo interface may already be there, so first check for it
-if ! grep -q "auto lo" /rootfs/etc/network/interfaces; then
-	echo "auto lo" >> /rootfs/etc/network/interfaces
-	echo "iface lo inet loopback" >> /rootfs/etc/network/interfaces
-fi
-
-# configured interface
-echo >> /rootfs/etc/network/interfaces
-echo "allow-hotplug ${ifname}" >> /rootfs/etc/network/interfaces
-if [ "${ip_addr}" = "dhcp" ]; then
-	echo "iface ${ifname} inet dhcp" >> /rootfs/etc/network/interfaces
-else
-	{
-		echo "iface ${ifname} inet static"
-		echo "    address ${ip_addr}"
-		echo "    netmask ${ip_netmask}"
-		echo "    broadcast ${ip_broadcast}"
-		echo "    gateway ${ip_gateway}"
-	} >> /rootfs/etc/network/interfaces
-fi
-
-# wlan config
-if echo "${ifname}" | grep -q "wlan"; then
-	if [ -e "${wlan_configfile}" ]; then
-		# copy the installer version of `wpa_supplicant.conf`
-		mkdir -p /rootfs/etc/wpa_supplicant
-		cp "${wlan_configfile}" /rootfs/etc/wpa_supplicant/
-		chmod 600 /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
-		echo "    wpa-conf /etc/wpa_supplicant/wpa_supplicant.conf" >> /rootfs/etc/network/interfaces
+if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "ifupdown"; then
+	echo -n "  Configuring network settings... "
+	mkdir -p /rootfs/etc/network
+	touch /rootfs/etc/network/interfaces || fail
+	# lo interface may already be there, so first check for it
+	if ! grep -q "auto lo" /rootfs/etc/network/interfaces; then
+		echo "auto lo" >> /rootfs/etc/network/interfaces
+		echo "iface lo inet loopback" >> /rootfs/etc/network/interfaces
 	fi
-	{
-		echo
-		echo "allow-hotplug eth0"
-		echo "iface eth0 inet dhcp"
-	} >> /rootfs/etc/network/interfaces
+	
+	# configured interface
+	echo >> /rootfs/etc/network/interfaces
+	echo "allow-hotplug ${ifname}" >> /rootfs/etc/network/interfaces
+	if [ "${ip_addr}" = "dhcp" ]; then
+		echo "iface ${ifname} inet dhcp" >> /rootfs/etc/network/interfaces
+	else
+		{
+			echo "iface ${ifname} inet static"
+			echo "    address ${ip_addr}"
+			echo "    netmask ${ip_netmask}"
+			echo "    broadcast ${ip_broadcast}"
+			echo "    gateway ${ip_gateway}"
+		} >> /rootfs/etc/network/interfaces
+	fi
+	
+	# wlan config
+	if echo "${ifname}" | grep -q "wlan"; then
+		if [ -e "${wlan_configfile}" ]; then
+			# copy the installer version of `wpa_supplicant.conf`
+			mkdir -p /rootfs/etc/wpa_supplicant
+			cp "${wlan_configfile}" /rootfs/etc/wpa_supplicant/
+			chmod 600 /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
+			echo "    wpa-conf /etc/wpa_supplicant/wpa_supplicant.conf" >> /rootfs/etc/network/interfaces
+		fi
+		{
+			echo
+			echo "allow-hotplug eth0"
+			echo "iface eth0 inet dhcp"
+		} >> /rootfs/etc/network/interfaces
+	fi
+	
+	# Customize cmdline.txt
+	if [ "${disable_predictable_nin}" = "1" ]; then
+		# as described here: https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames
+		# adding net.ifnames=0 to /boot/cmdline and disabling the persistent-net-generator.rules
+		line_add cmdline_custom "net.ifnames=0"
+		ln -s /dev/null /rootfs/etc/udev/rules.d/75-persistent-net-generator.rules
+	fi
+	
+	if [ "${ip_addr}" != "dhcp" ]; then
+		cp /etc/resolv.conf /rootfs/etc/ || fail
+	fi
+	
+	echo "OK"
 fi
-
-# Customize cmdline.txt
-if [ "${disable_predictable_nin}" = "1" ]; then
-	# as described here: https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames
-	# adding net.ifnames=0 to /boot/cmdline and disabling the persistent-net-generator.rules
-	line_add cmdline_custom "net.ifnames=0"
-	ln -s /dev/null /rootfs/etc/udev/rules.d/75-persistent-net-generator.rules
-fi
-line_add_if_boolean quiet_boot cmdline_custom "quiet" "loglevel=3"
-line_add_if_boolean disable_raspberries cmdline_custom "logo.nologo"
-line_add_if_set console_blank cmdline_custom "consoleblank=${console_blank}"
-
-if [ "${ip_addr}" != "dhcp" ]; then
-	cp /etc/resolv.conf /rootfs/etc/ || fail
-fi
-
-echo "OK"
 
 # set timezone and reconfigure tzdata package
 if [ -n "${timezone}" ]; then
@@ -1813,34 +1914,34 @@ fi
 # copy apt's sources.list to the target system
 echo "Configuring apt:"
 echo -n "  Configuring Raspbian repository... "
-if [ -e "/bootfs/raspberrypi-ua-netinst/config/apt/sources.list" ]; then
-	sed "s/__RELEASE__/${release_raspbian}/g" "/bootfs/raspberrypi-ua-netinst/config/apt/sources.list" > "/rootfs/etc/apt/sources.list" || fail
-	cp /bootfs/raspberrypi-ua-netinst/config/apt/sources.list /rootfs/etc/apt/sources.list || fail
+if [ -e "/rootfs/boot/raspberrypi-ua-netinst/config/apt/sources.list" ]; then
+	sed "s/__RELEASE__/${release_raspbian}/g" "/rootfs/boot/raspberrypi-ua-netinst/config/apt/sources.list" > "/rootfs/etc/apt/sources.list" || fail
+	cp /rootfs/boot/raspberrypi-ua-netinst/config/apt/sources.list /rootfs/etc/apt/sources.list || fail
 else
 	sed "s/__RELEASE__/${release_raspbian}/g" "/opt/raspberrypi-ua-netinst/res/etc/apt/sources.list" > "/rootfs/etc/apt/sources.list" || fail
 fi
 echo "OK"
 # if __RELEASE__ is still present, something went wrong
 echo -n "  Checking Raspbian repository entry... "
-if grep -l '__RELEASE__' /rootfs/etc/apt/sources.list >/dev/null; then
+if grep -l '__RELEASE__' /rootfs/etc/apt/sources.list > /dev/null; then
 	fail
 else
 	echo "OK"
 fi
 echo -n "  Adding raspberrypi.org GPG key to apt-key... "
-(chroot /rootfs /usr/bin/apt-key add - &>/dev/null) < /usr/share/keyrings/raspberrypi.gpg.key || fail
+(chroot /rootfs /usr/bin/apt-key add - &> /dev/null) < /usr/share/keyrings/raspberrypi.gpg.key || fail
 echo "OK"
 
 echo -n "  Configuring RaspberryPi repository... "
-if [ -e "/bootfs/raspberrypi-ua-netinst/config/apt/raspberrypi.org.list" ]; then
-	sed "s/__RELEASE__/${release_base}/g" "/bootfs/raspberrypi-ua-netinst/config/apt/raspberrypi.org.list" > "/rootfs/etc/apt/sources.list.d/raspberrypi.org.list" || fail
+if [ -e "/rootfs/boot/raspberrypi-ua-netinst/config/apt/raspberrypi.org.list" ]; then
+	sed "s/__RELEASE__/${release_base}/g" "/rootfs/boot/raspberrypi-ua-netinst/config/apt/raspberrypi.org.list" > "/rootfs/etc/apt/sources.list.d/raspberrypi.org.list" || fail
 else
 	sed "s/__RELEASE__/${release_base}/g" "/opt/raspberrypi-ua-netinst/res/etc/apt/raspberrypi.org.list" > "/rootfs/etc/apt/sources.list.d/raspberrypi.org.list" || fail
 fi
 echo "OK"
 echo -n "  Configuring RaspberryPi preference... "
-if [ -e "/bootfs/raspberrypi-ua-netinst/config/apt/archive_raspberrypi_org.pref" ]; then
-	sed "s/__RELEASE__/${release_base}/g" "/bootfs/raspberrypi-ua-netinst/config/apt/archive_raspberrypi_org.pref" > "/rootfs/etc/apt/preferences.d/archive_raspberrypi_org.pref" || fail
+if [ -e "/rootfs/boot/raspberrypi-ua-netinst/config/apt/archive_raspberrypi_org.pref" ]; then
+	sed "s/__RELEASE__/${release_base}/g" "/rootfs/boot/raspberrypi-ua-netinst/config/apt/archive_raspberrypi_org.pref" > "/rootfs/etc/apt/preferences.d/archive_raspberrypi_org.pref" || fail
 else
 	sed "s/__RELEASE__/${release_base}/g" "/opt/raspberrypi-ua-netinst/res/etc/apt/archive_raspberrypi_org.pref" > "/rootfs/etc/apt/preferences.d/archive_raspberrypi_org.pref" || fail
 fi
@@ -1908,18 +2009,21 @@ cd "${old_dir}" || fail
 
 echo
 echo -n "Updating package lists... "
-for i in $(seq 1 3); do
-	if chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" update &>/dev/null; then
+for i in $(seq 1 "${installer_pkg_updateretries}"); do
+	if [ -z "${mirror_cache}" ]; then
+		chroot /rootfs /usr/bin/apt-get update &> /dev/null
+	else
+		chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" update &> /dev/null
+	fi
+	update_exitcode="${?}"
+	if [ "${update_exitcode}" -eq 0 ]; then
 		echo "OK"
 		break
+	elif [ "${i}" -eq "${installer_pkg_updateretries}" ]; then
+		echo "ERROR: ${update_exitcode}, FAILED !"
+		fail
 	else
-		update_exitcode="${?}"
-		if [ "${i}" -eq 3 ]; then
-			echo "ERROR: ${update_exitcode}, FAILED !"
-			fail
-		else
-			echo -n "ERROR: ${update_exitcode}, trying again ($((i+1))/3)... "
-		fi
+		echo -n "ERROR: ${update_exitcode}, trying again ($((i+1))/${installer_pkg_updateretries})... "
 	fi
 done
 
@@ -1934,25 +2038,27 @@ if [ "${kernel_module}" = true ]; then
 
 	echo
 	echo "Downloading packages..."
-	for i in $(seq 1 5); do
-		eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y -d install "${packages_postinstall}" 2>&1 | output_filter
+	for i in $(seq 1 "${installer_pkg_downloadretries}"); do
+		if [ -z "${mirror_cache}" ]; then
+			eval chroot /rootfs /usr/bin/apt-get -y -d install "${packages_postinstall}" 2>&1 | output_filter
+		else
+			eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y -d install "${packages_postinstall}" 2>&1 | output_filter
+		fi
 		download_exitcode="${PIPESTATUS[0]}"
 		if [ "${download_exitcode}" -eq 0 ]; then
 			echo "OK"
 			break
+		elif [ "${i}" -eq "${installer_pkg_downloadretries}" ]; then
+			echo "ERROR: ${download_exitcode}, FAILED !"
+			fail
 		else
-			if [ "${i}" -eq 3 ]; then
-				echo "ERROR: ${download_exitcode}, FAILED !"
-				fail
-			else
-				echo -n "ERROR: ${download_exitcode}, trying again ($((i+1))/5)... "
-			fi
+			echo -n "ERROR: ${download_exitcode}, trying again ($((i+1))/${installer_pkg_downloadretries})... "
 		fi
 	done
 
 	echo
 	echo "Installing kernel, bootloader (=firmware) and user packages..."
-	eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y install "${packages_postinstall}" 2>&1 | output_filter
+	eval chroot /rootfs /usr/bin/apt-get -y install "${packages_postinstall}" 2>&1 | output_filter
 	if [ "${PIPESTATUS[0]}" -eq 0 ]; then
 		echo "OK"
 	else
@@ -1962,14 +2068,19 @@ if [ "${kernel_module}" = true ]; then
 	unset DEBIAN_FRONTEND
 fi
 
+# remove cdebootstrap-helper-rc.d which prevents rc.d scripts from running
+echo -n "Removing cdebootstrap-helper-rc.d... "
+chroot /rootfs /usr/bin/dpkg -r cdebootstrap-helper-rc.d &> /dev/null || fail
+echo "OK"
+
 echo "Preserving original config.txt and kernels..."
 mkdir -p /rootfs/boot/raspberrypi-ua-netinst/reinstall
-cp /bootfs/config.txt /rootfs/boot/raspberrypi-ua-netinst/reinstall/config.txt
-cp /bootfs/kernel.img /rootfs/boot/raspberrypi-ua-netinst/reinstall/kernel.img
-cp /bootfs/kernel7.img /rootfs/boot/raspberrypi-ua-netinst/reinstall/kernel7.img
+cp /rootfs/boot/config.txt /rootfs/boot/raspberrypi-ua-netinst/reinstall/config.txt
+cp /rootfs/boot/kernel.img /rootfs/boot/raspberrypi-ua-netinst/reinstall/kernel.img
+cp /rootfs/boot/kernel7.img /rootfs/boot/raspberrypi-ua-netinst/reinstall/kernel7.img
 echo "Configuring bootloader to start the installed system..."
-if [ -e "/bootfs/raspberrypi-ua-netinst/config/boot/config.txt" ]; then
-	cp /bootfs/raspberrypi-ua-netinst/config/boot/config.txt /rootfs/boot/config.txt
+if [ -e "/rootfs/boot/raspberrypi-ua-netinst/config/boot/config.txt" ]; then
+	cp /rootfs/boot/raspberrypi-ua-netinst/config/boot/config.txt /rootfs/boot/config.txt
 else
 	cp /opt/raspberrypi-ua-netinst/res/boot/config.txt /rootfs/boot/config.txt
 fi
@@ -1985,6 +2096,10 @@ fi
 # create cmdline.txt
 echo -n "Creating cmdline.txt... "
 line_add cmdline "root=${rootpartition} rootfstype=${rootfstype} rootwait"
+line_add_if_boolean quiet_boot cmdline_custom "quiet" "loglevel=3"
+line_add_if_boolean disable_raspberries cmdline_custom "logo.nologo"
+line_add_if_set console_blank cmdline_custom "consoleblank=${console_blank}"
+line_add_if_boolean_not ip_ipv6 cmdline_custom "ipv6.disable=1"
 line_add_if_set cmdline_custom cmdline "${cmdline_custom}"
 echo "${cmdline}" > /rootfs/boot/cmdline.txt
 echo "OK"
@@ -2189,28 +2304,23 @@ done
 cd "${old_dir}" || fail
 
 # run post install script if exists
-if [ -e "/bootfs/raspberrypi-ua-netinst/config/post-install.txt" ]; then
+if [ -e "/rootfs/boot/raspberrypi-ua-netinst/config/post-install.txt" ]; then
 	echo "================================================="
 	echo "=== Start executing post-install.txt. ==="
-	inputfile_sanitize /bootfs/raspberrypi-ua-netinst/config/post-install.txt
+	inputfile_sanitize /rootfs/boot/raspberrypi-ua-netinst/config/post-install.txt
 	# shellcheck disable=SC1091
-	source /bootfs/raspberrypi-ua-netinst/config/post-install.txt
+	source /rootfs/boot/raspberrypi-ua-netinst/config/post-install.txt
 	echo "=== Finished executing post-install.txt. ==="
 	echo "================================================="
 fi
 
-# remove cdebootstrap-helper-rc.d which prevents rc.d scripts from running
-echo -n "Removing cdebootstrap-helper-rc.d... "
-chroot /rootfs /usr/bin/dpkg -r cdebootstrap-helper-rc.d &>/dev/null || fail
-echo "OK"
-
 # save current time
-if [ -z "${rtc}" ]; then
+if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "fake-hwclock"; then
 	echo -n "Saving current time for fake-hwclock... "
 	sync # synchronize before saving time to make it "more accurate"
 	date +"%Y-%m-%d %H:%M:%S" > /rootfs/etc/fake-hwclock.data
 	echo "OK"
-else
+elif [ -n "${rtc}" ]; then
 	echo -n "Saving current time to RTC... "
 	/opt/busybox/bin/hwclock --systohc || fail
 	echo "OK"
@@ -2227,12 +2337,17 @@ if [ "${cleanup_logfiles}" = "1" ]; then
 	rm -f /rootfs/boot/raspberrypi-ua-netinst/error-*.log
 else
 	sleep 1
-	cp "${logfile}" /rootfs/var/log/raspberrypi-ua-netinst.log
+	# root and user passwords are deleted from logfile before it is written to the filesystem
+	sed "/rootpw/d;/userpw/d" "${logfile}" > /rootfs/var/log/raspberrypi-ua-netinst.log
 	chmod 0640 /rootfs/var/log/raspberrypi-ua-netinst.log
 fi
 
 # Cleanup installer files
-echo "installer_retries=3" > /rootfs/boot/raspberrypi-ua-netinst/config/installer-retries.txt
+rm -f "/rootfs${installer_retriesfile}"
+if [ -e "${installer_swapfile}" ]; then
+	swapoff "${installer_swapfile}"
+	rm -f "${installer_swapfile}"
+fi
 if [ "${cleanup}" = "1" ]; then
 	echo -n "Removing installer files... "
 	rm -rf /rootfs/boot/raspberrypi-ua-netinst/
@@ -2252,16 +2367,16 @@ fi
 
 case ${final_action} in
 	poweroff)
-		echo -n "Finished! Powering off in 5 seconds..."
+		echo -n "Finished! Powering off in 5 seconds... "
 		;;
 	halt)
-		echo -n "Finished! Halting in 5 seconds..."
+		echo -n "Finished! Halting in 5 seconds... "
 		;;
 	console)
 		echo -n "Finished!"
 		;;
 	*)
-		echo -n "Finished! Rebooting to installed system in 5 seconds..."
+		echo -n "Finished! Rebooting to installed system in 5 seconds... "
 		final_action=reboot
 esac
 
