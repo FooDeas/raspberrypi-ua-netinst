@@ -410,6 +410,9 @@ function create_cpio {
 	cp --preserve=xattr,timestamps tmp/etc/rpc rootfs/etc/
 	cp --preserve=xattr,timestamps tmp/etc/services rootfs/etc/
 
+	# netcat-openbsd
+	cp --preserve=xattr,timestamps tmp/bin/nc.openbsd rootfs/bin/nc
+
 	# ntpdate components
 	cp --preserve=xattr,timestamps tmp/etc/default/ntpdate rootfs/etc/default/
 	# don't use /etc/ntp.conf since we don't have it
@@ -466,6 +469,9 @@ function create_cpio {
 
 	# libblkid1 components
 	cp --preserve=xattr,timestamps tmp/lib/*/libblkid.so.1.* rootfs/lib/libblkid.so.1
+
+	# libbsd0 components
+	cp --preserve=xattr,timestamps tmp/lib/*/libbsd.so.0.* rootfs/lib/libbsd.so.0
 
 	# libbz2-1.0 components
 	cp --preserve=xattr,timestamps tmp/lib/*/libbz2.so.1.0.* rootfs/lib/libbz2.so.1.0

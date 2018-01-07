@@ -939,6 +939,15 @@ else
 	echo "OK"
 fi
 
+# Start telnet console output
+mkfifo telnet.pipe
+mkfifo /dev/installer-telnet
+tee < telnet.pipe /dev/installer-telnet &
+while IFS= read -r line; do echo "${line}"; done <"/dev/installer-telnet" | /bin/nc -klC -p 23 > /dev/null &
+exec &> telnet.pipe
+rm telnet.pipe
+echo "Printing console to telnet output started."
+
 # This will record the time to get to this point
 PRE_NETWORK_DURATION=$(date +%s)
 

@@ -74,7 +74,7 @@ If you don't have a display attached, you can monitor the ethernet card LEDs to 
 
 If the installation process fails, you will see **SOS** in Morse code (... --- ...) on an led.  In this case, power off the Pi and check the log on the sd card.
 
-If you do have a display, you can follow the progress and catch any possible errors in the default configuration or your own modifications.
+If you do have a display, you can follow the progress and catch any possible errors in the default configuration or your own modifications. Once a network connection has been established, the process can also be followed via telnet (port 23).
 
 If you have a serial cable connected, installer output can be followed there, too. If 'console=tty1' at then end of the `cmdline.txt` file is removed, you have access to the console in case of problems.
 
