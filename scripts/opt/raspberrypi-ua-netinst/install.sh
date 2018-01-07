@@ -391,11 +391,9 @@ output_filter() {
 	filterstring+="|^E$"
 	filterstring+="|^: $"
 
-	while IFS= read -r line ; do
-		if [[ "$line" =~ ${filterstring} ]] ; then
-			:
-		else
-			echo "  $line"
+	while IFS= read -r line; do
+		if [[ ! "${line}" =~ ${filterstring} ]]; then
+			echo "  ${line}"
 		fi
 	done
 }
