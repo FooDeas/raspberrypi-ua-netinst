@@ -941,7 +941,11 @@ fi
 mkfifo telnet.pipe
 mkfifo /dev/installer-telnet
 tee < telnet.pipe /dev/installer-telnet &
-while IFS= read -r line; do echo "${line}"; done <"/dev/installer-telnet" | /bin/nc -klC -p 23 > /dev/null &
+while IFS= read -r line; do
+	if [[ ! "${line}" =~ userpw|rootpw ]]; then
+		echo "${line}"
+	fi
+done < "/dev/installer-telnet" | /bin/nc -klC -p 23 > /dev/null &
 exec &> telnet.pipe
 rm telnet.pipe
 echo "Printing console to telnet output started."
