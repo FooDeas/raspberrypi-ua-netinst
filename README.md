@@ -137,7 +137,7 @@ The default **root** password is **raspbian**.
 - Configure your timezone: `dpkg-reconfigure tzdata`
 
 Optional:  
-Create a swap file with `fallocate -l 512M /swap && mkswap /swap && chmod 600 /swap` (example is 512MB) and enable it on boot by appending `/swap none swap sw 0 0` to `/etc/fstab`.  
+Create a swap file with `dd if=/dev/zero of=/swap bs=1M count=512 && chmod 600 /swap && mkswap /swap` (example is 512MB) and enable it on boot by appending `/swap none swap sw 0 0` to `/etc/fstab`.  
 
 ## Logging
 
