@@ -76,7 +76,7 @@ variables_reset() {
 	usbboot=
 	cmdline=
 	rootfstype=
-	final_action=
+	installer_telnet=
 	installer_retries=
 	installer_networktimeout=
 	installer_pkg_updateretries=
@@ -152,6 +152,7 @@ variables_set_defaults() {
 	variable_set "cmdline" "dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 elevator=deadline fsck.repair=yes"
 	variable_set "rootfstype" "f2fs"
 	variable_set "final_action" "reboot"
+	variable_set "installer_telnet" "1"
 	variable_set "installer_retries" "3"
 	variable_set "installer_networktimeout" "15"
 	variable_set "installer_pkg_updateretries" "3"
@@ -496,7 +497,6 @@ installer_swapfile=/rootfs/installer-swap
 wlan_configfile=/tmp/wpa_supplicant.conf
 rootdev=/dev/mmcblk0
 tmp_bootfs=/tmp/bootfs
-final_action=reboot
 
 mkdir -p /proc
 mkdir -p /sys
@@ -938,17 +938,19 @@ else
 fi
 
 # Start telnet console output
-mkfifo telnet.pipe
-mkfifo /dev/installer-telnet
-tee < telnet.pipe /dev/installer-telnet &
-while IFS= read -r line; do
-	if [[ ! "${line}" =~ userpw|rootpw ]]; then
-		echo "${line}"
-	fi
-done < "/dev/installer-telnet" | /bin/nc -klC -p 23 > /dev/null &
-exec &> telnet.pipe
-rm telnet.pipe
-echo "Printing console to telnet output started."
+if [ "${installer_telnet}" = "1" ]; then
+	mkfifo telnet.pipe
+	mkfifo /dev/installer-telnet
+	tee < telnet.pipe /dev/installer-telnet &
+	while IFS= read -r line; do
+		if [[ ! "${line}" =~ userpw|rootpw ]]; then
+			echo "${line}"
+		fi
+	done < "/dev/installer-telnet" | /bin/nc -klC -p 23 > /dev/null &
+	exec &> telnet.pipe
+	rm telnet.pipe
+	echo "Printing console to telnet output started."
+fi
 
 # This will record the time to get to this point
 PRE_NETWORK_DURATION=$(date +%s)

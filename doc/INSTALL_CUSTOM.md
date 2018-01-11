@@ -129,6 +129,7 @@
 | `rootfs_install_mount_options` |  |  |  |
 | `rootfs_mount_options` |  |  |  |
 | `final_action` | `reboot` | `reboot`/  `poweroff`/  `halt`/  `console` | Action at the end of install. |
+| `installer_telnet` | `1` | `0`/`1` | Send installer console output via telnet. |
 | `installer_retries` | `3` |  | Number of retries if installation fails. |
 | `installer_networktimeout` | `15` |  | Timeout in seconds for network interface initialization. |
 | `installer_pkg_updateretries` | `3` |  | Number of retries if package update fails. |
