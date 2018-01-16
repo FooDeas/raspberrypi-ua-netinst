@@ -1483,9 +1483,9 @@ mdev -s
 
 echo -n "Initializing /boot as vfat... "
 if [ -z "${boot_volume_label}" ]; then
-	mkfs.vfat "${bootpartition}" &> /dev/null || fail
+	mkfs.vfat -s 1 "${bootpartition}" &> /dev/null || fail
 else
-	mkfs.vfat -n "${boot_volume_label}" "${bootpartition}" &> /dev/null || fail
+	mkfs.vfat -s 1 -n "${boot_volume_label}" "${bootpartition}" &> /dev/null || fail
 fi
 echo "OK"
 
