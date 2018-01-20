@@ -363,8 +363,7 @@ install_files() {
 	echo
 }
 
-output_filter() {
-	local filterstring
+set_filter() {
 	filterstring="^$"
 	filterstring+="|^Setcap failed on \S.*, falling back to setuid$"
 	filterstring+="|^dpkg: warning: ignoring pre-dependency problem"'!'"$"
@@ -391,7 +390,9 @@ output_filter() {
 	filterstring+="|\(Reading database \.\.\. [0..9]{1,3}\%"
 	filterstring+="|^E$"
 	filterstring+="|^: $"
+}
 
+output_filter() {
 	while IFS= read -r line; do
 		if [[ ! "${line}" =~ ${filterstring} ]]; then
 			echo "  ${line}"
@@ -497,6 +498,7 @@ installer_swapfile=/rootfs/installer-swap
 wlan_configfile=/tmp/wpa_supplicant.conf
 rootdev=/dev/mmcblk0
 tmp_bootfs=/tmp/bootfs
+set_filter
 
 mkdir -p /proc
 mkdir -p /sys
