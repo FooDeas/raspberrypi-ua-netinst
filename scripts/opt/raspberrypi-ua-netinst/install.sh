@@ -1498,9 +1498,9 @@ mdev -s
 
 echo -n "Initializing /boot as vfat... "
 if [ -z "${boot_volume_label}" ]; then
-	mkfs.vfat -s 1 "${bootpartition}" &> /dev/null || fail
+	mkfs.vfat "${bootpartition}" || fail
 else
-	mkfs.vfat -s 1 -n "${boot_volume_label}" "${bootpartition}" &> /dev/null || fail
+	mkfs.vfat -n "${boot_volume_label}" "${bootpartition}" || fail
 fi
 echo "OK"
 
@@ -1521,7 +1521,7 @@ if [ "${kernel_module}" = true ]; then
 fi
 
 echo -n "Initializing / as ${rootfstype}... "
-eval mkfs."${rootfstype}" "${rootfs_mkfs_options}" "${rootpartition}" &> /dev/null || fail
+eval mkfs."${rootfstype}" "${rootfs_mkfs_options}" "${rootpartition}" || fail
 echo "OK"
 
 echo -n "Mounting new filesystems... "
