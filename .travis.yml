@@ -7,7 +7,7 @@ script:
     - cd wget-1.18
     - ./configure
     - make
-    - make install
+    - sudo make install
     - set -e
     - ./clean.sh
     - ./update.sh
