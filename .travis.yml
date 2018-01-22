@@ -5,6 +5,7 @@ script:
     - ./clean.sh
     - ./update.sh
     - ./build.sh
+    - sudo ./buildroot.sh
 
 addons:
     apt:
