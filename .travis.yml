@@ -2,7 +2,12 @@ language: generic
 sudo: true
 
 script:
-    - wget --version
+    - wget http://ftp.gnu.org/gnu/wget/wget-1.18.tar.xz
+    - tar xf wget-1.18.tar.xz
+    - cd wget-1.18
+    - ./configure
+    - make
+    - make install
     - set -e
     - ./clean.sh
     - ./update.sh
