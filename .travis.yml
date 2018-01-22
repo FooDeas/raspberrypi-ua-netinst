@@ -2,10 +2,12 @@ sudo: true
 
 script:
     - wget --version
+    - set -e
     - ./clean.sh
     - ./update.sh
     - ./build.sh
     - sudo ./buildroot.sh
+    - set +e
 
 addons:
     apt:
