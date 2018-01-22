@@ -1,1 +1,22 @@
-sudo: true
+sudo: false
+
+script:
+    - wget --version
+    - ./clean.sh
+    - ./update.sh
+    - ./build.sh
+
+addons:
+    apt:
+        packages:
+            - git
+            - curl
+            - bzip2
+            - zip
+            - xz-utils
+            - gnupg
+            - kpartx
+            - dosfstools
+            - binutils
+            - bc
+
