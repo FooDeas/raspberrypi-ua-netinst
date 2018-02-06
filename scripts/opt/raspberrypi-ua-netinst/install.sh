@@ -72,6 +72,7 @@ variables_reset() {
 	hdmi_monitor_res=
 	hdmi_disable_overscan=
 	hdmi_system_only=
+	hdmi_display_rotate=
 	usbroot=
 	usbboot=
 	cmdline=
@@ -147,6 +148,7 @@ variables_set_defaults() {
 	variable_set "hdmi_monitor_res" "1024x768"
 	variable_set "hdmi_disable_overscan" "0"
 	variable_set "hdmi_system_only" "0"
+	variable_set "hdmi_display_rotate" "0"
 	variable_set "usbroot" "0"
 	variable_set "usbboot" "0"
 	variable_set "cmdline" "dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 elevator=deadline fsck.repair=yes"
@@ -741,6 +743,9 @@ if [ "${hdmi_system_only}" = "0" ]; then
 	if [ "${hdmi_disable_overscan}" = "1" ]; then
 		if ! config_check "/boot/config.txt" "disable_overscan" "1"; then config_set "/boot/config.txt" "disable_overscan" "1"; preinstall_reboot=1; fi
 	fi
+	if [ "${hdmi_display_rotate}" != "0" ]; then
+		config_set "/boot/config.txt" "display_hdmi_rotate" "${hdmi_display_rotate}" >> /boot/config.txt; preinstall_reboot=1; fi
+	fi
 	echo "OK"
 fi
 # RTC
@@ -1322,6 +1327,7 @@ echo "  hdmi_type = ${hdmi_type}"
 echo "  hdmi_tv_res = ${hdmi_tv_res}"
 echo "  hdmi_monitor_res = ${hdmi_monitor_res}"
 echo "  hdmi_disable_overscan = ${hdmi_disable_overscan}"
+echo "  hdmi_display_rotate = ${hdmi_display_rotate}"
 echo "  hdmi_system_only = ${hdmi_system_only}"
 echo "  usbroot = ${usbroot}"
 echo "  usbboot = ${usbboot}"
