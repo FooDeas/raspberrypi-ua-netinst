@@ -67,6 +67,8 @@ variables_reset() {
 	online_config=
 	gpu_mem=
 	console_blank=
+	console_framebuffer_width=
+	console_framebuffer_height=
 	hdmi_type=
 	hdmi_tv_res=
 	hdmi_monitor_res=
@@ -746,6 +748,12 @@ if [ "${hdmi_system_only}" = "0" ]; then
 	if [ "${hdmi_display_rotate}" != "0" ]; then
 		config_set "/boot/config.txt" "display_hdmi_rotate" "${hdmi_display_rotate}" >> /boot/config.txt; preinstall_reboot=1; fi
 	fi
+	if [ -z "$console_framebuffer_width" ]; then
+		config_set "/boot/config.txt" "framebuffer_width" "${console_framebuffer_width}" >> /boot/config.txt; preinstall_reboot=1; fi
+	fi
+	if [ -z "$console_framebuffer_height" ]; then
+		config_set "/boot/config.txt" "framebuffer_height" "${console_framebuffer_height}" >> /boot/config.txt; preinstall_reboot=1; fi
+	fi
 	echo "OK"
 fi
 # RTC
@@ -792,6 +800,7 @@ echo -n "Unmounting boot partition... "
 umount /boot || fail
 echo "OK"
 
+# Network
 echo
 echo "Network configuration:"
 echo "  ifname = ${ifname}"
