@@ -75,6 +75,12 @@ variables_reset() {
 	hdmi_force_hotplug=
 	hdmi_ignore_hotplug=
 	hdmi_disable_overscan=
+	hdmi_overscan_right=
+	hdmi_overscan_left=
+	hdmi_overscan_top=
+	hdmi_overscan_bottom=
+	hdmi_disable_overscan=
+	hdmi_disable_overscan=
 	hdmi_system_only=
 	hdmi_display_rotate=
 	usbroot=
@@ -748,6 +754,18 @@ if [ "${hdmi_system_only}" = "0" ]; then
 	fi
 	if [ "${hdmi_disable_overscan}" = "1" ]; then
 		if ! config_check "/boot/config.txt" "disable_overscan" "1"; then config_set "/boot/config.txt" "disable_overscan" "1"; preinstall_reboot=1; fi
+	fi
+	if [ -z "$hdmi_overscan_left" ]; then
+		config_set "/boot/config.txt" "overscan_left" "${hdmi_overscan_left}" >> /boot/config.txt; preinstall_reboot=1; fi
+	fi
+	if [ -z "$hdmi_overscan_right" ]; then
+		config_set "/boot/config.txt" "overscan_right" "${hdmi_overscan_right}" >> /boot/config.txt; preinstall_reboot=1; fi
+	fi
+	if [ -z "$hdmi_overscan_top" ]; then
+		config_set "/boot/config.txt" "overscan_top" "${hdmi_overscan_top}" >> /boot/config.txt; preinstall_reboot=1; fi
+	fi
+	if [ -z "$hdmi_overscan_bottom" ]; then
+		config_set "/boot/config.txt" "overscan_bottom" "${hdmi_overscan_bottom}" >> /boot/config.txt; preinstall_reboot=1; fi
 	fi
 	if [ "${hdmi_display_rotate}" != "0" ]; then
 		config_set "/boot/config.txt" "display_hdmi_rotate" "${hdmi_display_rotate}" >> /boot/config.txt; preinstall_reboot=1; fi
