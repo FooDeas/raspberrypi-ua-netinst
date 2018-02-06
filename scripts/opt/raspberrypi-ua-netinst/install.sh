@@ -72,6 +72,8 @@ variables_reset() {
 	hdmi_type=
 	hdmi_tv_res=
 	hdmi_monitor_res=
+	hdmi_force_hotplug=
+	hdmi_ignore_hotplug=
 	hdmi_disable_overscan=
 	hdmi_system_only=
 	hdmi_display_rotate=
@@ -148,6 +150,8 @@ variables_set_defaults() {
 	variable_set "ip_ipv6" "1"
 	variable_set "hdmi_tv_res" "1080p"
 	variable_set "hdmi_monitor_res" "1024x768"
+	variable_set "hdmi_force_hotplug" "0"
+	variable_set "hdmi_ignore_hotplug" "0"
 	variable_set "hdmi_disable_overscan" "0"
 	variable_set "hdmi_system_only" "0"
 	variable_set "hdmi_display_rotate" "0"
@@ -753,6 +757,12 @@ if [ "${hdmi_system_only}" = "0" ]; then
 	fi
 	if [ -z "$console_framebuffer_height" ]; then
 		config_set "/boot/config.txt" "framebuffer_height" "${console_framebuffer_height}" >> /boot/config.txt; preinstall_reboot=1; fi
+	fi
+	if [ -z "${hdmi_force_hotplug}" ]; then
+		config_set "/boot/config.txt" "hdmi_force_hotplug" "${hdmi_force_hotplug}" >> /boot/config.txt; preinstall_reboot=1; fi
+	fi
+	if [ -z "${hdmi_ignore_hotplug}" ]; then
+		config_set "/boot/config.txt" "hdmi_ignore_hotplug" "${hdmi_ignore_hotplug}" >> /boot/config.txt; preinstall_reboot=1; fi
 	fi
 	echo "OK"
 fi
