@@ -3,15 +3,18 @@ sudo: true
 cache:
   directories:
   - packages
+  - wget
 
 script:
+    - mkdir wget
+    - cd wget
     - wget http://ftp.gnu.org/gnu/wget/wget-1.18.tar.xz
     - tar xf wget-1.18.tar.xz
     - cd wget-1.18
     - ./configure
     - make
     - sudo make install
-    - cd ..
+    - cd ../..
     - set -e
     - rm -rf res/initramfs/boot/config.txt build_dir ./*.zip ./*.xz ./*.bz2
     - ./update.sh
