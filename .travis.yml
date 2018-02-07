@@ -6,7 +6,6 @@ cache:
   - wget
 
 script:
-    - mkdir wget
     - cd wget
     - wget http://ftp.gnu.org/gnu/wget/wget-1.18.tar.xz
     - tar xf wget-1.18.tar.xz
