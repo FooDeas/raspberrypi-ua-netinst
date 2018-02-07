@@ -768,7 +768,7 @@ if [ "${hdmi_system_only}" = "0" ]; then
 		config_set "/boot/config.txt" "overscan_bottom" "${hdmi_overscan_bottom}" >> /boot/config.txt; preinstall_reboot=1; fi
 	fi
 	if [ "${hdmi_display_rotate}" != "0" ]; then
-		config_set "/boot/config.txt" "display_hdmi_rotate" "${hdmi_display_rotate}" >> /boot/config.txt; preinstall_reboot=1; fi
+		config_set "/boot/config.txt" "display_rotate" "${hdmi_display_rotate}" >> /boot/config.txt; preinstall_reboot=1; fi
 	fi
 	if [ -z "$console_framebuffer_width" ]; then
 		config_set "/boot/config.txt" "framebuffer_width" "${console_framebuffer_width}" >> /boot/config.txt; preinstall_reboot=1; fi
