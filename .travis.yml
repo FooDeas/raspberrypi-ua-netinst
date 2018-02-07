@@ -1,5 +1,8 @@
 language: generic
 sudo: true
+cache:
+  directories:
+  - packages
 
 script:
     - wget http://ftp.gnu.org/gnu/wget/wget-1.18.tar.xz
@@ -10,7 +13,7 @@ script:
     - sudo make install
     - cd ..
     - set -e
-    - ./clean.sh
+    - rm -rf res/initramfs/boot/config.txt build_dir ./*.zip ./*.xz ./*.bz2
     - ./update.sh
     - ./build.sh
     - sudo ./buildroot.sh
