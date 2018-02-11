@@ -98,11 +98,20 @@
 |-------------------------|------------|--------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `gpu_mem` |  |  | Specifies the amount of RAM in MB that should be reserved for the GPU. To allow the VideoCore GPU kernel driver to be loaded correctly, you should use at least "32". If not defined, the bootloader sets it to 64MB. The minimum value is "16". |
 | `console_blank` |  |  | Sets console blanking timeout (screensaver) in seconds. Default kernel setting is 10 minutes (`600`). The value `0` disables the blanking completely. |
+| `console_framebuffer_width` |  |  | Specifies the console framebuffer width in pixels. The default is the display width minus the total horizontal overscan. |
+| `console_framebuffer_height` |  |  | Specifies the console framebuffer height in pixels. The default is the display height minus the total vertical overscan. |
 | `hdmi_type` |  | `tv`/  `monitor` | Forces HDMI mode and disables automatic display identification. Choose between TV or monitor  mode and specify the resolution with the options below. If not defined, the automatic display setting is used to determine the information sent by the display. |
 | `hdmi_tv_res` | `1080p` | `720p`/  `1080i`/  `1080p` | Specifies the display resolution if `hdmi_type` is set to TV mode. |
 | `hdmi_monitor_res` | `1024x768` | `640x480`/  `800x600`/  `1024x768`/  `1280x1024` | Specifies the display resolution if `hdmi_type` is set to monitor mode. |
 | `hdmi_disable_overscan` | `0` | `0`/`1` | Set to "1" to disable overscan. |
+| `hdmi_overscan_left` |  |  | Specifies the number of pixels to skip on the left edge of the screen. |
+| `hdmi_overscan_right` |  |  | Specifies the number of pixels to skip on the right edge of the screen. |
+| `hdmi_overscan_top` |  |  | Specifies the number of pixels to skip on the top of the screen. |
+| `hdmi_overscan_bottom` |  |  | Specifies the number of pixels to skip on the bottom of the screen. |
+| `hdmi_display_rotate` | `0` | `0`/`1`/`2`/`3`/`0x10000`/`0x20000` | Rotate or flip the HDMI display orientation. |
 | `hdmi_system_only` | `0` | `0`/`1` | Set to "1" to ignore HDMI settings during installation and apply these settings only to the system. |
+| `hdmi_force_hotplug` | `0` | `0`/`1` | HDMI output mode will be forced, even if no HDMI monitor is detected. |
+| `hdmi_ignore_hotplug` | `0` | `0`/`1` | Composite output mode will be forced, even if an HDMI monitor is detected. |
 
 ## Partitioning / Filesystem
 
