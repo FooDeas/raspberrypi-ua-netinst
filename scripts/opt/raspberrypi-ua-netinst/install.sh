@@ -753,34 +753,34 @@ if [ "${hdmi_system_only}" = "0" ]; then
 		fi
 	fi
 	if [ "${hdmi_disable_overscan}" = "1" ]; then
-		if ! config_check "/boot/config.txt" "disable_overscan" "1"; then config_set "/boot/config.txt" "disable_overscan" "1"; preinstall_reboot=1; fi
+		if ! config_check "/boot/config.txt" "disable_overscan" "${hdmi_disable_overscan}"; then config_set "/boot/config.txt" "disable_overscan" "${hdmi_disable_overscan}"; preinstall_reboot=1; fi
 	fi
-	if [ -z "$hdmi_overscan_left" ]; then
-		config_set "/boot/config.txt" "overscan_left" "${hdmi_overscan_left}" >> /boot/config.txt; preinstall_reboot=1; fi
+	if [ -n "${hdmi_overscan_left}" ]; then
+		if ! config_check "/boot/config.txt" "overscan_left" "${hdmi_overscan_left}"; config_set "/boot/config.txt" "overscan_left" "${hdmi_overscan_left}" >> /boot/config.txt; preinstall_reboot=1; fi
 	fi
-	if [ -z "$hdmi_overscan_right" ]; then
-		config_set "/boot/config.txt" "overscan_right" "${hdmi_overscan_right}" >> /boot/config.txt; preinstall_reboot=1; fi
+	if [ -n "${hdmi_overscan_right}" ]; then
+		if ! config_check "/boot/config.txt" "overscan_right" "${hdmi_overscan_right}"; config_set "/boot/config.txt" "overscan_right" "${hdmi_overscan_right}" >> /boot/config.txt; preinstall_reboot=1; fi
 	fi
-	if [ -z "$hdmi_overscan_top" ]; then
-		config_set "/boot/config.txt" "overscan_top" "${hdmi_overscan_top}" >> /boot/config.txt; preinstall_reboot=1; fi
+	if [ -n "${hdmi_overscan_top}" ]; then
+		if ! config_check "/boot/config.txt" "overscan_top" "${hdmi_overscan_top}"; config_set "/boot/config.txt" "overscan_top" "${hdmi_overscan_top}" >> /boot/config.txt; preinstall_reboot=1; fi
 	fi
-	if [ -z "$hdmi_overscan_bottom" ]; then
-		config_set "/boot/config.txt" "overscan_bottom" "${hdmi_overscan_bottom}" >> /boot/config.txt; preinstall_reboot=1; fi
+	if [ -n "${hdmi_overscan_bottom}" ]; then
+		if ! config_check "/boot/config.txt" "overscan_bottom" "${hdmi_overscan_bottom}"; config_set "/boot/config.txt" "overscan_bottom" "${hdmi_overscan_bottom}" >> /boot/config.txt; preinstall_reboot=1; fi
 	fi
 	if [ "${hdmi_display_rotate}" != "0" ]; then
-		config_set "/boot/config.txt" "display_rotate" "${hdmi_display_rotate}" >> /boot/config.txt; preinstall_reboot=1; fi
+		if ! config_check "/boot/config.txt" "display_rotate" "${hdmi_display_rotate}"; config_set "/boot/config.txt" "display_rotate" "${hdmi_display_rotate}" >> /boot/config.txt; preinstall_reboot=1; fi
 	fi
-	if [ -z "$console_framebuffer_width" ]; then
-		config_set "/boot/config.txt" "framebuffer_width" "${console_framebuffer_width}" >> /boot/config.txt; preinstall_reboot=1; fi
+	if [ -n "${console_framebuffer_width}" ]; then
+		if ! config_check "/boot/config.txt" "framebuffer_width" "${console_framebuffer_width}"; config_set "/boot/config.txt" "framebuffer_width" "${console_framebuffer_width}" >> /boot/config.txt; preinstall_reboot=1; fi
 	fi
-	if [ -z "$console_framebuffer_height" ]; then
-		config_set "/boot/config.txt" "framebuffer_height" "${console_framebuffer_height}" >> /boot/config.txt; preinstall_reboot=1; fi
+	if [ -n "${console_framebuffer_height}" ]; then
+		if ! config_check "/boot/config.txt" "framebuffer_height" "${console_framebuffer_height}"; config_set "/boot/config.txt" "framebuffer_height" "${console_framebuffer_height}" >> /boot/config.txt; preinstall_reboot=1; fi
 	fi
-	if [ -z "${hdmi_force_hotplug}" ]; then
-		config_set "/boot/config.txt" "hdmi_force_hotplug" "${hdmi_force_hotplug}" >> /boot/config.txt; preinstall_reboot=1; fi
+	if [ "${hdmi_force_hotplug}" = "1" ]; then
+		if ! config_check "/boot/config.txt" "hdmi_force_hotplug" "${hdmi_force_hotplug}"; config_set "/boot/config.txt" "hdmi_force_hotplug" "${hdmi_force_hotplug}" >> /boot/config.txt; preinstall_reboot=1; fi
 	fi
-	if [ -z "${hdmi_ignore_hotplug}" ]; then
-		config_set "/boot/config.txt" "hdmi_ignore_hotplug" "${hdmi_ignore_hotplug}" >> /boot/config.txt; preinstall_reboot=1; fi
+	if [ "${hdmi_ignore_hotplug}" = "1" ]; then
+		if ! config_check "/boot/config.txt" "hdmi_ignore_hotplug" "${hdmi_ignore_hotplug}"; config_set "/boot/config.txt" "hdmi_ignore_hotplug" "${hdmi_ignore_hotplug}" >> /boot/config.txt; preinstall_reboot=1; fi
 	fi
 	echo "OK"
 fi
