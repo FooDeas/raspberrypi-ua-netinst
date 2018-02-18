@@ -37,7 +37,7 @@ The installer with the default settings configures eth0 with DHCP to get interne
 - extra configuration over HTTP possible - gives unlimited flexibility
 - installation takes about **20 minutes** with fast internet from power on to sshd running
 - can fit on a 512MB SD card, but 1GB is more reasonable
-- default installation includes `fake-hwclock` to save time on shutdown
+- default installation includes `fake-hwclock` to save the current time at shutdown
 - default installation includes NTP to keep time
 - `/tmp` is mounted as tmpfs to improve speed
 - no clutter included, you only get the bare essential packages
