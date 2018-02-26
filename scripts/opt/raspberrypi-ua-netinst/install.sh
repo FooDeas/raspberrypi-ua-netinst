@@ -756,31 +756,31 @@ if [ "${hdmi_system_only}" = "0" ]; then
 		if ! config_check "/boot/config.txt" "disable_overscan" "${hdmi_disable_overscan}"; then config_set "/boot/config.txt" "disable_overscan" "${hdmi_disable_overscan}"; preinstall_reboot=1; fi
 	fi
 	if [ -n "${hdmi_overscan_left}" ]; then
-		if ! config_check "/boot/config.txt" "overscan_left" "${hdmi_overscan_left}"; config_set "/boot/config.txt" "overscan_left" "${hdmi_overscan_left}"; preinstall_reboot=1; fi
+		if ! config_check "/boot/config.txt" "overscan_left" "${hdmi_overscan_left}"; then config_set "/boot/config.txt" "overscan_left" "${hdmi_overscan_left}"; preinstall_reboot=1; fi
 	fi
 	if [ -n "${hdmi_overscan_right}" ]; then
-		if ! config_check "/boot/config.txt" "overscan_right" "${hdmi_overscan_right}"; config_set "/boot/config.txt" "overscan_right" "${hdmi_overscan_right}"; preinstall_reboot=1; fi
+		if ! config_check "/boot/config.txt" "overscan_right" "${hdmi_overscan_right}"; then config_set "/boot/config.txt" "overscan_right" "${hdmi_overscan_right}"; preinstall_reboot=1; fi
 	fi
 	if [ -n "${hdmi_overscan_top}" ]; then
-		if ! config_check "/boot/config.txt" "overscan_top" "${hdmi_overscan_top}"; config_set "/boot/config.txt" "overscan_top" "${hdmi_overscan_top}"; preinstall_reboot=1; fi
+		if ! config_check "/boot/config.txt" "overscan_top" "${hdmi_overscan_top}"; then config_set "/boot/config.txt" "overscan_top" "${hdmi_overscan_top}"; preinstall_reboot=1; fi
 	fi
 	if [ -n "${hdmi_overscan_bottom}" ]; then
-		if ! config_check "/boot/config.txt" "overscan_bottom" "${hdmi_overscan_bottom}"; config_set "/boot/config.txt" "overscan_bottom" "${hdmi_overscan_bottom}"; preinstall_reboot=1; fi
+		if ! config_check "/boot/config.txt" "overscan_bottom" "${hdmi_overscan_bottom}"; then config_set "/boot/config.txt" "overscan_bottom" "${hdmi_overscan_bottom}"; preinstall_reboot=1; fi
 	fi
 	if [ "${hdmi_display_rotate}" != "0" ]; then
-		if ! config_check "/boot/config.txt" "display_rotate" "${hdmi_display_rotate}"; config_set "/boot/config.txt" "display_rotate" "${hdmi_display_rotate}"; preinstall_reboot=1; fi
+		if ! config_check "/boot/config.txt" "display_rotate" "${hdmi_display_rotate}"; then config_set "/boot/config.txt" "display_rotate" "${hdmi_display_rotate}"; preinstall_reboot=1; fi
 	fi
 	if [ -n "${console_framebuffer_width}" ]; then
-		if ! config_check "/boot/config.txt" "framebuffer_width" "${console_framebuffer_width}"; config_set "/boot/config.txt" "framebuffer_width" "${console_framebuffer_width}"; preinstall_reboot=1; fi
+		if ! config_check "/boot/config.txt" "framebuffer_width" "${console_framebuffer_width}"; then config_set "/boot/config.txt" "framebuffer_width" "${console_framebuffer_width}"; preinstall_reboot=1; fi
 	fi
 	if [ -n "${console_framebuffer_height}" ]; then
-		if ! config_check "/boot/config.txt" "framebuffer_height" "${console_framebuffer_height}"; config_set "/boot/config.txt" "framebuffer_height" "${console_framebuffer_height}"; preinstall_reboot=1; fi
+		if ! config_check "/boot/config.txt" "framebuffer_height" "${console_framebuffer_height}"; then config_set "/boot/config.txt" "framebuffer_height" "${console_framebuffer_height}"; preinstall_reboot=1; fi
 	fi
 	if [ "${hdmi_force_hotplug}" = "1" ]; then
-		if ! config_check "/boot/config.txt" "hdmi_force_hotplug" "${hdmi_force_hotplug}"; config_set "/boot/config.txt" "hdmi_force_hotplug" "${hdmi_force_hotplug}"; preinstall_reboot=1; fi
+		if ! config_check "/boot/config.txt" "hdmi_force_hotplug" "${hdmi_force_hotplug}"; then config_set "/boot/config.txt" "hdmi_force_hotplug" "${hdmi_force_hotplug}"; preinstall_reboot=1; fi
 	fi
 	if [ "${hdmi_ignore_hotplug}" = "1" ]; then
-		if ! config_check "/boot/config.txt" "hdmi_ignore_hotplug" "${hdmi_ignore_hotplug}"; config_set "/boot/config.txt" "hdmi_ignore_hotplug" "${hdmi_ignore_hotplug}"; preinstall_reboot=1; fi
+		if ! config_check "/boot/config.txt" "hdmi_ignore_hotplug" "${hdmi_ignore_hotplug}"; then config_set "/boot/config.txt" "hdmi_ignore_hotplug" "${hdmi_ignore_hotplug}"; preinstall_reboot=1; fi
 	fi
 	echo "OK"
 fi
