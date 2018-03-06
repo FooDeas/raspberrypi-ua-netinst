@@ -1,37 +1,4 @@
 language: generic
-sudo: true
-cache:
-  directories:
-  - packages
-  - wget
-
+sudo: false
 script:
-    - cd wget
-    - wget http://ftp.gnu.org/gnu/wget/wget-1.18.tar.xz
-    - tar xf wget-1.18.tar.xz
-    - cd wget-1.18
-    - ./configure
-    - make
-    - sudo make install
-    - cd ../..
-    - set -e
-    - rm -rf res/initramfs/boot/config.txt build_dir ./*.zip ./*.xz ./*.bz2
-    - ./update.sh
-    - ./build.sh
-    - sudo ./buildroot.sh
-    - set +e
-
-addons:
-    apt:
-        packages:
-            - git
-            - curl
-            - bzip2
-            - zip
-            - xz-utils
-            - gnupg
-            - kpartx
-            - dosfstools
-            - binutils
-            - bc
-
+    - find . -type f -name "*.sh" -exec "shellcheck" "--format=gcc" {} \;
