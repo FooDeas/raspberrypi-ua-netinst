@@ -1,6 +1,3 @@
 language: generic
 sudo: false
-before_install:
-  - wget -c https://goo.gl/ZzKHFv -O - | tar -xvJ -C /tmp/
-  - PATH="/tmp/shellcheck-latest:$PATH"
-script: bash -c 'shopt -s globstar; shellcheck **/*.sh'
+script: bash -c 'shopt -s globstar; shellcheck disable=SC1117 **/*.sh'
