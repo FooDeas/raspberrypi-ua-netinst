@@ -3,4 +3,4 @@ sudo: false
 before_install:
   - wget -c https://goo.gl/ZzKHFv -O - | tar -xvJ -C /tmp/
   - PATH="/tmp/shellcheck-latest:$PATH"
-script: bash -c 'shopt -s globstar; shellcheck **/*.{sh,bash}'
+script: bash -c 'shopt -s globstar; shellcheck **/*.sh'
