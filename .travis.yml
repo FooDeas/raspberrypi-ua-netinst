@@ -1,4 +1,3 @@
 language: generic
 sudo: false
-script:
-    - find . -type f -name "*.sh" -exec "shellcheck" "--format=gcc" {} \;
+script: shellcheck */**/*.sh
