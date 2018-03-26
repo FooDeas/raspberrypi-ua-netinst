@@ -1,0 +1,3 @@
+language: generic
+sudo: false
+script: bash -c 'shopt -s globstar; shellcheck -e SC1117 **/*.sh'
