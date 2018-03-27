@@ -659,7 +659,7 @@ case "${rpi_hardware}" in
 	"a020a0") rpi_hardware_version="Compute Module 3 (Lite)" ;;
 	"a22082") rpi_hardware_version="3 Model B" ;;
 	"a32082") rpi_hardware_version="3 Model B" ;;
-	"a020da") rpi_hardware_version="3 Model B+" ;;
+	"a020d3") rpi_hardware_version="3 Model B+" ;;
 	*) rpi_hardware_version="unknown (${rpi_hardware})" ;;
 esac
 
