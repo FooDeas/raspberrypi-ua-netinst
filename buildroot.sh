@@ -12,6 +12,7 @@ compress_xz=1
 
 # If a configuration file exists, import its settings
 if [ -e buildroot.conf ]; then
+	# shellcheck disable=SC1091
 	source buildroot.conf
 fi
 
@@ -91,6 +92,6 @@ fi
 
 # Cleanup
 
-if [ "$compress_xz" = "1" -o "$compress_bz2" = "1" ]; then
+if [ "$compress_xz" = "1" ] || [ "$compress_bz2" = "1" ]; then
 	rm -f "${image}"
 fi
