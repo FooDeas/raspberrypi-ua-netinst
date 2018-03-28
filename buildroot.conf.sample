@@ -1,0 +1,9 @@
+# To customize the buildroot process:
+#
+# Place your settings in this file as described in BUILD.md.
+
+# Controls production of a bz2-compressed image
+# compress_bz2=1
+
+# Controls production of an xz-compressed image
+# compress_xz=1

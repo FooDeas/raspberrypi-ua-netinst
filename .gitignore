@@ -1,4 +1,5 @@
 /build.conf
+/buildroot.conf
 /bootfs/
 /config/
 !/config/apt/custom_sources.txt
