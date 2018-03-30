@@ -126,8 +126,6 @@
 | `cleanup` | `0` | `0`/`1` | Remove installer files after success. To also remove log files, note the option below. |
 | `cleanup_logfiles` | `0` | `0`/`1` | Removes installer log files after success. |
 | `cmdline` | `"dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 elevator=deadline fsck.repair=yes"` |  |  |
-| `rootfs_install_mount_options` |  |  |  |
-| `rootfs_mount_options` |  |  |  |
 | `final_action` | `reboot` | `reboot`/  `poweroff`/  `halt`/  `console` | Action at the end of install. |
 | `installer_telnet` | `1` | `0`/`1` | Send installer console output via telnet. |
 | `installer_retries` | `3` |  | Number of retries if installation fails. |
