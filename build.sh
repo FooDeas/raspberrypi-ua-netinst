@@ -22,8 +22,8 @@ else
 	zipfile="raspberrypi-ua-netinst-$(date +%Y%m%d).zip"
 fi
 
-INSTALL_MODULES="kernel/fs/btrfs/btrfs.ko"
-INSTALL_MODULES="$INSTALL_MODULES kernel/drivers/scsi/sg.ko"
+INSTALL_MODULES+=("kernel/fs/btrfs/btrfs.ko")
+INSTALL_MODULES+=("kernel/drivers/scsi/sg.ko")
 
 # defines array with kernel versions
 function get_kernels {
@@ -67,16 +67,16 @@ function check_dependencies {
 	local dep
 	# iterate over the passed modules
 	for mod in "${mods[@]}"; do
-		# find the modules dependencies, convert into array
-		mapfile -t deps < <(grep "^${mod}" "${depmod_file}" | cut -d':' -f2)
+		# find the module's dependencies, convert into array
+		deps=($(grep "^${mod}" "${depmod_file}" | cut -d':' -f2))
 		# iterate over the found dependencies
 		for dep in "${deps[@]}"; do
 			# check if the dependency is in $modules, if not, add to temp array
-			contains_element "${dep}" "${modules[@]}" || new_found[${#new_found[@]}]="${dep}"
+			contains_element "${dep}" "${modules[@]}" || new_found+=("${dep}")
 		done
 	done
 	# add the newly found dependencies to the end of the $modules array
-	modules=("${modules[@]}" "${new_found[@]}")
+	modules+=("${new_found[@]}")
 	# set the global variable to the number of newly found dependencies
 	new_count=${#new_found[@]}
 }
