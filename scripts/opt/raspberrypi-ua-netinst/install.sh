@@ -1797,8 +1797,18 @@ if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "ifupdown"; 
 		ln -s /dev/null /rootfs/etc/udev/rules.d/75-persistent-net-generator.rules
 	fi
 	
-	if [ "${ip_addr}" != "dhcp" ]; then
-		cp /etc/resolv.conf /rootfs/etc/ || fail
+	# copy resolv.conf
+	echo -n "  Configuring nameserver... "
+	if [ -e "/etc/resolv.conf" ]; then
+		if cp /etc/resolv.conf /rootfs/etc/; then
+			echo "OK"
+		else
+			echo "FAILED !"
+			fail
+		fi
+	else
+		echo "MISSING !"
+		fail
 	fi
 	
 	echo "OK"
