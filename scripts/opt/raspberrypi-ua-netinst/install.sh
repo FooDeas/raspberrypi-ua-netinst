@@ -2240,6 +2240,11 @@ if [ -n "${wlan_country}" ]; then
 	fi
 fi
 
+# disable wlan country warning
+if [ -e "/rootfs/etc/wifi-country.sh" ]; then
+	sed -i "1 iexit 0" /rootfs/etc/wifi-country.sh
+fi
+
 # set hdmi options
 if [ "${hdmi_type}" = "tv" ] || [ "${hdmi_type}" = "monitor" ]; then
 	config_set "/rootfs/boot/config.txt" "hdmi_ignore_edid" "0xa5000080"
