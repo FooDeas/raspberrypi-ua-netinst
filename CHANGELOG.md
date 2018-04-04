@@ -167,7 +167,7 @@ If you are coming from an older version, **check your configuration options** to
 This is a bugfix release.
 
 - Fixed installer customization to enable audio
-- Added ability to install Raspberry Pi tools like `vcgencmd`, `raspistill` and similar  
+- Added ability to install Raspberry Pi tools like `vcgencmd`, `raspistill` and similar
   (see #6 to patch existing systems)
 
 ## raspberrypi-ua-netinst v1.1.0
@@ -178,5 +178,5 @@ This is a bugfix release.
 
 ## raspberrypi-ua-netinst v1.0.1
 
-- default config.txt from raspbian added:  
+- default config.txt from raspbian added:
   `dtparam=audio=on` is commented out

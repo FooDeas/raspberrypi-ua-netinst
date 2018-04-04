@@ -13,9 +13,9 @@
 
 ## Intro
 
-The minimal Raspbian unattended netinstaller for Raspberry Pi.  
+The minimal Raspbian unattended netinstaller for Raspberry Pi.
 
-This initially was a fork of [raspbian-ua-netinst](https://github.com/debian-pi/raspbian-ua-netinst). Because of extensive changes and improvements it became independent.  
+This initially was a fork of [raspbian-ua-netinst](https://github.com/debian-pi/raspbian-ua-netinst). Because of extensive changes and improvements it became independent.
 Some of the main differences are:
 
 - improved performance out of the box
@@ -63,7 +63,7 @@ Go to [our latest release page](https://github.com/FooDeas/raspberrypi-ua-netins
 
 Format your SD card as **FAT32** (MS-DOS on _Mac OS X_) and extract the installer files.
 
-**Note:** If you get an error saying it can't mount `/dev/mmcblk0p1` on `/boot` then the most likely cause is that you're using exFAT instead of FAT32. Try formatting the SD card with [this tool](https://www.sdcard.org/downloads/formatter_4/).  
+**Note:** If you get an error saying it can't mount `/dev/mmcblk0p1` on `/boot` then the most likely cause is that you're using exFAT instead of FAT32. Try formatting the SD card with [this tool](https://www.sdcard.org/downloads/formatter_4/).
 Further methods are described in [doc/INSTALL_ADVANCED.md](/doc/INSTALL_ADVANCED.md).
 
 ## Installing
@@ -82,7 +82,7 @@ If you have a serial cable connected, installer output can be followed there, to
 
 You can use the installer _as is_ and get a minimal system installed which you can then use and customize to your needs.
 
-**All configuration files and folders have to be placed in `raspberrypi-ua-netinst/config` on the SD card.**  
+**All configuration files and folders have to be placed in `raspberrypi-ua-netinst/config` on the SD card.**
 This is the configuration directory of the installer.
 
 ### Unattended install settings
@@ -126,7 +126,7 @@ More advanced customization as providing files or executing own scripts is docum
 
 ## First boot
 
-The system is almost completely unconfigured on first boot. Here are some tasks you most definitely want to do on first boot.  
+The system is almost completely unconfigured on first boot. Here are some tasks you most definitely want to do on first boot.
 Note, that this manual work can be done automatically during the installation process if the appropriate options in [`installer-config.txt`](#installer-customization)) are set.
 
 The default **root** password is **raspbian**.
@@ -136,13 +136,13 @@ The default **root** password is **raspbian**.
 - Configure your keyboard layout: `dpkg-reconfigure keyboard-configuration`
 - Configure your timezone: `dpkg-reconfigure tzdata`
 
-Optional:  
-Create a swap file with `dd if=/dev/zero of=/swap bs=1M count=512 && chmod 600 /swap && mkswap /swap` (example is 512MB) and enable it on boot by appending `/swap none swap sw 0 0` to `/etc/fstab`.  
+Optional:
+Create a swap file with `dd if=/dev/zero of=/swap bs=1M count=512 && chmod 600 /swap && mkswap /swap` (example is 512MB) and enable it on boot by appending `/swap none swap sw 0 0` to `/etc/fstab`.
 
 ## Logging
 
-The output of the installation process is logged to file.  
-When the installation completes successfully, the logfile is placed in `/var/log/raspberrypi-ua-netinst.log` on the installed system.  
+The output of the installation process is logged to file.
+When the installation completes successfully, the logfile is placed in `/var/log/raspberrypi-ua-netinst.log` on the installed system.
 When an error occurs during install, the logfile is placed in the `raspberrypi-ua-netinst` folder and is named `error-\<datetimestamp\>.log`
 
 ## Reinstalling or replacing an existing system
