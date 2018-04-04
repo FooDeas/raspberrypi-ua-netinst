@@ -1,5 +1,11 @@
 # Changelog
 
+## raspberrypi-ua-netinst v2.1.1
+
+- added installer output via telnet
+- added or changed configuration variables
+  - disable telnet output
+
 ## raspberrypi-ua-netinst v2.1.0
 
 - moved `cpufrequtils` from base to minimal preset

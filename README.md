@@ -30,14 +30,14 @@ The installer with the default settings configures eth0 with DHCP to get interne
 
 ### Features
 
-- completely unattended, you only need a working internet connection through the ethernet port or use the onboard wireless LAN (supported on model 3B and 0W)
+- completely unattended, you only need a working internet connection through the ethernet port or use the onboard wireless LAN (supported on model 3B, 3B+ and 0W)
 - DHCP and static IP configuration (DHCP is the default)
 - always installs the latest version of Raspbian
 - configurable default settings
 - extra configuration over HTTP possible - gives unlimited flexibility
 - installation takes about **20 minutes** with fast internet from power on to sshd running
 - can fit on a 512MB SD card, but 1GB is more reasonable
-- default installation includes `fake-hwclock` to save time on shutdown
+- default installation includes `fake-hwclock` to save the current time at shutdown
 - default installation includes NTP to keep time
 - `/tmp` is mounted as tmpfs to improve speed
 - no clutter included, you only get the bare essential packages
@@ -45,7 +45,7 @@ The installer with the default settings configures eth0 with DHCP to get interne
 
 ## Requirements
 
-- a Raspberry Pi (from model 1B up to 3B or Zero including Zero W)
+- a Raspberry Pi (from model 1B up to 3B, 3B+ or Zero including Zero W)
 - SD card with at least 1GB, or at least 128MB for USB root install (without customization)
 - ethernet or wireless LAN with a working internet connection
 
@@ -74,7 +74,7 @@ If you don't have a display attached, you can monitor the ethernet card LEDs to 
 
 If the installation process fails, you will see **SOS** in Morse code (... --- ...) on an led.  In this case, power off the Pi and check the log on the sd card.
 
-If you do have a display, you can follow the progress and catch any possible errors in the default configuration or your own modifications.
+If you do have a display, you can follow the progress and catch any possible errors in the default configuration or your own modifications. Once a network connection has been established, the process can also be followed via telnet (port 23).
 
 If you have a serial cable connected, installer output can be followed there, too. If 'console=tty1' at then end of the `cmdline.txt` file is removed, you have access to the console in case of problems.
 
@@ -137,7 +137,7 @@ The default **root** password is **raspbian**.
 - Configure your timezone: `dpkg-reconfigure tzdata`
 
 Optional:  
-Create a swap file with `fallocate -l 512M /swap && mkswap /swap && chmod 600 /swap` (example is 512MB) and enable it on boot by appending `/swap none swap sw 0 0` to `/etc/fstab`.  
+Create a swap file with `dd if=/dev/zero of=/swap bs=1M count=512 && chmod 600 /swap && mkswap /swap` (example is 512MB) and enable it on boot by appending `/swap none swap sw 0 0` to `/etc/fstab`.  
 
 ## Logging
 

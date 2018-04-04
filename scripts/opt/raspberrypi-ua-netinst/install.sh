@@ -76,7 +76,7 @@ variables_reset() {
 	usbboot=
 	cmdline=
 	rootfstype=
-	final_action=
+	installer_telnet=
 	installer_retries=
 	installer_networktimeout=
 	installer_pkg_updateretries=
@@ -152,6 +152,7 @@ variables_set_defaults() {
 	variable_set "cmdline" "dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 elevator=deadline fsck.repair=yes"
 	variable_set "rootfstype" "f2fs"
 	variable_set "final_action" "reboot"
+	variable_set "installer_telnet" "1"
 	variable_set "installer_retries" "3"
 	variable_set "installer_networktimeout" "15"
 	variable_set "installer_pkg_updateretries" "3"
@@ -362,8 +363,7 @@ install_files() {
 	echo
 }
 
-output_filter() {
-	local filterstring
+set_filter() {
 	filterstring="^$"
 	filterstring+="|^Setcap failed on \S.*, falling back to setuid$"
 	filterstring+="|^dpkg: warning: ignoring pre-dependency problem"'!'"$"
@@ -390,12 +390,12 @@ output_filter() {
 	filterstring+="|\(Reading database \.\.\. [0..9]{1,3}\%"
 	filterstring+="|^E$"
 	filterstring+="|^: $"
+}
 
-	while IFS= read -r line ; do
-		if [[ "$line" =~ ${filterstring} ]] ; then
-			:
-		else
-			echo "  $line"
+output_filter() {
+	while IFS= read -r line; do
+		if [[ ! "${line}" =~ ${filterstring} ]]; then
+			echo "  ${line}"
 		fi
 	done
 }
@@ -498,7 +498,7 @@ installer_swapfile=/rootfs/installer-swap
 wlan_configfile=/tmp/wpa_supplicant.conf
 rootdev=/dev/mmcblk0
 tmp_bootfs=/tmp/bootfs
-final_action=reboot
+set_filter
 
 mkdir -p /proc
 mkdir -p /sys
@@ -659,6 +659,7 @@ case "${rpi_hardware}" in
 	"a020a0") rpi_hardware_version="Compute Module 3 (Lite)" ;;
 	"a22082") rpi_hardware_version="3 Model B" ;;
 	"a32082") rpi_hardware_version="3 Model B" ;;
+	"a020d3") rpi_hardware_version="3 Model B+" ;;
 	*) rpi_hardware_version="unknown (${rpi_hardware})" ;;
 esac
 
@@ -937,6 +938,21 @@ else
 		echo "nameserver ${i}" >> /etc/resolv.conf
 	done
 	echo "OK"
+fi
+
+# Start telnet console output
+if [ "${installer_telnet}" = "1" ]; then
+	mkfifo telnet.pipe
+	mkfifo /dev/installer-telnet
+	tee < telnet.pipe /dev/installer-telnet &
+	while IFS= read -r line; do
+		if [[ ! "${line}" =~ userpw|rootpw ]]; then
+			echo "${line}"
+		fi
+	done < "/dev/installer-telnet" | /bin/nc -klC -p 23 > /dev/null &
+	exec &> telnet.pipe
+	rm telnet.pipe
+	echo "Printing console to telnet output started."
 fi
 
 # This will record the time to get to this point
@@ -1483,9 +1499,9 @@ mdev -s
 
 echo -n "Initializing /boot as vfat... "
 if [ -z "${boot_volume_label}" ]; then
-	mkfs.vfat "${bootpartition}" &> /dev/null || fail
+	mkfs.vfat -F 32 -s 1 "${bootpartition}" &> /dev/null || fail
 else
-	mkfs.vfat -n "${boot_volume_label}" "${bootpartition}" &> /dev/null || fail
+	mkfs.vfat -F 32 -s 1 -n "${boot_volume_label}" "${bootpartition}" &> /dev/null || fail
 fi
 echo "OK"
 
@@ -1506,7 +1522,7 @@ if [ "${kernel_module}" = true ]; then
 fi
 
 echo -n "Initializing / as ${rootfstype}... "
-eval mkfs."${rootfstype}" "${rootfs_mkfs_options}" "${rootpartition}" &> /dev/null || fail
+eval mkfs."${rootfstype}" "${rootfs_mkfs_options}" "${rootpartition}" || fail
 echo "OK"
 
 echo -n "Mounting new filesystems... "
@@ -1781,8 +1797,18 @@ if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "ifupdown"; 
 		ln -s /dev/null /rootfs/etc/udev/rules.d/75-persistent-net-generator.rules
 	fi
 	
-	if [ "${ip_addr}" != "dhcp" ]; then
-		cp /etc/resolv.conf /rootfs/etc/ || fail
+	# copy resolv.conf
+	echo -n "  Configuring nameserver... "
+	if [ -e "/etc/resolv.conf" ]; then
+		if cp /etc/resolv.conf /rootfs/etc/; then
+			echo "OK"
+		else
+			echo "FAILED !"
+			fail
+		fi
+	else
+		echo "MISSING !"
+		fail
 	fi
 	
 	echo "OK"
@@ -2212,6 +2238,11 @@ if [ -n "${wlan_country}" ]; then
 		echo "country=${wlan_country}" >> /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
 		chmod 600 /rootfs/etc/wpa_supplicant/wpa_supplicant.conf
 	fi
+fi
+
+# disable wlan country warning
+if [ -e "/rootfs/etc/wifi-country.sh" ]; then
+	sed -i "1 iexit 0" /rootfs/etc/wifi-country.sh
 fi
 
 # set hdmi options
