@@ -1,5 +1,6 @@
-language: generic
+language: ruby
 sudo: false
+install: gem install mdl
 script:
   - bash -c 'shopt -s globstar; shellcheck -e SC1117 **/*.sh'
   - mdl --rules '~MD013,~MD036,~MD034' doc *.md
