@@ -42,9 +42,9 @@ To set build options, create a file named `build.conf`, which contains the appro
 - `mirror_raspbian_cache` - Sets a apt caching proxy for the raspbian.org repository. (e.g. "192.168.0.1:3142")
 - `mirror_raspberrypi_cache` - Sets a apt caching proxy for the raspberrypi.org repository. (e.g. "192.168.0.1:3142")
 
-To set `buildroot` options, create a `buildroot.conf` file (or copy
-`buildroot.conf.sample` as a starting point.)  . By default both bzip2
-and xz compressed versions of the image will be created (and the
-uncompressed image will deleted), but either (or both) can be
-disabled. If both are disabled, the uncompressed image will be left in
-place.
+To set buildroot options, create a file named `buildroot.conf`, which contains the appropriate variable settings. Supported variables are:
+
+- `compress_bz2=1` - create a bz2-compressed image
+- `compress_xz=1` - create a xz-compressed image
+
+By default both bzip2 and xz compressed versions of the image will be created and the uncompressed image will deleted, but either or both can be disabled. If both are disabled, the uncompressed image will be left in place.
