@@ -3,4 +3,4 @@ sudo: false
 install: gem install mdl
 script:
  - bash -c 'shopt -s globstar; shellcheck **/*.sh'
- - mdl -v -r '~MD013, ~MD036' .
+ - mdl --verbose --rules '~MD013, ~MD036' .
