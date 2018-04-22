@@ -1,3 +1,6 @@
-language: generic
+language: bash
 sudo: false
-script: bash -c 'shopt -s globstar; shellcheck -e SC1117 **/*.sh'
+install: gem install mdl
+script:
+ - bash -c 'shopt -s globstar; shellcheck **/*.sh'
+ - mdl --verbose --rules '~MD013, ~MD036' .
