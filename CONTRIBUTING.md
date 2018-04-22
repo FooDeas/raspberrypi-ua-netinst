@@ -20,7 +20,7 @@ Example: `doc: fix typo in readme`
 
 Please do your pull requests always against the [devel branch](https://github.comhttps://github.com/FooDeas/raspberrypi-ua-netinst/tree/devel).
 
-**Note:**
+**Note:**  
 The [devel branch](https://github.com/FooDeas/raspberrypi-ua-netinst/tree/devel) should always contain stable and tested versions!
 
 If the [devel branch](https://github.com/FooDeas/raspberrypi-ua-netinst/tree/devel) has "enough" or important changes, it will (selectively) get merged into [master](https://github.com/FooDeas/raspberrypi-ua-netinst), [tagged](https://github.com/FooDeas/raspberrypi-ua-netinst/tags) and [released](https://github.com/FooDeas/raspberrypi-ua-netinst/releases).
