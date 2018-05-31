@@ -63,6 +63,7 @@ variables_reset() {
 	ip_gateway=
 	ip_nameservers=
 	ip_ipv6=
+	dhcp_options=
 	drivers_to_load=
 	online_config=
 	gpu_mem=
@@ -923,8 +924,26 @@ fi
 if [ "${ip_addr}" = "dhcp" ]; then
 	echo -n "Configuring ${ifname} with DHCP... "
 
+	# Capture udhcpc environment
+	sed -i "s#exit 0#set >/tmp/udhcpc_env\nexit 0#" /etc/udhcpc/default.script
+
 	if udhcpc -i "${ifname}" &> /dev/null; then
 		ifconfig "${ifname}" | grep -F addr: | awk '{print $2}' | cut -d: -f2
+                # Prefix udhcpc variables & source them
+		sed -i -e 's/^/udhcpc_/' /tmp/udhcpc_env
+		source /tmp/udhcpc_env
+
+		convert_listvariable dhcp_options
+		for i in $dhcp_options; do
+			# Remap udhcpc options to config variables
+			case $i in
+				"timeserver") timeserver=${udhcpc_ntpsrv} ;;
+				*)
+					tmpvar=udhcpc_${i}
+					eval $i=${!tmpvar}
+					;;
+			esac
+		done
 	else
 		echo "FAILED"
 		fail
