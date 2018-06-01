@@ -931,11 +931,13 @@ if [ "${ip_addr}" = "dhcp" ]; then
 		ifconfig "${ifname}" | grep -F addr: | awk '{print $2}' | cut -d: -f2
                 # Prefix udhcpc variables & source them
 		sed -i -e 's/^/udhcpc_/' /tmp/udhcpc_env
+		# shellcheck disable=SC1091
 		source /tmp/udhcpc_env
 
 		convert_listvariable dhcp_options
 		for i in $dhcp_options; do
 			# Remap udhcpc options to config variables
+			# shellcheck disable=SC2154
 			case $i in
 				"timeserver") timeserver=${udhcpc_ntpsrv} ;;
 				*)
