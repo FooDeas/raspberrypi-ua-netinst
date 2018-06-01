@@ -1701,6 +1701,7 @@ if [ -n "${username}" ]; then
 		if [ -z "${userpw}" ]; then
 			echo -n "  Setting '${username}' to sudo without a password... "
 			echo -n "${username} ALL = (ALL) NOPASSWD: ALL" > "/rootfs/etc/sudoers.d/${username}" || fail
+			chmod 440 "/rootfs/etc/sudoers.d/${username}" || fail
 			echo "OK"
 		fi
 	fi
