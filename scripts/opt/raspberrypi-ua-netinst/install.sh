@@ -1521,8 +1521,13 @@ if [ "${kernel_module}" = true ]; then
 	fi
 fi
 
+
 echo -n "Initializing / as ${rootfstype}... "
-eval mkfs."${rootfstype}" "${rootfs_mkfs_options}" "${rootpartition}" || fail
+eval mkfs."${rootfstype}" "${rootfs_mkfs_options}" "${rootpartition}" | sed 's/^/  /'
+if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+	fail
+fi
+
 echo "OK"
 
 echo -n "Mounting new filesystems... "
