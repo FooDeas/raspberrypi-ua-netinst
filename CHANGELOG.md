@@ -1,10 +1,14 @@
 # Changelog
 
-## raspberrypi-ua-netinst v2.1.1
+## raspberrypi-ua-netinst v2.2.0
 
+- support for model 3B+
 - added installer output via telnet
+- improved compatibility with RPi Compute Module 3
+- improved SD card compatibility
 - added or changed configuration variables
   - disable telnet output
+- many build improvements and fixes
 
 ## raspberrypi-ua-netinst v2.1.0
 
