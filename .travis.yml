@@ -1,0 +1,6 @@
+language: bash
+sudo: false
+install: gem install mdl
+script:
+ - bash -c 'shopt -s globstar; shellcheck **/*.sh'
+ - mdl --verbose --rules '~MD013, ~MD036' .

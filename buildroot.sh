@@ -2,6 +2,20 @@
 
 set -e # exit if any command fails
 
+# Set defaults for configurable behavior
+
+# Controls production of a bz2-compressed image
+compress_bz2=1
+
+# Controls production of an xz-compressed image
+compress_xz=1
+
+# If a configuration file exists, import its settings
+if [ -e buildroot.conf ]; then
+	# shellcheck disable=SC1091
+	source buildroot.conf
+fi
+
 build_dir=build_dir
 
 version_tag="$(git describe --exact-match --tags HEAD 2> /dev/null || true)"
@@ -60,16 +74,24 @@ else
 fi
 
 # Create archives
-rm -f "${build_dir}/${imagename}.img.xz"
-if ! xz -9v --keep "${image}"; then
-	# This happens e.g. on Raspberry Pi because xz runs out of memory.
-	echo "WARNING: Could not create '${IMG}.xz' variant." >&2
-fi
-rm -f "${imagename}.img.xz"
-mv "${image}.xz" ./
 
-rm -f "${imagename}.img.bz2"
-( bzip2 -9v > "${imagename}.img.bz2" ) < "${image}"
+if [ "$compress_xz" = "1" ]; then
+	rm -f "${image}.xz"
+	if ! xz -9v --keep "${image}"; then
+		# This happens e.g. on Raspberry Pi because xz runs out of memory.
+		echo "WARNING: Could not create '${IMG}.xz' variant." >&2
+	fi
+	rm -f "${imagename}.img.xz"
+	mv "${image}.xz" ./
+fi
+
+if [ "$compress_bz2" = "1" ]; then
+	rm -f "${imagename}.img.bz2"
+	( bzip2 -9v > "${imagename}.img.bz2" ) < "${image}"
+fi
 
 # Cleanup
-rm -f "${image}"
+
+if [ "$compress_xz" = "1" ] || [ "$compress_bz2" = "1" ]; then
+	rm -f "${image}"
+fi
