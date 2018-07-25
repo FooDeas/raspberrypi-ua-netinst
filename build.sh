@@ -633,8 +633,14 @@ function create_cpio {
 
 	# Binary firmware for version 3 Model B wireless
 	mkdir -p rootfs/lib/firmware/brcm
-	cp --preserve=xattr,timestamps -r tmp/lib/firmware/brcm/brcmfmac43430-sdio.txt rootfs/lib/firmware/brcm/
 	cp --preserve=xattr,timestamps -r tmp/lib/firmware/brcm/brcmfmac43430-sdio.bin rootfs/lib/firmware/brcm/
+	cp --preserve=xattr,timestamps -r tmp/lib/firmware/brcm/brcmfmac43430-sdio.txt rootfs/lib/firmware/brcm/
+
+	# Binary firmware for version 3 Model B+ wireless
+	mkdir -p rootfs/lib/firmware/brcm
+	cp --preserve=xattr,timestamps -r tmp/lib/firmware/brcm/brcmfmac43455-sdio.bin rootfs/lib/firmware/brcm/
+	cp --preserve=xattr,timestamps -r tmp/lib/firmware/brcm/brcmfmac43455-sdio.clm_blob rootfs/lib/firmware/brcm/
+	cp --preserve=xattr,timestamps -r tmp/lib/firmware/brcm/brcmfmac43455-sdio.txt rootfs/lib/firmware/brcm/
 
 	# vcgencmd
 	## libraspberrypi-bin
