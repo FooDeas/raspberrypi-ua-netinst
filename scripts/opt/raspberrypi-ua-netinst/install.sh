@@ -674,13 +674,6 @@ echo "=================================================="
 echo "https://github.com/FooDeas/raspberrypi-ua-netinst/"
 echo "=================================================="
 
-echo -n "Starting HWRNG... "
-if /usr/sbin/rngd -r /dev/hwrng; then
-	echo "OK"
-else
-	echo "FAILED! (continuing to use the software RNG)"
-fi
-
 echo -n "Mounting boot partition... "
 mount "${bootpartition}" /boot || fail
 echo "OK"
@@ -1544,6 +1537,13 @@ if [ "$(free -m | awk '/^Mem:/{print $2}')" -lt "384" ]; then
 	mkswap "${installer_swapfile}" > /dev/null
 	swapon "${installer_swapfile}" || fail
 	echo "OK"
+fi
+
+echo -n "Starting HWRNG... "
+if /usr/sbin/rngd -r /dev/hwrng; then
+	echo "OK"
+else
+	echo "FAILED! (continuing to use the software RNG)"
 fi
 
 if [ "${kernel_module}" = true ]; then
