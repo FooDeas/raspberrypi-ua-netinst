@@ -124,7 +124,7 @@ download_file() {
 	local download_target=$2
 	if [ -z "${download_target}" ]; then
 		for i in $(seq 1 5); do
-			if ! wget -q --show-progress --no-cache "${download_source}"; then
+			if ! wget -q --no-cache "${download_source}"; then
 				if [ "${i}" != "5" ]; then
 					sleep 5
 				else
@@ -137,7 +137,7 @@ download_file() {
 		done
 	else
 		for i in $(seq 1 5); do
-			if ! wget -q --show-progress --no-cache -O "${download_target}" "${download_source}"; then
+			if ! wget -q --no-cache -O "${download_target}" "${download_source}"; then
 				if [ "${i}" != "5" ]; then
 					sleep 5
 				else
