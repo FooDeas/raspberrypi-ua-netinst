@@ -1,5 +1,9 @@
 # Changelog
 
+## raspberrypi-ua-netinst v2.2.2
+
+- fix compatibility with version 1 model B (with 256MB RAM)
+
 ## raspberrypi-ua-netinst v2.2.1
 
 - fix compatibility with onboard wireless lan on version 3 model B+ (with BCM2837B0)
