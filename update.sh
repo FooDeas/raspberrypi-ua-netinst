@@ -122,9 +122,10 @@ packages_sha256=
 download_file() {
 	local download_source=$1
 	local download_target=$2
+	local progress_option=$(wget --show-progress --version &> /dev/null; [ "$?" -ne 2 ] && echo "--show-progress")
 	if [ -z "${download_target}" ]; then
 		for i in $(seq 1 5); do
-			if ! wget -q --no-cache "${download_source}"; then
+			if ! wget $progress_option -q --no-cache "${download_source}"; then
 				if [ "${i}" != "5" ]; then
 					sleep 5
 				else
@@ -137,7 +138,7 @@ download_file() {
 		done
 	else
 		for i in $(seq 1 5); do
-			if ! wget -q --no-cache -O "${download_target}" "${download_source}"; then
+			if ! wget $progress_option -q --no-cache -O "${download_target}" "${download_source}"; then
 				if [ "${i}" != "5" ]; then
 					sleep 5
 				else
