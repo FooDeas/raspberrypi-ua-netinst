@@ -123,10 +123,10 @@ download_file() {
 	local download_source=$1
 	local download_target=$2
 	local progress_option
-	if wget --show-progress --version &> /dev/null; [ "$?" -eq 2 ]; then
-	    progress_option=( )
+	if wget --show-progress --version &> /dev/null; [ "${?}" -eq 2 ]; then
+	    progress_option=()
 	else
-	    progress_option=( --show-progress )
+	    progress_option=("--show-progress")
 	fi
 	if [ -z "${download_target}" ]; then
 		for i in $(seq 1 5); do
