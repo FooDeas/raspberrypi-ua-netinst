@@ -2,6 +2,10 @@
 
 ## raspberrypi-ua-netinst v2.2.2
 
+- build improvements
+
+**Bugfixes:**
+
 - fix compatibility with version 1 model B (with 256MB RAM)
 
 ## raspberrypi-ua-netinst v2.2.1
