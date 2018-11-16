@@ -1567,11 +1567,10 @@ for i in $(seq 1 "${installer_pkg_downloadretries}"); do
 	else
 		unset http_proxy
 		if [ "${i}" -eq "${installer_pkg_downloadretries}" ]; then
-			echo
-			echo "  ERROR: ${cdebootstrap_exitcode}"
+			echo -e "\n  ERROR: ${cdebootstrap_exitcode}"
 			fail
 		else
-			echo "  ERROR: ${cdebootstrap_exitcode}, trying again ($((i+1))/${installer_pkg_downloadretries})..."
+			echo -e "\n  ERROR: ${cdebootstrap_exitcode}, trying again ($((i+1))/${installer_pkg_downloadretries})..."
 		fi
 	fi
 done
