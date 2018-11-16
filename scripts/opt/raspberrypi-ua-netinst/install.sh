@@ -866,6 +866,23 @@ fi
 echo "  online_config = ${online_config}"
 echo
 
+# create symlink for other kernel modules if needed
+if [ ! -e "/lib/modules/$(uname -r)" ]; then
+	echo "Kernel modules for the kernel version \"$(uname -r)\" could not be found. Searching for alternatives..."
+	if [[ "$(uname -r)" =~ -v7\+$ ]]; then
+		kernel_modulepath="$(find /lib/modules/ -maxdepth 1 -type d ! -path /lib/modules/ | grep -e "[^/]\+-v7+$" | head -1)"
+	else
+		kernel_modulepath="$(find /lib/modules/ -maxdepth 1 -type d ! -path /lib/modules/ | grep -ve "[^/]\+-v7+$" | head -1)"
+	fi
+	if [ -z "${kernel_modulepath}" ] ; then
+		echo "ERROR: No kernel modules could be found!"
+		fail_blocking
+	fi
+	#kernel_modulename="$("${kernel_modulepath}" | grep -oe "[^/]\+$"\")"
+	echo "  Using modules of kernel version \"$(echo "${kernel_modulepath}" | grep -oe "[^/]\+$")\"."
+	ln -s "${kernel_modulepath}" "/lib/modules/$(uname -r)"
+fi
+
 # depmod needs to update modules.dep before using modprobe
 depmod -a
 find /sys/ -name modalias -print0 | xargs -0 sort -u | xargs modprobe -abq
