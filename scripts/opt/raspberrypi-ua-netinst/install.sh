@@ -1119,7 +1119,7 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 
 	# always add packages if requested or needed
 	if [ "${firmware_packages}" = "1" ]; then
-		custom_packages_postinstall="${custom_packages_postinstall},firmware-atheros,firmware-brcm80211,firmware-libertas,firmware-ralink,firmware-realtek"
+		custom_packages_postinstall="${custom_packages_postinstall},firmware-atheros,firmware-brcm80211,firmware-libertas,firmware-misc-nonfree,firmware-realtek"
 	fi
 	if [ -n "${locales}" ] || [ -n "${system_default_locale}" ]; then
 		custom_packages="${custom_packages},locales"
@@ -1155,7 +1155,7 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 		base_packages_postinstall="${base_packages_postinstall},raspberrypi-kernel"
 	fi
 	base_packages_postinstall="${custom_packages_postinstall},${base_packages_postinstall}"
-	
+
 	# minimal
 	minimal_packages="cpufrequtils,ifupdown,net-tools,openssh-server,dosfstools"
 	if [ "${init_system}" != "systemd" ]; then
@@ -1763,7 +1763,7 @@ if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "ifupdown"; 
 		echo "auto lo" >> /rootfs/etc/network/interfaces
 		echo "iface lo inet loopback" >> /rootfs/etc/network/interfaces
 	fi
-	
+
 	# configured interface
 	echo >> /rootfs/etc/network/interfaces
 	echo "allow-hotplug ${ifname}" >> /rootfs/etc/network/interfaces
@@ -1778,7 +1778,7 @@ if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "ifupdown"; 
 			echo "    gateway ${ip_gateway}"
 		} >> /rootfs/etc/network/interfaces
 	fi
-	
+
 	# wlan config
 	if echo "${ifname}" | grep -q "wlan"; then
 		if [ -e "${wlan_configfile}" ]; then
@@ -1794,7 +1794,7 @@ if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "ifupdown"; 
 			echo "iface eth0 inet dhcp"
 		} >> /rootfs/etc/network/interfaces
 	fi
-	
+
 	# Customize cmdline.txt
 	if [ "${disable_predictable_nin}" = "1" ]; then
 		# as described here: https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames
@@ -1802,7 +1802,7 @@ if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "ifupdown"; 
 		line_add cmdline_custom "net.ifnames=0"
 		ln -s /dev/null /rootfs/etc/udev/rules.d/75-persistent-net-generator.rules
 	fi
-	
+
 	# copy resolv.conf
 	echo -n "  Configuring nameserver... "
 	if [ -e "/etc/resolv.conf" ]; then
@@ -1816,7 +1816,7 @@ if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "ifupdown"; 
 		echo "MISSING !"
 		fail
 	fi
-	
+
 	echo "OK"
 fi
 
@@ -2096,7 +2096,7 @@ if [ "${kernel_module}" = true ]; then
 	else
 		echo "FAILED !"
 	fi
-	
+
 	unset DEBIAN_FRONTEND
 fi
 
