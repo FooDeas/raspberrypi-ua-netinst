@@ -1136,7 +1136,7 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 
 	# always add packages if requested or needed
 	if [ "${firmware_packages}" = "1" ]; then
-		custom_packages_postinstall="${custom_packages_postinstall},firmware-atheros,firmware-brcm80211,firmware-libertas,firmware-ralink,firmware-realtek"
+		custom_packages_postinstall="${custom_packages_postinstall},firmware-atheros,firmware-brcm80211,firmware-libertas,firmware-misc-nonfree,firmware-realtek"
 	fi
 	if [ -n "${locales}" ] || [ -n "${system_default_locale}" ]; then
 		custom_packages="${custom_packages},locales"
