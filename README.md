@@ -45,7 +45,7 @@ The installer with the default settings configures eth0 with DHCP to get interne
 
 ## Requirements
 
-- a Raspberry Pi (from model 1B up to 3B, 3B+ or Zero including Zero W)
+- a Raspberry Pi (from model 1B up to 3B, 3A+, 3B+ or Zero including Zero W)
 - SD card with at least 1GB, or at least 128MB for USB root install (without customization)
 - ethernet or wireless LAN with a working internet connection
 
