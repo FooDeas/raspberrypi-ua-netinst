@@ -674,6 +674,10 @@ echo "=================================================="
 echo "https://github.com/FooDeas/raspberrypi-ua-netinst/"
 echo "=================================================="
 
+echo -n "Remounting TempFS... "
+mount -o remount,size=80% / || fail
+echo "OK"
+
 echo -n "Mounting boot partition... "
 mount "${bootpartition}" /boot || fail
 echo "OK"
