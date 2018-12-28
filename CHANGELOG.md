@@ -1,5 +1,14 @@
 # Changelog
 
+## raspberrypi-ua-netinst v2.3.0
+
+- support for version 3 model A+
+
+**Bugfixes:**
+
+- allow reinstall with new kernel versions
+- minor fixes and improvements
+
 ## raspberrypi-ua-netinst v2.2.2
 
 - build improvements
