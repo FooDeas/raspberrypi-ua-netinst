@@ -96,7 +96,7 @@
 
 | Parameter | Default | Options | Description |
 |-------------------------|------------|--------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `gpu_mem` | `16` |  | Specifies the amount of RAM in MB that should be reserved for the GPU. To allow the VideoCore GPU kernel driver to be loaded correctly, you should use at least "32". If not defined, the bootloader sets it to 64MB. The minimum value is "16". |
+| `gpu_mem` |  |  | Specifies the amount of RAM in MB that should be reserved for the GPU. To allow the VideoCore GPU kernel driver to be loaded correctly, you should use at least "32". If not defined, the bootloader sets it to 64MB. The minimum value is "16". |
 | `console_blank` |  |  | Sets console blanking timeout (screensaver) in seconds. Default kernel setting is 10 minutes (`600`). The value `0` disables the blanking completely. |
 | `hdmi_type` |  | `tv`/  `monitor` | Forces HDMI mode and disables automatic display identification. Choose between TV or monitor  mode and specify the resolution with the options below. If not defined, the automatic display setting is used to determine the information sent by the display. |
 | `hdmi_tv_res` | `1080p` | `720p`/  `1080i`/  `1080p` | Specifies the display resolution if `hdmi_type` is set to TV mode. |
