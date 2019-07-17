@@ -68,7 +68,7 @@ function check_dependencies {
 	# iterate over the passed modules
 	for mod in "${mods[@]}"; do
 		# find the module's dependencies, convert into array
-		deps=($(grep "^${mod}" "${depmod_file}" | cut -d':' -f2))
+		IFS=" " read -r -a deps <<< "$(grep "^${mod}" "${depmod_file}" | cut -d':' -f2)"
 		# iterate over the found dependencies
 		for dep in "${deps[@]}"; do
 			# check if the dependency is in $modules, if not, add to temp array
