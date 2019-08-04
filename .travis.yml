@@ -1,6 +1,49 @@
 language: bash
-sudo: false
-install: gem install mdl
-script:
- - bash -c 'shopt -s globstar; shellcheck **/*.sh'
- - mdl --verbose --rules '~MD013, ~MD036' .
+
+stages:
+- name: lint
+- name: build
+
+jobs:
+  include:
+  - stage: lint
+    name: Linting project
+    sudo: false
+    install: gem install mdl
+    script:
+    - bash -c 'shopt -s globstar; shellcheck **/*.sh'
+    - mdl --verbose --rules '~MD013, ~MD036' .
+  - stage: build
+    name: Building release packages
+    sudo: true
+    addons:
+      apt:
+        update: true
+        packages:
+        - git
+        - curl
+        - bzip2
+        - zip
+        - xz-utils
+        - gnupg
+        - kpartx
+        - dosfstools
+        - binutils
+        - bc
+        - wget
+        - kmod
+        - cpio
+    script:
+    - bash update.sh
+    - bash build.sh
+    - sudo bash buildroot.sh
+    deploy:
+      provider: releases
+      api_key: "$GITHUB_OAUTH_TOKEN"
+      skip_cleanup: true
+      on:
+        tags: true
+      file_glob: true
+      file:
+      - "raspberrypi-ua-netinst*"
+      - "*/raspberrypi-ua-netinst*"
