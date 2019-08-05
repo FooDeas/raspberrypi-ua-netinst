@@ -30,7 +30,7 @@ The installer with the default settings configures eth0 with DHCP to get interne
 
 ### Features
 
-- completely unattended, you only need a working internet connection through the ethernet port or use the onboard wireless LAN (supported on model 3B, 3B+ and 0W)
+- completely unattended, you only need a working internet connection through the ethernet port or use the onboard wireless LAN (supported on model 3B, 3B+, 4B and 0W)
 - DHCP and static IP configuration (DHCP is the default)
 - always installs the latest version of Raspbian
 - configurable default settings
@@ -45,7 +45,7 @@ The installer with the default settings configures eth0 with DHCP to get interne
 
 ## Requirements
 
-- a Raspberry Pi (from model 1B up to 3B, 3A+, 3B+ or Zero including Zero W)
+- a Raspberry Pi (from model 1B up to 4B, 3A+, 3B+ or Zero including Zero W)
 - SD card with at least 1GB, or at least 128MB for USB root install (without customization)
 - ethernet or wireless LAN with a working internet connection
 
