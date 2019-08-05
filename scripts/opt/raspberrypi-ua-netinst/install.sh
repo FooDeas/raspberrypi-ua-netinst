@@ -129,7 +129,7 @@ variables_set_defaults() {
 	# set config defaults
 	variable_set "preset" "server"
 	variable_set "mirror" "http://mirrordirector.raspbian.org/raspbian/"
-	variable_set "release" "stretch"
+	variable_set "release" "buster"
 	variable_set "hostname" "pi"
 	variable_set "rootpw" "raspbian"
 	variable_set "root_ssh_pwlogin" "1"
@@ -1068,7 +1068,6 @@ case "${rootfstype}" in
 		rootfs_mount_options="noatime"
 	;;
 	"ext4")
-		kernel_module=true
 		if [ -z "${rootfs_mkfs_options}" ]; then
 			if [ -n "${root_volume_label}" ]; then
 				rootfs_mkfs_options="-L ${root_volume_label}"
@@ -1080,12 +1079,11 @@ case "${rootfstype}" in
 		rootfs_mount_options="errors=remount-ro,noatime"
 	;;
 	"f2fs")
-		kernel_module=true
 		if [ -z "${rootfs_mkfs_options}" ]; then
 			if [ -n "${root_volume_label}" ]; then
-				rootfs_mkfs_options="-l ${root_volume_label}"
+				rootfs_mkfs_options="-l ${root_volume_label} -f"
 			else
-				rootfs_mkfs_options=
+				rootfs_mkfs_options="-f"
 			fi
 		fi
 		rootfs_install_mount_options="noatime"
@@ -1117,7 +1115,7 @@ fi
 
 # determine available releases
 mirror_base=http://archive.raspberrypi.org/debian/dists/
-release_fallback=stretch
+release_fallback=buster
 release_base="${release}"
 release_raspbian="${release}"
 if ! wget --spider "${mirror_base}/${release}/" &> /dev/null; then
@@ -1529,7 +1527,7 @@ rm -rf "${tmp_bootfs:?}"/ || fail
 echo "OK"
 
 if [ "${kernel_module}" = true ]; then
-	if [ "${rootfstype}" != "ext4" ]; then
+	if [ "${rootfstype}" != "ext4" ] && [ "${rootfstype}" != "f2fs" ]; then
 		echo -n "Loading ${rootfstype} module... "
 		modprobe "${rootfstype}" &> /dev/null || fail
 		echo "OK"
@@ -1569,7 +1567,7 @@ else
 fi
 
 if [ "${kernel_module}" = true ]; then
-	if [ "${rootfstype}" != "ext4" ]; then
+	if [ "${rootfstype}" != "ext4" ] && [ "${rootfstype}" != "f2fs" ]; then
 		mkdir -p /rootfs/etc/initramfs-tools
 		echo "${rootfstype}" >> /rootfs/etc/initramfs-tools/modules
 	fi
@@ -2081,45 +2079,43 @@ for i in $(seq 1 "${installer_pkg_updateretries}"); do
 done
 
 # kernel and firmware package can't be installed during cdebootstrap phase, so do so now
-if [ "${kernel_module}" = true ]; then
-	if [ -n "${packages_postinstall}" ]; then
-		convert_listvariable packages_postinstall
-	fi
-
-	DEBIAN_FRONTEND=noninteractive
-	export DEBIAN_FRONTEND
-
-	echo
-	echo "Downloading packages..."
-	for i in $(seq 1 "${installer_pkg_downloadretries}"); do
-		if [ -z "${mirror_cache}" ]; then
-			eval chroot /rootfs /usr/bin/apt-get -y -d install "${packages_postinstall}" 2>&1 | output_filter
-		else
-			eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y -d install "${packages_postinstall}" 2>&1 | output_filter
-		fi
-		download_exitcode="${PIPESTATUS[0]}"
-		if [ "${download_exitcode}" -eq 0 ]; then
-			echo "OK"
-			break
-		elif [ "${i}" -eq "${installer_pkg_downloadretries}" ]; then
-			echo "ERROR: ${download_exitcode}, FAILED !"
-			fail
-		else
-			echo -n "ERROR: ${download_exitcode}, trying again ($((i+1))/${installer_pkg_downloadretries})... "
-		fi
-	done
-
-	echo
-	echo "Installing kernel, bootloader (=firmware) and user packages..."
-	eval chroot /rootfs /usr/bin/apt-get -y install "${packages_postinstall}" 2>&1 | output_filter
-	if [ "${PIPESTATUS[0]}" -eq 0 ]; then
-		echo "OK"
-	else
-		echo "FAILED !"
-	fi
-
-	unset DEBIAN_FRONTEND
+if [ -n "${packages_postinstall}" ]; then
+	convert_listvariable packages_postinstall
 fi
+
+DEBIAN_FRONTEND=noninteractive
+export DEBIAN_FRONTEND
+
+echo
+echo "Downloading packages..."
+for i in $(seq 1 "${installer_pkg_downloadretries}"); do
+	if [ -z "${mirror_cache}" ]; then
+		eval chroot /rootfs /usr/bin/apt-get -y -d upgrade "${packages_postinstall}" 2>&1 | output_filter
+	else
+		eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y -d upgrade "${packages_postinstall}" 2>&1 | output_filter
+	fi
+	download_exitcode="${PIPESTATUS[0]}"
+	if [ "${download_exitcode}" -eq 0 ]; then
+		echo "OK"
+		break
+	elif [ "${i}" -eq "${installer_pkg_downloadretries}" ]; then
+		echo "ERROR: ${download_exitcode}, FAILED !"
+		fail
+	else
+		echo -n "ERROR: ${download_exitcode}, trying again ($((i+1))/${installer_pkg_downloadretries})... "
+	fi
+done
+
+echo
+echo "Installing kernel, bootloader (=firmware) and user packages..."
+eval chroot /rootfs /usr/bin/apt-get -y upgrade "${packages_postinstall}" 2>&1 | output_filter
+if [ "${PIPESTATUS[0]}" -eq 0 ]; then
+	echo "OK"
+else
+	echo "FAILED !"
+fi
+
+unset DEBIAN_FRONTEND
 
 # remove cdebootstrap-helper-rc.d which prevents rc.d scripts from running
 echo -n "Removing cdebootstrap-helper-rc.d... "
