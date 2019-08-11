@@ -1919,9 +1919,9 @@ if [ -n "${system_default_locale}" ]; then
 				system_default_locale="$(echo "${system_default_locale}" | grep -Eo "^\S+")" # trim to first space character
 				echo -n "'${system_default_locale}'... "
 				if chroot /rootfs /usr/sbin/update-locale LANG="${system_default_locale}" &> /dev/null; then
-				    echo "OK"
+					echo "OK"
 				else
-				    echo "FAILED !"
+					echo "FAILED !"
 				fi
 			fi
 		else
@@ -2430,7 +2430,7 @@ if [ "${final_action}" != "console" ]; then
 		killall -q udhcpc
 		echo "OK"
 	fi
-	
+
 	echo -n "Unmounting filesystems... "
 	for sysfolder in /sys /proc /dev/pts /dev; do
 		umount "/rootfs${sysfolder}"
