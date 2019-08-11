@@ -2398,6 +2398,9 @@ DURATION=$((ENDTIME - REAL_STARTTIME))
 echo
 echo -n "Installation finished at $(date --date="@${ENDTIME}" --utc)"
 echo " and took $((DURATION/60)) min $((DURATION%60)) sec (${DURATION} seconds)"
+echo
+killall -q nc
+echo "Printing console to telnet output stopped."
 
 # copy logfile to standard log directory
 if [ "${cleanup_logfiles}" = "1" ]; then
