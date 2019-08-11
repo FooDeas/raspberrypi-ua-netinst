@@ -708,10 +708,11 @@ preinstall_reboot=0
 echo
 echo "Checking if config.txt needs to be modified before starting installation..."
 # Reinstallation
-if [ -e "/boot/raspberrypi-ua-netinst/reinstall/kernel.img" ] && [ -e "/boot/raspberrypi-ua-netinst/reinstall/kernel7.img" ] ; then
+if [ -e "/boot/raspberrypi-ua-netinst/reinstall/kernel.img" ] && [ -e "/boot/raspberrypi-ua-netinst/reinstall/kernel7.img" ] && [ -e "/boot/raspberrypi-ua-netinst/reinstall/kernel7l.img" ] ; then
 	echo -n "  Reinstallation requested! Restoring files... "
 	mv /boot/raspberrypi-ua-netinst/reinstall/kernel.img /boot/kernel.img
 	mv /boot/raspberrypi-ua-netinst/reinstall/kernel7.img /boot/kernel7.img
+	mv /boot/raspberrypi-ua-netinst/reinstall/kernel7l.img /boot/kernel7l.img
 	echo "OK"
 	preinstall_reboot=1
 fi
@@ -881,6 +882,8 @@ if [ ! -e "/lib/modules/$(uname -r)" ]; then
 	echo "Kernel modules for the kernel version \"$(uname -r)\" could not be found. Searching for alternatives..."
 	if [[ "$(uname -r)" =~ -v7\+$ ]]; then
 		kernel_modulepath="$(find /lib/modules/ -maxdepth 1 -type d ! -path /lib/modules/ | grep -e "[^/]\+-v7+$" | head -1)"
+	elif [[ "$(uname -r)" =~ -v7l\+$ ]]; then
+		kernel_modulepath="$(find /lib/modules/ -maxdepth 1 -type d ! -path /lib/modules/ | grep -e "[^/]\+-v7l+$" | head -1)"
 	else
 		kernel_modulepath="$(find /lib/modules/ -maxdepth 1 -type d ! -path /lib/modules/ | grep -ve "[^/]\+-v7+$" | head -1)"
 	fi
@@ -2127,6 +2130,7 @@ mkdir -p /rootfs/boot/raspberrypi-ua-netinst/reinstall
 cp /rootfs/boot/config.txt /rootfs/boot/raspberrypi-ua-netinst/reinstall/config.txt
 cp /rootfs/boot/kernel.img /rootfs/boot/raspberrypi-ua-netinst/reinstall/kernel.img
 cp /rootfs/boot/kernel7.img /rootfs/boot/raspberrypi-ua-netinst/reinstall/kernel7.img
+cp /rootfs/boot/kernel7l.img /rootfs/boot/raspberrypi-ua-netinst/reinstall/kernel7l.img
 echo "Configuring bootloader to start the installed system..."
 if [ -e "/rootfs/boot/raspberrypi-ua-netinst/config/boot/config.txt" ]; then
 	cp /rootfs/boot/raspberrypi-ua-netinst/config/boot/config.txt /rootfs/boot/config.txt
@@ -2409,6 +2413,12 @@ if [ "${cleanup}" = "1" ]; then
 fi
 
 if [ "${final_action}" != "console" ]; then
+	if [ "${ip_addr}" = "dhcp" ]; then
+		echo -n "Releasing IP... "
+		killall -q udhcpc
+		echo "OK"
+	fi
+	
 	echo -n "Unmounting filesystems... "
 	for sysfolder in /sys /proc /dev/pts /dev; do
 		umount "/rootfs${sysfolder}"
