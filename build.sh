@@ -68,7 +68,7 @@ function check_dependencies {
 	# iterate over the passed modules
 	for mod in "${mods[@]}"; do
 		# find the module's dependencies, convert into array
-		deps=($(grep "^${mod}" "${depmod_file}" | cut -d':' -f2))
+		IFS=" " read -r -a deps <<< "$(grep "^${mod}" "${depmod_file}" | cut -d':' -f2)"
 		# iterate over the found dependencies
 		for dep in "${deps[@]}"; do
 			# check if the dependency is in $modules, if not, add to temp array
@@ -216,7 +216,7 @@ function create_cpio {
 	sed -i "s/__VERSION__/${version_info}/" rootfs/opt/raspberrypi-ua-netinst/install.sh
 	sed -i "s/__DATE__/$(date)/" rootfs/opt/raspberrypi-ua-netinst/install.sh
 
-	# btrfs-tools components
+	# btrfs-progs components
 	cp --preserve=xattr,timestamps tmp/bin/mkfs.btrfs rootfs/bin/
 	cp --preserve=xattr,timestamps tmp/usr/lib/*/libbtrfs.so.0 rootfs/lib/
 
@@ -306,7 +306,7 @@ function create_cpio {
 	cd ../../..
 	touch rootfs/var/lib/dpkg/status
 
-	# e2fslibs components
+	# libext2fs2 components
 	cp --preserve=xattr,timestamps tmp/lib/*/libe2p.so.2.* rootfs/lib/libe2p.so.2
 	cp --preserve=xattr,timestamps tmp/lib/*/libext2fs.so.2.*  rootfs/lib/libext2fs.so.2
 
@@ -340,8 +340,8 @@ function create_cpio {
 	ln -s mke2fs mkfs.ext4dev
 	cd ../..
 
-	# libf2fs0 components
-	cp --preserve=xattr,timestamps tmp/lib/*/libf2fs.so.1.*  rootfs/lib/libf2fs.so.1
+	# libf2fs5 components
+	cp --preserve=xattr,timestamps tmp/lib/*/libf2fs.so.5.*  rootfs/lib/libf2fs.so.5
 
 	# f2fs-tools components
 	cp --preserve=xattr,timestamps tmp/sbin/mkfs.f2fs rootfs/sbin/
@@ -351,13 +351,7 @@ function create_cpio {
 
 	# ifupdown components
 	cp --preserve=xattr,timestamps tmp/etc/default/networking rootfs/etc/default/
-	cp --preserve=xattr,timestamps tmp/etc/init/network-interface-container.conf rootfs/etc/init/
-	cp --preserve=xattr,timestamps tmp/etc/init/network-interface-security.conf rootfs/etc/init/
-	cp --preserve=xattr,timestamps tmp/etc/init/network-interface.conf rootfs/etc/init/
-	cp --preserve=xattr,timestamps tmp/etc/init/networking.conf rootfs/etc/init/
 	cp --preserve=xattr,timestamps tmp/etc/init.d/networking rootfs/etc/init.d/
-	cp --preserve=xattr,timestamps tmp/etc/network/if-down.d/upstart rootfs/etc/network/if-down.d/
-	cp --preserve=xattr,timestamps tmp/etc/network/if-up.d/upstart rootfs/etc/network/if-up.d/
 	cp --preserve=xattr,timestamps tmp/lib/ifupdown/settle-dad.sh rootfs/lib/ifupdown/
 	cp --preserve=xattr,timestamps tmp/sbin/ifup rootfs/sbin/
 	cd rootfs/sbin
@@ -415,9 +409,7 @@ function create_cpio {
 
 	# ntpdate components
 	cp --preserve=xattr,timestamps tmp/etc/default/ntpdate rootfs/etc/default/
-	# don't use /etc/ntp.conf since we don't have it
 	sed -i s/NTPDATE_USE_NTP_CONF=yes/NTPDATE_USE_NTP_CONF=no/ rootfs/etc/default/ntpdate
-	cp --preserve=xattr,timestamps tmp/etc/network/if-up.d/ntpdate rootfs/etc/network/if-up.d/
 	cp --preserve=xattr,timestamps tmp/usr/sbin/ntpdate rootfs/usr/sbin/
 	cp --preserve=xattr,timestamps tmp/usr/sbin/ntpdate-debian rootfs/usr/sbin/
 
@@ -440,10 +432,12 @@ function create_cpio {
 	cp --preserve=xattr,timestamps tmp/usr/sbin/rmt-tar rootfs/usr/sbin/
 	cp --preserve=xattr,timestamps tmp/usr/sbin/tarcat rootfs/usr/sbin/
 
+	# fdisk components
+	cp --preserve=xattr,timestamps tmp/sbin/fdisk rootfs/sbin/
+
 	# util-linux components
 	cp --preserve=xattr,timestamps tmp/sbin/blkid rootfs/sbin/
 	cp --preserve=xattr,timestamps tmp/sbin/blockdev rootfs/sbin/
-	cp --preserve=xattr,timestamps tmp/sbin/fdisk rootfs/sbin/
 	cp --preserve=xattr,timestamps tmp/sbin/fsck rootfs/sbin/
 	cp --preserve=xattr,timestamps tmp/sbin/mkswap rootfs/sbin/
 	cp --preserve=xattr,timestamps tmp/sbin/swaplabel rootfs/sbin/
@@ -453,13 +447,13 @@ function create_cpio {
 	cp --preserve=xattr,timestamps -r tmp/etc/wpa_supplicant rootfs/etc/wpa_supplicant
 
 	# libacl1 components
-	cp --preserve=xattr,timestamps tmp/lib/*/libacl.so.1.* rootfs/lib/libacl.so.1
+	cp --preserve=xattr,timestamps tmp/usr/lib/*/libacl.so.1.* rootfs/usr/lib/libacl.so.1
 
 	# libatm1 components
 	cp --preserve=xattr,timestamps tmp/lib/*/libatm.so.1.* rootfs/lib/libatm.so.1
 
 	# libattr1 components
-	cp --preserve=xattr,timestamps tmp/lib/*/libattr.so.1.* rootfs/lib/libattr.so.1
+	cp --preserve=xattr,timestamps tmp/usr/lib/*/libattr.so.1.* rootfs/usr/lib/libattr.so.1
 
 	# libaudit-common components
 	cp --preserve=xattr,timestamps tmp/etc/libaudit.conf rootfs/etc/
@@ -471,7 +465,7 @@ function create_cpio {
 	cp --preserve=xattr,timestamps tmp/lib/*/libblkid.so.1.* rootfs/lib/libblkid.so.1
 
 	# libbsd0 components
-	cp --preserve=xattr,timestamps tmp/lib/*/libbsd.so.0.* rootfs/lib/libbsd.so.0
+	cp --preserve=xattr,timestamps tmp/usr/lib/*/libbsd.so.0.* rootfs/usr/lib/libbsd.so.0
 
 	# libbz2-1.0 components
 	cp --preserve=xattr,timestamps tmp/lib/*/libbz2.so.1.0.* rootfs/lib/libbz2.so.1.0
@@ -506,7 +500,6 @@ function create_cpio {
 	cp --preserve=xattr,timestamps tmp/lib/*/libanl-*.so rootfs/lib/libanl.so.1
 	cp --preserve=xattr,timestamps tmp/lib/*/libBrokenLocale-*.so rootfs/lib/libBrokenLocale.so.1
 	cp --preserve=xattr,timestamps tmp/lib/*/libc-*.so rootfs/lib/libc.so.6
-	cp --preserve=xattr,timestamps tmp/lib/*/libcidn-*.so rootfs/lib/libcidn.so.1
 	cp --preserve=xattr,timestamps tmp/lib/*/libcrypt-*.so rootfs/lib/libcrypt.so.1
 	cp --preserve=xattr,timestamps tmp/lib/*/libdl-*.so rootfs/lib/libdl.so.2
 	cp --preserve=xattr,timestamps tmp/lib/*/libm-*.so  rootfs/lib/libm.so.6
@@ -528,7 +521,7 @@ function create_cpio {
 	# libcap2 components
 	cp --preserve=xattr,timestamps tmp/lib/*/libcap.so.2.* rootfs/lib/libcap.so.2
 
-	# libcomerr2 components
+	# libcom-err2 components
 	cp --preserve=xattr,timestamps tmp/lib/*/libcom_err.so.2.* rootfs/lib/libcom_err.so.2
 
 	# libdb5.3 components
@@ -537,6 +530,9 @@ function create_cpio {
 	# libdbus-1-3 components
 	cp --preserve=xattr,timestamps tmp/lib/*/libdbus-1.so.3 rootfs/lib/libdbus-1.so.3
 	cp --preserve=xattr,timestamps tmp/lib/*/libdl.so.2 rootfs/lib/libdl.so.2
+
+	# libelf1 components
+	cp --preserve=xattr,timestamps tmp/usr/lib/*/libelf.so.1 rootfs/usr/lib/libelf.so.1
 
 	# libfdisk1 components
 	cp --no-dereference --preserve=xattr,timestamps tmp/lib/*/libfdisk.so.1.* rootfs/lib/libfdisk.so.1
@@ -563,6 +559,9 @@ function create_cpio {
 	# libmount1 components
 	cp --preserve=xattr,timestamps tmp/lib/*/libmount.so.1.* rootfs/lib/libmount.so.1
 
+	# libmnl0 components
+	cp --preserve=xattr,timestamps tmp/lib/*/libmnl.so.0.* rootfs/lib/libmnl.so.0
+
 	# libncurses5 components
 	cp --preserve=xattr,timestamps tmp/lib/*/libncurses.so.5.* rootfs/lib/libncurses.so.5
 	cp --preserve=xattr,timestamps tmp/usr/lib/*/libform.so.5.* rootfs/usr/lib/libform.so.5
@@ -574,6 +573,9 @@ function create_cpio {
 
 	# libnl-genl-3-200 components
 	cp --preserve=xattr,timestamps tmp/lib/*/libnl-genl-3.so.200 rootfs/lib/libnl-genl-3.so.200
+
+	# libnl-route-3-200 components
+	cp --preserve=xattr,timestamps tmp/usr/lib/*/libnl-route-3.so.200.* rootfs/usr/lib/libnl-route-3.so.200
 
 	# libpam0g components
 	cp --preserve=xattr,timestamps tmp/lib/*/libpam.so.0.* rootfs/lib/libpam.so.0
@@ -621,9 +623,9 @@ function create_cpio {
 	# libsystemd0 components
 	cp --no-dereference --preserve=xattr,timestamps tmp/lib/*/libsystemd.so* rootfs/lib/
 
-	# libtinfo5 components
-	cp --preserve=xattr,timestamps tmp/lib/*/libtinfo.so.5.* rootfs/lib/libtinfo.so.5
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libtic.so.5.* rootfs/usr/lib/libtinfo.so.5
+	# libtinfo6 components
+	cp --preserve=xattr,timestamps tmp/lib/*/libtinfo.so.6.* rootfs/lib/libtinfo.so.6
+	cp --preserve=xattr,timestamps tmp/usr/lib/*/libtic.so.6.* rootfs/usr/lib/libtinfo.so.6
 
 	# libuuid1 components
 	cp --preserve=xattr,timestamps tmp/lib/*/libuuid.so.1.* rootfs/lib/libuuid.so.1
@@ -679,7 +681,7 @@ function create_cpio {
 	cp --preserve=xattr,timestamps tmp/usr/lib/*/libk5crypto.so.3 rootfs/lib/arm-linux-gnueabihf/libk5crypto.so.3
 	cp --preserve=xattr,timestamps tmp/usr/lib/*/liblber-2.4.so.2 rootfs/lib/arm-linux-gnueabihf/liblber-2.4.so.2
 	cp --preserve=xattr,timestamps tmp/usr/lib/*/libldap_r-2.4.so.2 rootfs/lib/arm-linux-gnueabihf/libldap_r-2.4.so.2
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libunistring.so.0 rootfs/lib/arm-linux-gnueabihf/libunistring.so.0
+	cp --preserve=xattr,timestamps tmp/usr/lib/*/libunistring.so.2.* rootfs/lib/arm-linux-gnueabihf/libunistring.so.2
 	cp --preserve=xattr,timestamps tmp/usr/lib/*/libgnutls.so.30 rootfs/lib/arm-linux-gnueabihf/libgnutls.so.30
 	cp --preserve=xattr,timestamps tmp/usr/lib/*/libhogweed.so.4 rootfs/lib/arm-linux-gnueabihf/libhogweed.so.4
 	cp --preserve=xattr,timestamps tmp/usr/lib/*/libnettle.so.6 rootfs/lib/arm-linux-gnueabihf/libnettle.so.6

@@ -129,7 +129,7 @@ variables_set_defaults() {
 	# set config defaults
 	variable_set "preset" "server"
 	variable_set "mirror" "http://mirrordirector.raspbian.org/raspbian/"
-	variable_set "release" "stretch"
+	variable_set "release" "buster"
 	variable_set "hostname" "pi"
 	variable_set "rootpw" "raspbian"
 	variable_set "root_ssh_pwlogin" "1"
@@ -286,6 +286,7 @@ fail() {
 
 	# if we mounted /boot in the fail command, unmount it.
 	if [ "${fail_boot_mounted}" = true ]; then
+		sync
 		umount /boot
 	fi
 
@@ -661,6 +662,9 @@ case "${rpi_hardware}" in
 	"a32082") rpi_hardware_version="3 Model B" ;;
 	"a020d3") rpi_hardware_version="3 Model B+" ;;
 	"9020e0") rpi_hardware_version="3 Model A+" ;;
+	"a03111") rpi_hardware_version="4 Model B" ;;
+	"b03111") rpi_hardware_version="4 Model B" ;;
+	"c03111") rpi_hardware_version="4 Model B" ;;
 	*) rpi_hardware_version="unknown (${rpi_hardware})" ;;
 esac
 
@@ -704,10 +708,11 @@ preinstall_reboot=0
 echo
 echo "Checking if config.txt needs to be modified before starting installation..."
 # Reinstallation
-if [ -e "/boot/raspberrypi-ua-netinst/reinstall/kernel.img" ] && [ -e "/boot/raspberrypi-ua-netinst/reinstall/kernel7.img" ] ; then
+if [ -e "/boot/raspberrypi-ua-netinst/reinstall/kernel.img" ] && [ -e "/boot/raspberrypi-ua-netinst/reinstall/kernel7.img" ] && [ -e "/boot/raspberrypi-ua-netinst/reinstall/kernel7l.img" ] ; then
 	echo -n "  Reinstallation requested! Restoring files... "
 	mv /boot/raspberrypi-ua-netinst/reinstall/kernel.img /boot/kernel.img
 	mv /boot/raspberrypi-ua-netinst/reinstall/kernel7.img /boot/kernel7.img
+	mv /boot/raspberrypi-ua-netinst/reinstall/kernel7l.img /boot/kernel7l.img
 	echo "OK"
 	preinstall_reboot=1
 fi
@@ -785,6 +790,7 @@ unset preinstall_reboot
 
 echo
 echo -n "Unmounting boot partition... "
+sync
 umount /boot || fail
 echo "OK"
 
@@ -876,6 +882,8 @@ if [ ! -e "/lib/modules/$(uname -r)" ]; then
 	echo "Kernel modules for the kernel version \"$(uname -r)\" could not be found. Searching for alternatives..."
 	if [[ "$(uname -r)" =~ -v7\+$ ]]; then
 		kernel_modulepath="$(find /lib/modules/ -maxdepth 1 -type d ! -path /lib/modules/ | grep -e "[^/]\+-v7+$" | head -1)"
+	elif [[ "$(uname -r)" =~ -v7l\+$ ]]; then
+		kernel_modulepath="$(find /lib/modules/ -maxdepth 1 -type d ! -path /lib/modules/ | grep -e "[^/]\+-v7l+$" | head -1)"
 	else
 		kernel_modulepath="$(find /lib/modules/ -maxdepth 1 -type d ! -path /lib/modules/ | grep -ve "[^/]\+-v7+$" | head -1)"
 	fi
@@ -922,15 +930,20 @@ if [ "${ifname}" != "eth0" ]; then
 	sed -i "s/PEERDNS_IF=.*/PEERDNS_IF=${ifname}/g" /etc/udhcpc/default.script
 	# wlan* is a wireless interface and wpa_supplicant must connect to wlan
 	if echo "${ifname}" | grep -q "wlan"; then
-		echo -n "Starting wpa_supplicant... "
+		echo "Starting wpa_supplicant..."
 		if [ -e "${wlan_configfile}" ]; then
-			if wpa_supplicant -B -Dnl80211 -c"${wlan_configfile}" -i"${ifname}"; then
-				echo "OK"
-			else
-				echo "nl80211 driver didn't work. Trying generic driver (wext)..."
-				wpa_supplicant -B -Dwext -c"${wlan_configfile}" -i"${ifname}" || fail
-				echo "OK"
+			wpa_supplicant -B -Dnl80211 -c"${wlan_configfile}" -i"${ifname}" | sed 's/^/  /'
+			if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+				echo "  nl80211 driver didn't work. Trying generic driver (wext)..."
+				wpa_supplicant -B -Dwext -c"${wlan_configfile}" -i"${ifname}" | sed 's/^/  /'
+				if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+					fail
+				fi
 			fi
+			echo "OK"
+		else
+			echo "  wpa_supplicant.conf could not be found."
+			fail
 		fi
 	fi
 fi
@@ -938,7 +951,7 @@ fi
 if [ "${ip_addr}" = "dhcp" ]; then
 	echo -n "Configuring ${ifname} with DHCP... "
 
-	if udhcpc -i "${ifname}" &> /dev/null; then
+	if udhcpc -R -i "${ifname}" &> /dev/null; then
 		ifconfig "${ifname}" | grep -F addr: | awk '{print $2}' | cut -d: -f2
 	else
 		echo "FAILED"
@@ -1068,7 +1081,6 @@ case "${rootfstype}" in
 		rootfs_mount_options="noatime"
 	;;
 	"ext4")
-		kernel_module=true
 		if [ -z "${rootfs_mkfs_options}" ]; then
 			if [ -n "${root_volume_label}" ]; then
 				rootfs_mkfs_options="-L ${root_volume_label}"
@@ -1080,12 +1092,11 @@ case "${rootfstype}" in
 		rootfs_mount_options="errors=remount-ro,noatime"
 	;;
 	"f2fs")
-		kernel_module=true
 		if [ -z "${rootfs_mkfs_options}" ]; then
 			if [ -n "${root_volume_label}" ]; then
-				rootfs_mkfs_options="-l ${root_volume_label}"
+				rootfs_mkfs_options="-l ${root_volume_label} -f"
 			else
-				rootfs_mkfs_options=
+				rootfs_mkfs_options="-f"
 			fi
 		fi
 		rootfs_install_mount_options="noatime"
@@ -1117,7 +1128,7 @@ fi
 
 # determine available releases
 mirror_base=http://archive.raspberrypi.org/debian/dists/
-release_fallback=stretch
+release_fallback=buster
 release_base="${release}"
 release_raspbian="${release}"
 if ! wget --spider "${mirror_base}/${release}/" &> /dev/null; then
@@ -1132,12 +1143,7 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	# from small to large: base, minimal, server
 	# not very logical that minimal > base, but that's how it was historically defined
 
-	init_system=""
-	if [ "${release}" = "wheezy" ]; then
-		init_system="sysvinit"
-	else
-		init_system="systemd"
-	fi
+	init_system="systemd"
 
 	# always add packages if requested or needed
 	if [ "${firmware_packages}" = "1" ]; then
@@ -1149,7 +1155,7 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	if [ -n "${keyboard_layout}" ] && [ "${keyboard_layout}" != "us" ]; then
 		custom_packages="${custom_packages},console-setup"
 	fi
-	if [ "${watchdog_enable}" = "1" ] && [ "${init_system}" = "sysvinit" ]; then
+	if [ "${watchdog_enable}" = "1" ] && [ "${init_system}" != "systemd" ]; then
 		custom_packages="${custom_packages},watchdog"
 	fi
 	if [ "${sound_usb_enable}" = "1" ]; then
@@ -1529,7 +1535,7 @@ rm -rf "${tmp_bootfs:?}"/ || fail
 echo "OK"
 
 if [ "${kernel_module}" = true ]; then
-	if [ "${rootfstype}" != "ext4" ]; then
+	if [ "${rootfstype}" != "ext4" ] && [ "${rootfstype}" != "f2fs" ]; then
 		echo -n "Loading ${rootfstype} module... "
 		modprobe "${rootfstype}" &> /dev/null || fail
 		echo "OK"
@@ -1542,7 +1548,6 @@ eval mkfs."${rootfstype}" "${rootfs_mkfs_options}" "${rootpartition}" | sed 's/^
 if [ "${PIPESTATUS[0]}" -ne 0 ]; then
 	fail
 fi
-
 echo "OK"
 
 echo -n "Mounting new filesystems... "
@@ -1569,7 +1574,7 @@ else
 fi
 
 if [ "${kernel_module}" = true ]; then
-	if [ "${rootfstype}" != "ext4" ]; then
+	if [ "${rootfstype}" != "ext4" ] && [ "${rootfstype}" != "f2fs" ]; then
 		mkdir -p /rootfs/etc/initramfs-tools
 		echo "${rootfstype}" >> /rootfs/etc/initramfs-tools/modules
 	fi
@@ -1596,6 +1601,7 @@ for i in $(seq 1 "${installer_pkg_downloadretries}"); do
 		fi
 	fi
 done
+echo "OK"
 
 echo
 echo "Configuring installed system:"
@@ -1824,6 +1830,8 @@ if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "ifupdown"; 
 		ln -s /dev/null /rootfs/etc/udev/rules.d/75-persistent-net-generator.rules
 	fi
 
+	echo "OK"
+
 	# copy resolv.conf
 	echo -n "  Configuring nameserver... "
 	if [ -e "/etc/resolv.conf" ]; then
@@ -1837,8 +1845,6 @@ if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "ifupdown"; 
 		echo "MISSING !"
 		fail
 	fi
-
-	echo "OK"
 fi
 
 # set timezone and reconfigure tzdata package
@@ -2081,57 +2087,59 @@ for i in $(seq 1 "${installer_pkg_updateretries}"); do
 done
 
 # kernel and firmware package can't be installed during cdebootstrap phase, so do so now
-if [ "${kernel_module}" = true ]; then
-	if [ -n "${packages_postinstall}" ]; then
-		convert_listvariable packages_postinstall
-	fi
-
-	DEBIAN_FRONTEND=noninteractive
-	export DEBIAN_FRONTEND
-
-	echo
-	echo "Downloading packages..."
-	for i in $(seq 1 "${installer_pkg_downloadretries}"); do
-		if [ -z "${mirror_cache}" ]; then
-			eval chroot /rootfs /usr/bin/apt-get -y -d install "${packages_postinstall}" 2>&1 | output_filter
-		else
-			eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y -d install "${packages_postinstall}" 2>&1 | output_filter
-		fi
-		download_exitcode="${PIPESTATUS[0]}"
-		if [ "${download_exitcode}" -eq 0 ]; then
-			echo "OK"
-			break
-		elif [ "${i}" -eq "${installer_pkg_downloadretries}" ]; then
-			echo "ERROR: ${download_exitcode}, FAILED !"
-			fail
-		else
-			echo -n "ERROR: ${download_exitcode}, trying again ($((i+1))/${installer_pkg_downloadretries})... "
-		fi
-	done
-
-	echo
-	echo "Installing kernel, bootloader (=firmware) and user packages..."
-	eval chroot /rootfs /usr/bin/apt-get -y install "${packages_postinstall}" 2>&1 | output_filter
-	if [ "${PIPESTATUS[0]}" -eq 0 ]; then
-		echo "OK"
-	else
-		echo "FAILED !"
-	fi
-
-	unset DEBIAN_FRONTEND
+if [ -n "${packages_postinstall}" ]; then
+	convert_listvariable packages_postinstall
 fi
+
+DEBIAN_FRONTEND=noninteractive
+export DEBIAN_FRONTEND
+
+echo
+echo "Downloading packages..."
+for i in $(seq 1 "${installer_pkg_downloadretries}"); do
+	if [ -z "${mirror_cache}" ]; then
+		eval chroot /rootfs /usr/bin/apt-get -y -d upgrade "${packages_postinstall}" 2>&1 | output_filter
+	else
+		eval chroot /rootfs /usr/bin/apt-get -o Acquire::http::Proxy=http://"${mirror_cache}" -y -d upgrade "${packages_postinstall}" 2>&1 | output_filter
+	fi
+	download_exitcode="${PIPESTATUS[0]}"
+	if [ "${download_exitcode}" -eq 0 ]; then
+		echo "OK"
+		break
+	elif [ "${i}" -eq "${installer_pkg_downloadretries}" ]; then
+		echo "ERROR: ${download_exitcode}, FAILED !"
+		fail
+	else
+		echo -n "ERROR: ${download_exitcode}, trying again ($((i+1))/${installer_pkg_downloadretries})... "
+	fi
+done
+
+echo
+echo "Installing kernel, bootloader (=firmware) and user packages..."
+eval chroot /rootfs /usr/bin/apt-get -y upgrade "${packages_postinstall}" 2>&1 | output_filter
+if [ "${PIPESTATUS[0]}" -eq 0 ]; then
+	echo "OK"
+else
+	echo "FAILED !"
+fi
+
+unset DEBIAN_FRONTEND
+echo
 
 # remove cdebootstrap-helper-rc.d which prevents rc.d scripts from running
 echo -n "Removing cdebootstrap-helper-rc.d... "
 chroot /rootfs /usr/bin/dpkg -r cdebootstrap-helper-rc.d &> /dev/null || fail
 echo "OK"
 
-echo "Preserving original config.txt and kernels..."
+echo -n "Preserving original config.txt and kernels... "
 mkdir -p /rootfs/boot/raspberrypi-ua-netinst/reinstall
 cp /rootfs/boot/config.txt /rootfs/boot/raspberrypi-ua-netinst/reinstall/config.txt
 cp /rootfs/boot/kernel.img /rootfs/boot/raspberrypi-ua-netinst/reinstall/kernel.img
 cp /rootfs/boot/kernel7.img /rootfs/boot/raspberrypi-ua-netinst/reinstall/kernel7.img
-echo "Configuring bootloader to start the installed system..."
+cp /rootfs/boot/kernel7l.img /rootfs/boot/raspberrypi-ua-netinst/reinstall/kernel7l.img
+echo "OK"
+
+echo -n "Configuring bootloader to start the installed system..."
 if [ -e "/rootfs/boot/raspberrypi-ua-netinst/config/boot/config.txt" ]; then
 	cp /rootfs/boot/raspberrypi-ua-netinst/config/boot/config.txt /rootfs/boot/config.txt
 else
@@ -2145,6 +2153,7 @@ fi
 if [ "${usbboot}" = "1" ]; then
 	touch /rootfs/boot/TIMEOUT
 fi
+echo "OK"
 
 # create cmdline.txt
 echo -n "Creating cmdline.txt... "
@@ -2240,7 +2249,9 @@ if [ "${watchdog_enable}" = "1" ]; then
 		sed -i "s/^\(dtparam=watchdog=.*\)/#\1/" /rootfs/boot/config.txt
 		echo "dtparam=watchdog=on" >> /rootfs/boot/config.txt
 	fi
-	if [ "${init_system}" = "sysvinit" ]; then
+	if [ "${init_system}" = "systemd" ]; then
+		sed -i 's/^.*RuntimeWatchdogSec=.*$/RuntimeWatchdogSec=14s/' /rootfs/etc/systemd/system.conf
+	else
 		sed -i "s/^\(#\)*\(max-load-1\t\t= \)\S\+/\224/" /rootfs/etc/watchdog.conf || fail
 		sed -i "s/^\(#\)*\(watchdog-device\t\)\(= \)\S\+/\2\t\3\/dev\/watchdog/" /rootfs/etc/watchdog.conf || fail
 		if [ "$(grep -c "^\(#\)*watchdog-timeout" /etc/watchdog.conf)" -eq 1 ]; then
@@ -2248,8 +2259,6 @@ if [ "${watchdog_enable}" = "1" ]; then
 		else
 			echo -e "watchdog-timeout\t= 14" >> /rootfs/etc/watchdog.conf || fail
 		fi
-	elif [ "${init_system}" = "systemd" ]; then
-		sed -i 's/^.*RuntimeWatchdogSec=.*$/RuntimeWatchdogSec=14s/' /rootfs/etc/systemd/system.conf
 	fi
 fi
 
@@ -2413,8 +2422,14 @@ if [ "${cleanup}" = "1" ]; then
 fi
 
 if [ "${final_action}" != "console" ]; then
+	if [ "${ip_addr}" = "dhcp" ]; then
+		echo -n "Releasing IP... "
+		killall -q udhcpc
+		echo "OK"
+	fi
+	
 	echo -n "Unmounting filesystems... "
-	for sysfolder in /dev/pts /proc /sys; do
+	for sysfolder in /sys /proc /dev/pts /dev; do
 		umount "/rootfs${sysfolder}"
 	done
 	sync

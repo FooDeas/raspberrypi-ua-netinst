@@ -1,5 +1,17 @@
 # Changelog
 
+## raspberrypi-ua-netinst v2.4.0
+
+- support for version 4 model B
+- support for Debian 10 (buster)
+- removed handling of Debian 7 (wheezy) because it is no longer available in Raspbian repository
+- added or changed configuration variables:
+  - `release` is set to "buster" by default
+
+**Bugfixes:**
+
+- upgrade initial packages
+
 ## raspberrypi-ua-netinst v2.3.0
 
 - support for version 3 model A+
