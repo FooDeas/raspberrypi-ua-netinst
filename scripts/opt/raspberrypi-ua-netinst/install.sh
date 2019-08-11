@@ -286,6 +286,7 @@ fail() {
 
 	# if we mounted /boot in the fail command, unmount it.
 	if [ "${fail_boot_mounted}" = true ]; then
+		sync
 		umount /boot
 	fi
 
@@ -788,6 +789,7 @@ unset preinstall_reboot
 
 echo
 echo -n "Unmounting boot partition... "
+sync
 umount /boot || fail
 echo "OK"
 
@@ -941,7 +943,7 @@ fi
 if [ "${ip_addr}" = "dhcp" ]; then
 	echo -n "Configuring ${ifname} with DHCP... "
 
-	if udhcpc -i "${ifname}" &> /dev/null; then
+	if udhcpc -R -i "${ifname}" &> /dev/null; then
 		ifconfig "${ifname}" | grep -F addr: | awk '{print $2}' | cut -d: -f2
 	else
 		echo "FAILED"
@@ -2408,7 +2410,7 @@ fi
 
 if [ "${final_action}" != "console" ]; then
 	echo -n "Unmounting filesystems... "
-	for sysfolder in /dev/pts /proc /sys; do
+	for sysfolder in /sys /proc /dev/pts /dev; do
 		umount "/rootfs${sysfolder}"
 	done
 	sync
