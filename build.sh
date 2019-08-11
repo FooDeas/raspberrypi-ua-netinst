@@ -574,6 +574,9 @@ function create_cpio {
 	# libnl-genl-3-200 components
 	cp --preserve=xattr,timestamps tmp/lib/*/libnl-genl-3.so.200 rootfs/lib/libnl-genl-3.so.200
 
+	# libnl-route-3-200 components
+	cp --preserve=xattr,timestamps tmp/usr/lib/*/libnl-route-3.so.200.* rootfs/usr/lib/libnl-route-3.so.200
+
 	# libpam0g components
 	cp --preserve=xattr,timestamps tmp/lib/*/libpam.so.0.* rootfs/lib/libpam.so.0
 	cp --preserve=xattr,timestamps tmp/lib/*/libpam_misc.so.0.* rootfs/lib/libpam_misc.so.0
