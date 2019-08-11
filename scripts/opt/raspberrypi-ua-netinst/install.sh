@@ -1133,12 +1133,7 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	# from small to large: base, minimal, server
 	# not very logical that minimal > base, but that's how it was historically defined
 
-	init_system=""
-	if [ "${release}" = "wheezy" ]; then
-		init_system="sysvinit"
-	else
-		init_system="systemd"
-	fi
+	init_system="systemd"
 
 	# always add packages if requested or needed
 	if [ "${firmware_packages}" = "1" ]; then
@@ -1150,7 +1145,7 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	if [ -n "${keyboard_layout}" ] && [ "${keyboard_layout}" != "us" ]; then
 		custom_packages="${custom_packages},console-setup"
 	fi
-	if [ "${watchdog_enable}" = "1" ] && [ "${init_system}" = "sysvinit" ]; then
+	if [ "${watchdog_enable}" = "1" ] && [ "${init_system}" != "systemd" ]; then
 		custom_packages="${custom_packages},watchdog"
 	fi
 	if [ "${sound_usb_enable}" = "1" ]; then
@@ -2239,7 +2234,9 @@ if [ "${watchdog_enable}" = "1" ]; then
 		sed -i "s/^\(dtparam=watchdog=.*\)/#\1/" /rootfs/boot/config.txt
 		echo "dtparam=watchdog=on" >> /rootfs/boot/config.txt
 	fi
-	if [ "${init_system}" = "sysvinit" ]; then
+	if [ "${init_system}" = "systemd" ]; then
+		sed -i 's/^.*RuntimeWatchdogSec=.*$/RuntimeWatchdogSec=14s/' /rootfs/etc/systemd/system.conf
+	else
 		sed -i "s/^\(#\)*\(max-load-1\t\t= \)\S\+/\224/" /rootfs/etc/watchdog.conf || fail
 		sed -i "s/^\(#\)*\(watchdog-device\t\)\(= \)\S\+/\2\t\3\/dev\/watchdog/" /rootfs/etc/watchdog.conf || fail
 		if [ "$(grep -c "^\(#\)*watchdog-timeout" /etc/watchdog.conf)" -eq 1 ]; then
@@ -2247,8 +2244,6 @@ if [ "${watchdog_enable}" = "1" ]; then
 		else
 			echo -e "watchdog-timeout\t= 14" >> /rootfs/etc/watchdog.conf || fail
 		fi
-	elif [ "${init_system}" = "systemd" ]; then
-		sed -i 's/^.*RuntimeWatchdogSec=.*$/RuntimeWatchdogSec=14s/' /rootfs/etc/systemd/system.conf
 	fi
 fi
 
