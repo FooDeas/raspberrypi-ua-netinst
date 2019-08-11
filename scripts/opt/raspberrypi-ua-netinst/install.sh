@@ -930,15 +930,20 @@ if [ "${ifname}" != "eth0" ]; then
 	sed -i "s/PEERDNS_IF=.*/PEERDNS_IF=${ifname}/g" /etc/udhcpc/default.script
 	# wlan* is a wireless interface and wpa_supplicant must connect to wlan
 	if echo "${ifname}" | grep -q "wlan"; then
-		echo -n "Starting wpa_supplicant... "
+		echo "Starting wpa_supplicant..."
 		if [ -e "${wlan_configfile}" ]; then
-			if wpa_supplicant -B -Dnl80211 -c"${wlan_configfile}" -i"${ifname}"; then
-				echo "OK"
-			else
-				echo "nl80211 driver didn't work. Trying generic driver (wext)..."
-				wpa_supplicant -B -Dwext -c"${wlan_configfile}" -i"${ifname}" || fail
-				echo "OK"
+			wpa_supplicant -B -Dnl80211 -c"${wlan_configfile}" -i"${ifname}" | sed 's/^/  /'
+			if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+				echo "  nl80211 driver didn't work. Trying generic driver (wext)..."
+				wpa_supplicant -B -Dwext -c"${wlan_configfile}" -i"${ifname}" | sed 's/^/  /'
+				if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+					fail
+				fi
 			fi
+			echo "OK"
+		else
+			echo "  wpa_supplicant.conf could not be found."
+			fail
 		fi
 	fi
 fi
@@ -1543,7 +1548,6 @@ eval mkfs."${rootfstype}" "${rootfs_mkfs_options}" "${rootpartition}" | sed 's/^
 if [ "${PIPESTATUS[0]}" -ne 0 ]; then
 	fail
 fi
-
 echo "OK"
 
 echo -n "Mounting new filesystems... "
@@ -1597,6 +1601,7 @@ for i in $(seq 1 "${installer_pkg_downloadretries}"); do
 		fi
 	fi
 done
+echo "OK"
 
 echo
 echo "Configuring installed system:"
@@ -1825,6 +1830,8 @@ if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "ifupdown"; 
 		ln -s /dev/null /rootfs/etc/udev/rules.d/75-persistent-net-generator.rules
 	fi
 
+	echo "OK"
+
 	# copy resolv.conf
 	echo -n "  Configuring nameserver... "
 	if [ -e "/etc/resolv.conf" ]; then
@@ -1838,8 +1845,6 @@ if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "ifupdown"; 
 		echo "MISSING !"
 		fail
 	fi
-
-	echo "OK"
 fi
 
 # set timezone and reconfigure tzdata package
@@ -2119,19 +2124,22 @@ else
 fi
 
 unset DEBIAN_FRONTEND
+echo
 
 # remove cdebootstrap-helper-rc.d which prevents rc.d scripts from running
 echo -n "Removing cdebootstrap-helper-rc.d... "
 chroot /rootfs /usr/bin/dpkg -r cdebootstrap-helper-rc.d &> /dev/null || fail
 echo "OK"
 
-echo "Preserving original config.txt and kernels..."
+echo -n "Preserving original config.txt and kernels... "
 mkdir -p /rootfs/boot/raspberrypi-ua-netinst/reinstall
 cp /rootfs/boot/config.txt /rootfs/boot/raspberrypi-ua-netinst/reinstall/config.txt
 cp /rootfs/boot/kernel.img /rootfs/boot/raspberrypi-ua-netinst/reinstall/kernel.img
 cp /rootfs/boot/kernel7.img /rootfs/boot/raspberrypi-ua-netinst/reinstall/kernel7.img
 cp /rootfs/boot/kernel7l.img /rootfs/boot/raspberrypi-ua-netinst/reinstall/kernel7l.img
-echo "Configuring bootloader to start the installed system..."
+echo "OK"
+
+echo -n "Configuring bootloader to start the installed system..."
 if [ -e "/rootfs/boot/raspberrypi-ua-netinst/config/boot/config.txt" ]; then
 	cp /rootfs/boot/raspberrypi-ua-netinst/config/boot/config.txt /rootfs/boot/config.txt
 else
@@ -2145,6 +2153,7 @@ fi
 if [ "${usbboot}" = "1" ]; then
 	touch /rootfs/boot/TIMEOUT
 fi
+echo "OK"
 
 # create cmdline.txt
 echo -n "Creating cmdline.txt... "
