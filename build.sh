@@ -427,9 +427,7 @@ function create_cpio {
 
 	# tar components
 	cp --preserve=xattr,timestamps tmp/bin/tar rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/etc/rmt rootfs/etc/
 	cp --preserve=xattr,timestamps tmp/usr/lib/mime/packages/tar rootfs/usr/lib/mime/packages/
-	cp --preserve=xattr,timestamps tmp/usr/sbin/rmt-tar rootfs/usr/sbin/
 	cp --preserve=xattr,timestamps tmp/usr/sbin/tarcat rootfs/usr/sbin/
 
 	# fdisk components
