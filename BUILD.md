@@ -46,5 +46,6 @@ To set buildroot options, create a file named `buildroot.conf`, which contains t
 
 - `compress_bz2=1` - create a bz2-compressed image
 - `compress_xz=1` - create a xz-compressed image
+- `use_sudo=1` - use passwordless-sudo for operations which require root privileges
 
 By default both bzip2 and xz compressed versions of the image will be created and the uncompressed image will deleted, but either or both can be disabled. If both are disabled, the uncompressed image will be left in place.
