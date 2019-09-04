@@ -1178,10 +1178,7 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	if [ "$(find "${tmp_bootfs}"/raspberrypi-ua-netinst/config/apt/ -maxdepth 1 -type f -name "*.list" 2> /dev/null | wc -l)" != 0 ]; then
 		base_packages="${base_packages},apt-transport-https"
 	fi
-	base_packages_postinstall=raspberrypi-bootloader
-	if [ "${release}" != "wheezy" ]; then
-		base_packages_postinstall="${base_packages_postinstall},raspberrypi-kernel"
-	fi
+	base_packages_postinstall="raspberrypi-bootloader,raspberrypi-kernel"
 	base_packages_postinstall="${custom_packages_postinstall},${base_packages_postinstall}"
 
 	# minimal
@@ -1192,10 +1189,7 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	if [ -z "${rtc}" ]; then
 		minimal_packages="${minimal_packages},fake-hwclock"
 	fi
-	minimal_packages_postinstall="${base_packages_postinstall},${minimal_packages_postinstall}"
-	if [ "${release}" != "wheezy" ]; then
-		minimal_packages_postinstall="${minimal_packages_postinstall},raspberrypi-sys-mods"
-	fi
+	minimal_packages_postinstall="${base_packages_postinstall},${minimal_packages_postinstall},raspberrypi-sys-mods"
 	if echo "${ifname}" | grep -q "wlan"; then
 		minimal_packages_postinstall="${minimal_packages_postinstall},firmware-brcm80211"
 	fi
@@ -1640,14 +1634,12 @@ if [ -n "${root_ssh_pubkey}" ]; then
 		fail
 	fi
 fi
-# openssh-server in jessie and higher doesn't allow root to login with a password
+# openssh-server doesn't allow root to login with a password
 if [ "${root_ssh_pwlogin}" = "1" ]; then
-	if [ "${release_raspbian}" != "wheezy" ]; then
-		if [ -f /rootfs/etc/ssh/sshd_config ]; then
-			echo -n "  Allowing root to login with password... "
-			sed -i '/PermitRootLogin/s/.*/PermitRootLogin yes/' /rootfs/etc/ssh/sshd_config || fail
-			echo "OK"
-		fi
+	if [ -f /rootfs/etc/ssh/sshd_config ]; then
+		echo -n "  Allowing root to login with password... "
+		sed -i '/PermitRootLogin/s/.*/PermitRootLogin yes/' /rootfs/etc/ssh/sshd_config || fail
+		echo "OK"
 	fi
 fi
 # disable global password login if requested
