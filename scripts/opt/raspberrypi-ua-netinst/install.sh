@@ -1138,12 +1138,18 @@ if ! wget --spider "${mirror}/dists/${release}/" &> /dev/null; then
 	release_raspbian="${release_fallback}"
 fi
 
+# if the configuration will install the sysvinit-core package, then the init system will
+# be sysvinit, otherwise it will be systemd
+if echo "${cdebootstrap_cmdline} ${syspackages} ${packages}" | grep -q "sysvinit-core"; then
+    init_system="sysvinit"
+else
+    init_system="systemd"
+fi
+
 # configure different kinds of presets
 if [ -z "${cdebootstrap_cmdline}" ]; then
 	# from small to large: base, minimal, server
 	# not very logical that minimal > base, but that's how it was historically defined
-
-	init_system="systemd"
 
 	# always add packages if requested or needed
 	if [ "${firmware_packages}" = "1" ]; then
