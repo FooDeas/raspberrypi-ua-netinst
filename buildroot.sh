@@ -40,7 +40,7 @@ image=${build_dir}/${imagename}.img
 
 # Prepare
 rm -f "${image}"
-rm -rf ${build_dir}/mnt
+rm -rf "${build_dir:-build_dir}/mnt/"
 
 # Create image
 dd if=/dev/zero of="$image" bs=1M count=128
