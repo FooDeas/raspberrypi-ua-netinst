@@ -10,10 +10,17 @@ compress_bz2=1
 # Controls production of an xz-compressed image
 compress_xz=1
 
+# Use 'sudo' for commands which require root privileges
+use_sudo=0
+
 # If a configuration file exists, import its settings
 if [ -e buildroot.conf ]; then
 	# shellcheck disable=SC1091
 	source buildroot.conf
+fi
+
+if [ "$use_sudo" = "1" ]; then
+    SUDO=sudo
 fi
 
 build_dir=build_dir
@@ -33,11 +40,12 @@ image=${build_dir}/${imagename}.img
 
 # Prepare
 rm -f "${image}"
+rm -rf "${build_dir:-build_dir}/mnt/"
 
 # Create image
 dd if=/dev/zero of="$image" bs=1M count=128
 
-fdisk "${image}" <<EOF
+${SUDO} fdisk "${image}" <<EOF
 n
 p
 1
@@ -57,20 +65,24 @@ else
 fi
 
 if [ "$losetup_lt_2_22" = "true" ]; then
-	kpartx -as "${image}"
-	mkfs.vfat /dev/mapper/loop0p1
-	mount /dev/mapper/loop0p1 /mnt
-	cp -r ${build_dir}/bootfs/* /mnt/
-	umount /mnt
-	kpartx -d "${image}" || true
+	${SUDO} kpartx -as "${image}"
+	${SUDO} mkfs.vfat /dev/mapper/loop0p1
+	mkdir ${build_dir}/mnt
+	${SUDO} mount /dev/mapper/loop0p1 ${build_dir}/mnt
+	${SUDO} cp -r ${build_dir}/bootfs/* ${build_dir}/mnt
+	${SUDO} umount ${build_dir}/mnt
+	${SUDO} kpartx -d "${image}" || true
+	rmdir ${build_dir}/mnt
 else
-	losetup --find --partscan "${image}"
+	${SUDO} losetup --find --partscan "${image}"
 	LOOP_DEV="$(losetup --associated "${image}" | cut -f1 -d':')"
-	mkfs.vfat "${LOOP_DEV}p1"
-	mount "${LOOP_DEV}p1" /mnt
-	cp -r ${build_dir}/bootfs/* /mnt/
-	umount /mnt
-	losetup --detach "${LOOP_DEV}"
+	${SUDO} mkfs.vfat "${LOOP_DEV}p1"
+	mkdir ${build_dir}/mnt
+	${SUDO} mount "${LOOP_DEV}p1" ${build_dir}/mnt
+	${SUDO} cp -r ${build_dir}/bootfs/* ${build_dir}/mnt
+	${SUDO} umount ${build_dir}/mnt
+	${SUDO} losetup --detach "${LOOP_DEV}"
+	rmdir ${build_dir}/mnt
 fi
 
 # Create archives
