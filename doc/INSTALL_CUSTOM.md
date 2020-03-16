@@ -55,7 +55,7 @@ Note that if the networking configuration is set to use DHCP, no additional pack
 | `sound_usb_first` | `0` | `0`/`1` | Set to "1" to define USB audio as default if onboard audio is also enabled. The options `sound_enable=1` and `sound_usb_enable=1` have to be set to take effect. |
 | `camera_enable` | `0` | `0`/`1` | Set to "1" to enable the camera module. This enables all camera-related parameters in config.txt. |
 | `camera_disable_led` | `0` | `0`/`1` | Disables the camera LED. The option `camera_enable=1` has to be set to take effect. |
-| `rtc` |  | `ds1307`/  `ds1339`/  `ds3231`/  `mcp7940x`/  `mcp7941x`/  `pcf2127`/  `pcf8523`/  `pcf8563` | Select an RTC if it is connected via I²C. |
+| `rtc` |  | `ds1307`/  `ds1339`/  `ds3231`/  `mcp7940x`/  `mcp7941x`/  `pcf2127`/  `pcf8523`/  `pcf8563`/  `abx80x` | Select an RTC if it is connected via I²C. |
 | `dt_overlays` |  |  | Enables additional device tree overlays (comma separated and quoted). (e.g. 'dt_overlays="hifiberry-dac,lirc-rpi"') |
 
 ## SSH
