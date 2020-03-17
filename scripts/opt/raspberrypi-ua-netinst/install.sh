@@ -96,6 +96,10 @@ variables_reset() {
 	sound_usb_first=
 	camera_enable=
 	camera_disable_led=
+	poe_fan_temp0=
+	poe_fan_temp0_hyst=
+	poe_fan_temp1=
+	poe_fan_temp1_hyst=
 }
 
 variable_set() {
@@ -1369,6 +1373,10 @@ echo "  sound_usb_enable = ${sound_usb_enable}"
 echo "  sound_usb_first = ${sound_usb_first}"
 echo "  camera_enable = ${camera_enable}"
 echo "  camera_disable_led = ${camera_disable_led}"
+echo "  poe_fan_temp0 = ${poe_fan_temp0}"
+echo "  poe_fan_temp0_hyst = ${poe_fan_temp0_hyst}"
+echo "  poe_fan_temp1 = ${poe_fan_temp1}"
+echo "  poe_fan_temp1_hyst = ${poe_fan_temp1_hyst}"
 echo
 echo "OTP dump:"
 vcgencmd otp_dump | grep -v "..:00000000\|..:ffffffff" | sed 's/^/  /'
@@ -2259,6 +2267,17 @@ if [ "${watchdog_enable}" = "1" ]; then
 		fi
 	fi
 fi
+
+# set POE fan speed thresholds
+for param in poe_fan_temp0 poe_fan_temp0_hyst poe_fan_temp1 poe_fan_temp1_hyst; do
+	eval param_value=\$$param
+
+	if [ -n "${param_value}" ]; then
+		# disable conflicting parameters (works with multiple parameters in one line and preserves comments)
+		sed -i -e "s/^dtparam=\(\([^#]*\),\)\?\($param=[^,#]*\)\(,\([^#]*\w\)\)\?\(#\(.*\)\)\?\(\W\+#.*\)\?$/dtparam=\1\5#,\3\7\8/" -e '/^dtparam/s/,#,/#,/g' -e 's/^dtparam=#,/#dtparam=/' /rootfs/boot/config.txt
+		echo dtparam=$param=$param_value >> /rootfs/boot/config.txt
+	fi
+done
 
 # set wlan country code
 if [ -n "${wlan_country}" ]; then

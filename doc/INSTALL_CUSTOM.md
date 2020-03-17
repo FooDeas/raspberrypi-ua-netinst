@@ -41,6 +41,10 @@
 | `sound_usb_first` | `0` | `0`/`1` | Set to "1" to define USB audio as default if onboard audio is also enabled. The options `sound_enable=1` and `sound_usb_enable=1` have to be set to take effect. |
 | `camera_enable` | `0` | `0`/`1` | Set to "1" to enable the camera module. This enables all camera-related parameters in config.txt. |
 | `camera_disable_led` | `0` | `0`/`1` | Disables the camera LED. The option `camera_enable=1` has to be set to take effect. |
+| `poe_fan_temp0` | | | Sets the temperature threshold in millidegrees Celsius for low fan speed on the optional POE board (e.g. `poe_fan_temp0=61500` for 61.5 C). |
+| `poe_fan_temp0_hyst` | | | Sets the temperature threshold hysteresis in millidegrees Kelvin for low fan speed on the optional POE board (e.g. `poe_fan_temp0_hyst=5000` for 5K). |
+| `poe_fan_temp1` | | | Sets the temperature threshold in millidegrees Celsius for high fan speed on the optional POE board (e.g. `poe_fan_temp1=68500` for 68.5 C). |
+| `poe_fan_temp1_hyst` | | | Sets the temperature threshold hysteresis in millidegrees Kelvin for low high speed on the optional POE board (e.g. `poe_fan_temp1_hyst=2500` for 2.5K). |
 | `rtc` |  | `ds1307`/  `ds1339`/  `ds3231`/  `mcp7940x`/  `mcp7941x`/  `pcf2127`/  `pcf8523`/  `pcf8563` | Select an RTC if it is connected via I²C. |
 | `dt_overlays` |  |  | Enables additional device tree overlays (comma separated and quoted). (e.g. 'dt_overlays="hifiberry-dac,lirc-rpi"') |
 
