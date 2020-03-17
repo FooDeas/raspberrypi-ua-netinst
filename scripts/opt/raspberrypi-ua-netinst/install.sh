@@ -2272,12 +2272,13 @@ fi
 
 # set POE fan speed thresholds
 for param in poe_fan_temp0 poe_fan_temp0_hyst poe_fan_temp1 poe_fan_temp1_hyst; do
+	param_value=
 	eval param_value=\$$param
 
 	if [ -n "${param_value}" ]; then
 		# disable conflicting parameters (works with multiple parameters in one line and preserves comments)
 		sed -i -e "s/^dtparam=\(\([^#]*\),\)\?\($param=[^,#]*\)\(,\([^#]*\w\)\)\?\(#\(.*\)\)\?\(\W\+#.*\)\?$/dtparam=\1\5#,\3\7\8/" -e '/^dtparam/s/,#,/#,/g' -e 's/^dtparam=#,/#dtparam=/' /rootfs/boot/config.txt
-		echo dtparam=$param=$param_value >> /rootfs/boot/config.txt
+		echo "dtparam=$param=$param_value" >> /rootfs/boot/config.txt
 	fi
 done
 
