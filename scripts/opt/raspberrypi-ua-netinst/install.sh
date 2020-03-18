@@ -708,11 +708,9 @@ preinstall_reboot=0
 echo
 echo "Checking if config.txt needs to be modified before starting installation..."
 # Reinstallation
-if [ -e "/boot/raspberrypi-ua-netinst/reinstall/kernel.img" ] && [ -e "/boot/raspberrypi-ua-netinst/reinstall/kernel7.img" ] && [ -e "/boot/raspberrypi-ua-netinst/reinstall/kernel7l.img" ] ; then
+if [ -e "/boot/raspberrypi-ua-netinst/reinstall/kernel*.img" ]; then
 	echo -n "  Reinstallation requested! Restoring files... "
-	mv /boot/raspberrypi-ua-netinst/reinstall/kernel.img /boot/kernel.img
-	mv /boot/raspberrypi-ua-netinst/reinstall/kernel7.img /boot/kernel7.img
-	mv /boot/raspberrypi-ua-netinst/reinstall/kernel7l.img /boot/kernel7l.img
+	mv /boot/raspberrypi-ua-netinst/reinstall/kernel*.img /boot/
 	echo "OK"
 	preinstall_reboot=1
 fi
@@ -2115,12 +2113,22 @@ for i in $(seq 1 "${installer_pkg_downloadretries}"); do
 done
 
 echo
+echo -n "Moving original kernels... "
+mkdir -p /rootfs/boot/raspberrypi-ua-netinst/reinstall
+mv /rootfs/boot/kernel*.img /rootfs/boot/raspberrypi-ua-netinst/reinstall/
+echo "OK"
+
+echo
 echo "Installing kernel, bootloader (=firmware) and user packages..."
 eval chroot /rootfs /usr/bin/apt-get -y upgrade "${packages_postinstall}" 2>&1 | output_filter
 if [ "${PIPESTATUS[0]}" -eq 0 ]; then
 	echo "OK"
 else
 	echo "FAILED !"
+	echo
+	echo -n "Restoring kernels... "
+	cp /rootfs/boot/raspberrypi-ua-netinst/reinstall/kernel*.img /rootfs/boot/
+	echo "OK"
 fi
 
 unset DEBIAN_FRONTEND
@@ -2131,12 +2139,8 @@ echo -n "Removing cdebootstrap-helper-rc.d... "
 chroot /rootfs /usr/bin/dpkg -r cdebootstrap-helper-rc.d &> /dev/null || fail
 echo "OK"
 
-echo -n "Preserving original config.txt and kernels... "
-mkdir -p /rootfs/boot/raspberrypi-ua-netinst/reinstall
+echo -n "Preserving original config.txt... "
 cp /rootfs/boot/config.txt /rootfs/boot/raspberrypi-ua-netinst/reinstall/config.txt
-cp /rootfs/boot/kernel.img /rootfs/boot/raspberrypi-ua-netinst/reinstall/kernel.img
-cp /rootfs/boot/kernel7.img /rootfs/boot/raspberrypi-ua-netinst/reinstall/kernel7.img
-cp /rootfs/boot/kernel7l.img /rootfs/boot/raspberrypi-ua-netinst/reinstall/kernel7l.img
 echo "OK"
 
 echo -n "Configuring bootloader to start the installed system..."
