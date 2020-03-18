@@ -23,11 +23,25 @@
 
 ### Description: Presets
 
+#### Default configuration (when `use_systemd_services` is unset or set to `0`):
+
 | Preset | Packages |
 |---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `base` | _\<essential\>,apt,kmod_ |
 | `minimal` | _\<base\>,cpufrequtils,fake-hwclock,ifupdown,net-tools,ntp,openssh-server,dosfstools,raspberrypi-sys-mods_ |
 | `server` | _\<minimal\>,systemd-sysv,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,tzdata,less,man-db,logrotate,bash-completion,console-setup,apt-utils,libraspberrypi-bin,raspi-copies-and-fills_ |
+
+Note that if the networking configuration is set to use DHCP, `isc-dhcp-client` will also be installed.
+
+#### Advanced configuration (when `use_systemd_services` is set to `1`):
+
+| Preset | Packages |
+|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `base` | _\<essential\>,apt,kmod_ |
+| `minimal` | _\<base\>,cpufrequtils,iproute2,openssh-server,dosfstools,raspberrypi-sys-mods_ |
+| `server` | _\<minimal\>,systemd-sysv,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,tzdata,less,man-db,logrotate,bash-completion,console-setup,apt-utils,libraspberrypi-bin,raspi-copies-and-fills_ |
+
+Note that if the networking configuration is set to use DHCP, no additional packages will be installed as `systemd-networkd` provides DHCP client support.
 
 ## Device / peripheral
 
@@ -142,3 +156,4 @@
 | `disable_predictable_nin` | `1` | `0`/`1` | Disable Predictable Network Interface Names. Set to 0 if you want to use predictable network interface names, which means if you use the same SD card on a different RPi board, your network device might be named differently. This will result in the board having no network connectivity. |
 | `drivers_to_load` |  |  | Loads additional kernel modules at installation (comma separated and quoted). |
 | `online_config` |  |  | URL to extra config that will be executed after installer-config.txt |
+| `use_systemd_services` | `0` | `0`/`1` | Use systemd for networking and DNS resolution. |

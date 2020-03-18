@@ -96,6 +96,7 @@ variables_reset() {
 	sound_usb_first=
 	camera_enable=
 	camera_disable_led=
+	use_systemd_services=
 }
 
 variable_set() {
@@ -171,6 +172,7 @@ variables_set_defaults() {
 	variable_set "sound_usb_first" "0"
 	variable_set "camera_enable" "0"
 	variable_set "camera_disable_led" "0"
+	variable_set "use_systemd_services" "0"
 }
 
 led_sos() {
@@ -1141,9 +1143,13 @@ fi
 # if the configuration will install the sysvinit-core package, then the init system will
 # be sysvinit, otherwise it will be systemd
 if echo "${cdebootstrap_cmdline} ${syspackages} ${packages}" | grep -q "sysvinit-core"; then
-    init_system="sysvinit"
+	init_system="sysvinit"
+	if [ "${use_systemd_services}" != "0" ]; then
+		echo "Ignoring 'use_systemd_services' setting because init system is 'sysvinit'"
+		use_systemd_services=0
+	fi
 else
-    init_system="systemd"
+	init_system="systemd"
 fi
 
 # configure different kinds of presets
@@ -1188,12 +1194,15 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	base_packages_postinstall="${custom_packages_postinstall},${base_packages_postinstall}"
 
 	# minimal
-	minimal_packages="cpufrequtils,ifupdown,net-tools,openssh-server,dosfstools"
-	if [ "${init_system}" != "systemd" ]; then
+	minimal_packages="cpufrequtils,openssh-server,dosfstools"
+	if [ "${init_system}" != "systemd" ] || [ "${use_systemd_services}" = "0" ]; then
 		minimal_packages="${minimal_packages},ntp"
-	fi
-	if [ -z "${rtc}" ]; then
-		minimal_packages="${minimal_packages},fake-hwclock"
+		if [ -z "${rtc}" ]; then
+			minimal_packages="${minimal_packages},fake-hwclock"
+		fi
+		minimal_packages="${minimal_packages},ifupdown,net-tools"
+	else
+		minimal_packages="${minimal_packages},iproute2"
 	fi
 	minimal_packages_postinstall="${base_packages_postinstall},${minimal_packages_postinstall},raspberrypi-sys-mods"
 	if echo "${ifname}" | grep -q "wlan"; then
@@ -1369,6 +1378,7 @@ echo "  sound_usb_enable = ${sound_usb_enable}"
 echo "  sound_usb_first = ${sound_usb_first}"
 echo "  camera_enable = ${camera_enable}"
 echo "  camera_disable_led = ${camera_disable_led}"
+echo "  use_systemd_services = ${use_systemd_services}"
 echo
 echo "OTP dump:"
 vcgencmd otp_dump | grep -v "..:00000000\|..:ffffffff" | sed 's/^/  /'
@@ -1778,9 +1788,9 @@ else
 fi
 echo "OK"
 
-# networking
+# networking - ifupdown
 if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "ifupdown"; then
-	echo -n "  Configuring network settings... "
+	echo -n "  Configuring ifupdown network settings... "
 	mkdir -p /rootfs/etc/network
 	touch /rootfs/etc/network/interfaces || fail
 	# lo interface may already be there, so first check for it
@@ -1820,14 +1830,6 @@ if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "ifupdown"; 
 		} >> /rootfs/etc/network/interfaces
 	fi
 
-	# Customize cmdline.txt
-	if [ "${disable_predictable_nin}" = "1" ]; then
-		# as described here: https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames
-		# adding net.ifnames=0 to /boot/cmdline and disabling the persistent-net-generator.rules
-		line_add cmdline_custom "net.ifnames=0"
-		ln -s /dev/null /rootfs/etc/udev/rules.d/75-persistent-net-generator.rules
-	fi
-
 	echo "OK"
 
 	# copy resolv.conf
@@ -1843,6 +1845,65 @@ if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "ifupdown"; 
 		echo "MISSING !"
 		fail
 	fi
+fi
+
+# networking - systemd
+if [ "${use_systemd_services}" != "0" ]; then
+	echo -n "  Configuring systemd network settings... "
+	NETFILE=/rootfs/etc/systemd/network/primary.network
+	mkdir -p /rootfs/etc/systemd/network
+
+	{
+		echo "[Match]"
+		echo "Name=${ifname}"
+		echo "[Network]"
+	} >> ${NETFILE}
+
+	if [ "${ip_addr}" = "dhcp" ]; then
+		echo "DHCP=yes" >> ${NETFILE}
+	else
+		NETPREFIX=$(/bin/busybox ipcalc -p ${ip_addr} ${ip_netmask} | cut -f2 -d=)
+		{
+			echo "Address=${ip_addr}/${NETPREFIX}"
+			for i in ${ip_nameservers}; do
+				echo "DNS=${i}"
+			done
+			if [ -n "${timeserver}" ]; then
+				echo "NTP=${timeserver}"
+			fi
+			echo "[Route]"
+			echo "Gateway=${ip_gateway}"
+		} >> ${NETFILE}
+	fi
+
+	# enable systemd-networkd service
+	ln -s /lib/systemd/system/systemd-networkd.service /rootfs/etc/systemd/system/multi-user.target.wants/systemd-networkd.service
+
+	# enable systemd-resolved service
+	ln -s /lib/systemd/system/systemd-resolved.service /rootfs/etc/systemd/system/multi-user.target.wants/systemd-resolved.service
+
+	# wlan config
+	if echo "${ifname}" | grep -q "wlan"; then
+		if [ -e "${wlan_configfile}" ]; then
+			# copy the installer version of `wpa_supplicant.conf`
+			mkdir -p /rootfs/etc/wpa_supplicant
+			cp "${wlan_configfile}" /rootfs/etc/wpa_supplicant/wpa_supplicant-${ifname}.conf
+			chmod 600 /rootfs/etc/wpa_supplicant/wpa_supplicant-${ifname}.conf
+		fi
+		# enable wpa_supplicant service
+		ln -s /lib/systemd/system/wpa_supplicant@.service /rootfs/etc/systemd/system/multi-user.target.wants/wpa_supplicant@${ifname}.service
+		rm /rootfs/etc/systemd/system/multi-user.target.wants/wpa_supplicant.service
+	fi
+
+	echo "OK"
+fi
+
+# Customize cmdline.txt if predictable network interface names are not desired
+if [ "${disable_predictable_nin}" = "1" ]; then
+	# as described here: https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames
+	# adding net.ifnames=0 to /boot/cmdline and disabling the persistent-net-generator.rules
+	line_add cmdline_custom "net.ifnames=0"
+	ln -s /dev/null /rootfs/etc/udev/rules.d/75-persistent-net-generator.rules
 fi
 
 # set timezone and reconfigure tzdata package
@@ -1950,22 +2011,22 @@ fi
 
 echo
 
-# if there is no hw clock on rpi
-if [ -z "${rtc}" ]; then
-	if grep -q "#HWCLOCKACCESS=yes" /rootfs/etc/default/hwclock; then
-		sed -i "s/^#\(HWCLOCKACCESS=\)yes/\1no/" /rootfs/etc/default/hwclock
-	elif grep -q "HWCLOCKACCESS=yes" /rootfs/etc/default/hwclock; then
-		sed -i "s/^\(HWCLOCKACCESS=\)yes/\1no/m" /rootfs/etc/default/hwclock
+if [ "${use_systemd_services}" = "0" ]; then
+	# if systemd is not in use, setup hwclock appropriately
+	if [ -z "${rtc}" ]; then
+		if grep -q "#HWCLOCKACCESS=yes" /rootfs/etc/default/hwclock; then
+			sed -i "s/^#\(HWCLOCKACCESS=\)yes/\1no/" /rootfs/etc/default/hwclock
+		elif grep -q "HWCLOCKACCESS=yes" /rootfs/etc/default/hwclock; then
+			sed -i "s/^\(HWCLOCKACCESS=\)yes/\1no/m" /rootfs/etc/default/hwclock
+		else
+			echo -e "HWCLOCKACCESS=no\n" >> /rootfs/etc/default/hwclock
+		fi
 	else
-		echo -e "HWCLOCKACCESS=no\n" >> /rootfs/etc/default/hwclock
+		sed -i "s/^\(exit 0\)/\/sbin\/hwclock --hctosys\n\1/" /rootfs/etc/rc.local
 	fi
 else
-	sed -i "s/^\(exit 0\)/\/sbin\/hwclock --hctosys\n\1/" /rootfs/etc/rc.local
-fi
-
-# enable NTP client on systemd releases
-if [ "${init_system}" = "systemd" ]; then
-	ln -s /usr/lib/systemd/system/systemd-timesyncd.service /rootfs/etc/systemd/system/multi-user.target.wants/systemd-timesyncd.service
+	# enable systemd-timesyncd
+	ln -s /lib/systemd/system/systemd-timesyncd.service /rootfs/etc/systemd/system/multi-user.target.wants/systemd-timesyncd.service
 fi
 
 # copy apt's sources.list to the target system
@@ -2377,6 +2438,14 @@ if [ -e "/rootfs/boot/raspberrypi-ua-netinst/config/post-install.txt" ]; then
 	source /rootfs/boot/raspberrypi-ua-netinst/config/post-install.txt
 	echo "=== Finished executing post-install.txt. ==="
 	echo "================================================="
+fi
+
+# this must be done as the last step, after all package installation and post-install scripts,
+# since it will break DNS resolution on the target system until it is rebooted
+if [ "${use_systemd_services}" != "0" ]; then
+	# ensure that /etc/resolv.conf will be provided by systemd and use systemd's stub resolver
+	rm -f /rootfs/etc/resolv.conf
+	ln -s /run/systemd/resolve/stub-resolv.conf /rootfs/etc/resolv.conf
 fi
 
 # save current time
