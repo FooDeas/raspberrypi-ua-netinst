@@ -100,6 +100,7 @@ variables_reset() {
 	poe_fan_temp0_hyst=
 	poe_fan_temp1=
 	poe_fan_temp1_hyst=
+	use_systemd_services=
 }
 
 variable_set() {
@@ -175,6 +176,7 @@ variables_set_defaults() {
 	variable_set "sound_usb_first" "0"
 	variable_set "camera_enable" "0"
 	variable_set "camera_disable_led" "0"
+	variable_set "use_systemd_services" "0"
 }
 
 led_sos() {
@@ -489,6 +491,16 @@ dtoverlay_enable() {
 	fi
 }
 
+module_enable() {
+	local module="${1}"
+	local purpose="${2}"
+	if [ "${init_system}" = "systemd" ]; then
+		echo "${module}" > "/rootfs/etc/modules-load.d/${purpose}.conf"
+	else
+		echo "${module}" >> /rootfs/etc/modules
+	fi
+}
+
 #######################
 ###    INSTALLER    ###
 #######################
@@ -757,7 +769,7 @@ fi
 if [ -n "${rtc}" ] ; then
 	echo -n "  Enabling RTC configuration... "
 	if ! grep -q "^dtoverlay=i2c-rtc,${rtc}\>" /boot/config.txt; then
-		echo -e "\ndtoverlay=i2c-rtc,${rtc}" >> /boot/config.txt
+		dtoverlay_enable "/boot/config.txt" "i2c-rtc,${rtc}"
 		preinstall_reboot=1
 	fi
 	echo "OK"
@@ -913,6 +925,17 @@ if [ -n "${drivers_to_load}" ]; then
 		echo "OK"
 	done
 	echo
+fi
+
+if [ -n "${rtc}" ] ; then
+	echo -n "Ensuring RTC module has been loaded... "
+	modprobe "rtc-${rtc}" || fail
+	echo "OK"
+	echo -n "Checking hardware clock access... "
+	mdev -s
+	sleep 3s
+	/opt/busybox/bin/hwclock --show &> /dev/null || fail
+	echo "OK"
 fi
 
 echo -n "Waiting for ${ifname}... "
@@ -1142,12 +1165,22 @@ if ! wget --spider "${mirror}/dists/${release}/" &> /dev/null; then
 	release_raspbian="${release_fallback}"
 fi
 
+# if the configuration will install the sysvinit-core package, then the init system will
+# be sysvinit, otherwise it will be systemd
+if echo "${cdebootstrap_cmdline} ${syspackages} ${packages}" | grep -q "sysvinit-core"; then
+	init_system="sysvinit"
+	if [ "${use_systemd_services}" != "0" ]; then
+		echo "Ignoring 'use_systemd_services' setting because init system is 'sysvinit'"
+		use_systemd_services=0
+	fi
+else
+	init_system="systemd"
+fi
+
 # configure different kinds of presets
 if [ -z "${cdebootstrap_cmdline}" ]; then
 	# from small to large: base, minimal, server
 	# not very logical that minimal > base, but that's how it was historically defined
-
-	init_system="systemd"
 
 	# always add packages if requested or needed
 	if [ "${firmware_packages}" = "1" ]; then
@@ -1182,24 +1215,21 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	if [ "$(find "${tmp_bootfs}"/raspberrypi-ua-netinst/config/apt/ -maxdepth 1 -type f -name "*.list" 2> /dev/null | wc -l)" != 0 ]; then
 		base_packages="${base_packages},apt-transport-https"
 	fi
-	base_packages_postinstall=raspberrypi-bootloader
-	if [ "${release}" != "wheezy" ]; then
-		base_packages_postinstall="${base_packages_postinstall},raspberrypi-kernel"
-	fi
+	base_packages_postinstall="raspberrypi-bootloader,raspberrypi-kernel"
 	base_packages_postinstall="${custom_packages_postinstall},${base_packages_postinstall}"
 
 	# minimal
-	minimal_packages="cpufrequtils,ifupdown,net-tools,openssh-server,dosfstools"
-	if [ "${init_system}" != "systemd" ]; then
+	minimal_packages="cpufrequtils,openssh-server,dosfstools"
+	if [ "${init_system}" != "systemd" ] || [ "${use_systemd_services}" = "0" ]; then
 		minimal_packages="${minimal_packages},ntp"
+		if [ -z "${rtc}" ]; then
+			minimal_packages="${minimal_packages},fake-hwclock"
+		fi
+		minimal_packages="${minimal_packages},ifupdown,net-tools"
+	else
+		minimal_packages="${minimal_packages},iproute2"
 	fi
-	if [ -z "${rtc}" ]; then
-		minimal_packages="${minimal_packages},fake-hwclock"
-	fi
-	minimal_packages_postinstall="${base_packages_postinstall},${minimal_packages_postinstall}"
-	if [ "${release}" != "wheezy" ]; then
-		minimal_packages_postinstall="${minimal_packages_postinstall},raspberrypi-sys-mods"
-	fi
+	minimal_packages_postinstall="${base_packages_postinstall},${minimal_packages_postinstall},raspberrypi-sys-mods"
 	if echo "${ifname}" | grep -q "wlan"; then
 		minimal_packages_postinstall="${minimal_packages_postinstall},firmware-brcm80211"
 	fi
@@ -1377,6 +1407,7 @@ echo "  poe_fan_temp0 = ${poe_fan_temp0}"
 echo "  poe_fan_temp0_hyst = ${poe_fan_temp0_hyst}"
 echo "  poe_fan_temp1 = ${poe_fan_temp1}"
 echo "  poe_fan_temp1_hyst = ${poe_fan_temp1_hyst}"
+echo "  use_systemd_services = ${use_systemd_services}"
 echo
 echo "OTP dump:"
 vcgencmd otp_dump | grep -v "..:00000000\|..:ffffffff" | sed 's/^/  /'
@@ -1388,13 +1419,6 @@ for i in $(seq 1 5); do
 	sleep 1
 done
 echo
-
-if [ -n "${rtc}" ] ; then
-	echo -n "Checking hardware clock access... "
-	/opt/busybox/bin/hwclock --show &> /dev/null || fail
-	echo "OK"
-	echo
-fi
 
 # fdisk's boot offset is 2048, so only handle $bootoffset is it's larger then that
 if [ -n "${bootoffset}" ] && [ "${bootoffset}" -gt 2048 ]; then
@@ -1648,14 +1672,12 @@ if [ -n "${root_ssh_pubkey}" ]; then
 		fail
 	fi
 fi
-# openssh-server in jessie and higher doesn't allow root to login with a password
+# openssh-server doesn't allow root to login with a password
 if [ "${root_ssh_pwlogin}" = "1" ]; then
-	if [ "${release_raspbian}" != "wheezy" ]; then
-		if [ -f /rootfs/etc/ssh/sshd_config ]; then
-			echo -n "  Allowing root to login with password... "
-			sed -i '/PermitRootLogin/s/.*/PermitRootLogin yes/' /rootfs/etc/ssh/sshd_config || fail
-			echo "OK"
-		fi
+	if [ -f /rootfs/etc/ssh/sshd_config ]; then
+		echo -n "  Allowing root to login with password... "
+		sed -i '/PermitRootLogin/s/.*/PermitRootLogin yes/' /rootfs/etc/ssh/sshd_config || fail
+		echo "OK"
 	fi
 fi
 # disable global password login if requested
@@ -1788,9 +1810,9 @@ else
 fi
 echo "OK"
 
-# networking
+# networking - ifupdown
 if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "ifupdown"; then
-	echo -n "  Configuring network settings... "
+	echo -n "  Configuring ifupdown network settings... "
 	mkdir -p /rootfs/etc/network
 	touch /rootfs/etc/network/interfaces || fail
 	# lo interface may already be there, so first check for it
@@ -1830,14 +1852,6 @@ if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "ifupdown"; 
 		} >> /rootfs/etc/network/interfaces
 	fi
 
-	# Customize cmdline.txt
-	if [ "${disable_predictable_nin}" = "1" ]; then
-		# as described here: https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames
-		# adding net.ifnames=0 to /boot/cmdline and disabling the persistent-net-generator.rules
-		line_add cmdline_custom "net.ifnames=0"
-		ln -s /dev/null /rootfs/etc/udev/rules.d/75-persistent-net-generator.rules
-	fi
-
 	echo "OK"
 
 	# copy resolv.conf
@@ -1853,6 +1867,65 @@ if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "ifupdown"; 
 		echo "MISSING !"
 		fail
 	fi
+fi
+
+# networking - systemd
+if [ "${use_systemd_services}" != "0" ]; then
+	echo -n "  Configuring systemd network settings... "
+	NETFILE=/rootfs/etc/systemd/network/primary.network
+	mkdir -p /rootfs/etc/systemd/network
+
+	{
+		echo "[Match]"
+		echo "Name=${ifname}"
+		echo "[Network]"
+	} >> ${NETFILE}
+
+	if [ "${ip_addr}" = "dhcp" ]; then
+		echo "DHCP=yes" >> ${NETFILE}
+	else
+		NETPREFIX=$(/bin/busybox ipcalc -p ${ip_addr} ${ip_netmask} | cut -f2 -d=)
+		{
+			echo "Address=${ip_addr}/${NETPREFIX}"
+			for i in ${ip_nameservers}; do
+				echo "DNS=${i}"
+			done
+			if [ -n "${timeserver}" ]; then
+				echo "NTP=${timeserver}"
+			fi
+			echo "[Route]"
+			echo "Gateway=${ip_gateway}"
+		} >> ${NETFILE}
+	fi
+
+	# enable systemd-networkd service
+	ln -s /lib/systemd/system/systemd-networkd.service /rootfs/etc/systemd/system/multi-user.target.wants/systemd-networkd.service
+
+	# enable systemd-resolved service
+	ln -s /lib/systemd/system/systemd-resolved.service /rootfs/etc/systemd/system/multi-user.target.wants/systemd-resolved.service
+
+	# wlan config
+	if echo "${ifname}" | grep -q "wlan"; then
+		if [ -e "${wlan_configfile}" ]; then
+			# copy the installer version of `wpa_supplicant.conf`
+			mkdir -p /rootfs/etc/wpa_supplicant
+			cp "${wlan_configfile}" /rootfs/etc/wpa_supplicant/wpa_supplicant-${ifname}.conf
+			chmod 600 /rootfs/etc/wpa_supplicant/wpa_supplicant-${ifname}.conf
+		fi
+		# enable wpa_supplicant service
+		ln -s /lib/systemd/system/wpa_supplicant@.service /rootfs/etc/systemd/system/multi-user.target.wants/wpa_supplicant@${ifname}.service
+		rm /rootfs/etc/systemd/system/multi-user.target.wants/wpa_supplicant.service
+	fi
+
+	echo "OK"
+fi
+
+# Customize cmdline.txt if predictable network interface names are not desired
+if [ "${disable_predictable_nin}" = "1" ]; then
+	# as described here: https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames
+	# adding net.ifnames=0 to /boot/cmdline and disabling the persistent-net-generator.rules
+	line_add cmdline_custom "net.ifnames=0"
+	ln -s /dev/null /rootfs/etc/udev/rules.d/75-persistent-net-generator.rules
 fi
 
 # set timezone and reconfigure tzdata package
@@ -1927,9 +2000,9 @@ if [ -n "${system_default_locale}" ]; then
 				system_default_locale="$(echo "${system_default_locale}" | grep -Eo "^\S+")" # trim to first space character
 				echo -n "'${system_default_locale}'... "
 				if chroot /rootfs /usr/sbin/update-locale LANG="${system_default_locale}" &> /dev/null; then
-				    echo "OK"
+					echo "OK"
 				else
-				    echo "FAILED !"
+					echo "FAILED !"
 				fi
 			fi
 		else
@@ -1960,22 +2033,39 @@ fi
 
 echo
 
-# if there is no hw clock on rpi
-if [ -z "${rtc}" ]; then
-	if grep -q "#HWCLOCKACCESS=yes" /rootfs/etc/default/hwclock; then
-		sed -i "s/^#\(HWCLOCKACCESS=\)yes/\1no/" /rootfs/etc/default/hwclock
-	elif grep -q "HWCLOCKACCESS=yes" /rootfs/etc/default/hwclock; then
-		sed -i "s/^\(HWCLOCKACCESS=\)yes/\1no/m" /rootfs/etc/default/hwclock
+if [ "${use_systemd_services}" = "0" ]; then
+	# if systemd is not in use, setup hwclock appropriately
+	if [ -z "${rtc}" ]; then
+		if grep -q "#HWCLOCKACCESS=yes" /rootfs/etc/default/hwclock; then
+			sed -i "s/^#\(HWCLOCKACCESS=\)yes/\1no/" /rootfs/etc/default/hwclock
+		elif grep -q "HWCLOCKACCESS=yes" /rootfs/etc/default/hwclock; then
+			sed -i "s/^\(HWCLOCKACCESS=\)yes/\1no/m" /rootfs/etc/default/hwclock
+		else
+			echo -e "HWCLOCKACCESS=no\n" >> /rootfs/etc/default/hwclock
+		fi
 	else
-		echo -e "HWCLOCKACCESS=no\n" >> /rootfs/etc/default/hwclock
+		sed -i "s/^\(exit 0\)/\/sbin\/hwclock --hctosys\n\1/" /rootfs/etc/rc.local
 	fi
 else
-	sed -i "s/^\(exit 0\)/\/sbin\/hwclock --hctosys\n\1/" /rootfs/etc/rc.local
-fi
+	ln -s /lib/systemd/system/systemd-timesyncd.service /rootfs/etc/systemd/system/multi-user.target.wants/systemd-timesyncd.service
 
-# enable NTP client on systemd releases
-if [ "${init_system}" = "systemd" ]; then
-	ln -s /usr/lib/systemd/system/systemd-timesyncd.service /rootfs/etc/systemd/system/multi-user.target.wants/systemd-timesyncd.service
+	if [ -n "${rtc}" ]; then
+		cat > /rootfs/etc/systemd/system/hwclock-to-sysclock.service << EOF
+[Unit]
+Description=Set system clock from hardware clock
+After=systemd-modules-load.service
+
+[Service]
+Type=oneshot
+ExecStart=/sbin/hwclock --hctosys --utc
+
+[Install]
+WantedBy=basic.target
+
+EOF
+		mkdir /rootfs/etc/systemd/system/basic.target.wants
+		ln -s /etc/systemd/system/hwclock-to-sysclock.service /rootfs/etc/systemd/system/basic.target.wants/hwclock-to-sysclock.service
+	fi
 fi
 
 # copy apt's sources.list to the target system
@@ -2197,7 +2287,7 @@ if [ "${i2c_enable}" = "1" ]; then
 		sed -i "s/^\(dtparam=i2c_arm=.*\)/#\1/" /rootfs/boot/config.txt
 		echo "dtparam=i2c_arm=on" >> /rootfs/boot/config.txt
 	fi
-	echo "i2c-dev" >> /rootfs/etc/modules
+	module_enable "i2c-dev" "i2c"
 	if [ -n "${i2c_baudrate}" ]; then
 		if grep -q "i2c_baudrate=" /rootfs/boot/config.txt; then
 			sed -i "s/\(.*i2c_baudrate=.*\)/#\1/" /rootfs/boot/config.txt
@@ -2340,11 +2430,8 @@ fi
 
 # enable rtc if specified in the configuration file
 if [ -n "${rtc}" ]; then
-	sed -i "s/^#\(dtoverlay=i2c-rtc,${rtc}\)/\1/" /rootfs/boot/config.txt
-	if [ "$(grep -c "^dtoverlay=i2c-rtc,.*" /rootfs/boot/config.txt)" -ne 1 ]; then
-		sed -i "s/^\(dtoverlay=i2c-rtc,\)/#\1/" /rootfs/boot/config.txt
-		echo "dtoverlay=i2c-rtc,${rtc}" >> /rootfs/boot/config.txt
-	fi
+	dtoverlay_enable "/rootfs/boot/config.txt" "i2c-rtc,${rtc}"
+	module_enable "rtc-${rtc}" "rtc"
 fi
 
 # enable custom dtoverlays
@@ -2401,6 +2488,14 @@ if [ -e "/rootfs/boot/raspberrypi-ua-netinst/config/post-install.txt" ]; then
 	echo "================================================="
 fi
 
+# this must be done as the last step, after all package installation and post-install scripts,
+# since it will break DNS resolution on the target system until it is rebooted
+if [ "${use_systemd_services}" != "0" ]; then
+	# ensure that /etc/resolv.conf will be provided by systemd and use systemd's stub resolver
+	rm -f /rootfs/etc/resolv.conf
+	ln -s /run/systemd/resolve/stub-resolv.conf /rootfs/etc/resolv.conf
+fi
+
 # save current time
 if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "fake-hwclock"; then
 	echo -n "Saving current time for fake-hwclock... "
@@ -2409,7 +2504,7 @@ if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "fake-hwcloc
 	echo "OK"
 elif [ -n "${rtc}" ]; then
 	echo -n "Saving current time to RTC... "
-	/opt/busybox/bin/hwclock --systohc || fail
+	/opt/busybox/bin/hwclock --systohc --utc || fail
 	echo "OK"
 fi
 
@@ -2418,6 +2513,9 @@ DURATION=$((ENDTIME - REAL_STARTTIME))
 echo
 echo -n "Installation finished at $(date --date="@${ENDTIME}" --utc)"
 echo " and took $((DURATION/60)) min $((DURATION%60)) sec (${DURATION} seconds)"
+echo
+killall -q nc
+echo "Printing console to telnet output stopped."
 
 # copy logfile to standard log directory
 if [ "${cleanup_logfiles}" = "1" ]; then
@@ -2447,7 +2545,7 @@ if [ "${final_action}" != "console" ]; then
 		killall -q udhcpc
 		echo "OK"
 	fi
-	
+
 	echo -n "Unmounting filesystems... "
 	for sysfolder in /sys /proc /dev/pts /dev; do
 		umount "/rootfs${sysfolder}"

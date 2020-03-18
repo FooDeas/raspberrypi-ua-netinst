@@ -23,11 +23,25 @@
 
 ### Description: Presets
 
+#### Default configuration (when `use_systemd_services` is unset or set to `0`):
+
 | Preset | Packages |
 |---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `base` | _\<essential\>,apt,kmod_ |
 | `minimal` | _\<base\>,cpufrequtils,fake-hwclock,ifupdown,net-tools,ntp,openssh-server,dosfstools,raspberrypi-sys-mods_ |
 | `server` | _\<minimal\>,systemd-sysv,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,tzdata,less,man-db,logrotate,bash-completion,console-setup,apt-utils,libraspberrypi-bin,raspi-copies-and-fills_ |
+
+Note that if the networking configuration is set to use DHCP, `isc-dhcp-client` will also be installed.
+
+#### Advanced configuration (when `use_systemd_services` is set to `1`):
+
+| Preset | Packages |
+|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `base` | _\<essential\>,apt,kmod_ |
+| `minimal` | _\<base\>,cpufrequtils,iproute2,openssh-server,dosfstools,raspberrypi-sys-mods_ |
+| `server` | _\<minimal\>,systemd-sysv,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,tzdata,less,man-db,logrotate,bash-completion,console-setup,apt-utils,libraspberrypi-bin,raspi-copies-and-fills_ |
+
+Note that if the networking configuration is set to use DHCP, no additional packages will be installed as `systemd-networkd` provides DHCP client support.
 
 ## Device / peripheral
 
@@ -45,7 +59,7 @@
 | `poe_fan_temp0_hyst` | | | Sets the temperature threshold hysteresis in millidegrees Kelvin for low fan speed on the optional POE board (e.g. `poe_fan_temp0_hyst=5000` for 5K). |
 | `poe_fan_temp1` | | | Sets the temperature threshold in millidegrees Celsius for high fan speed on the optional POE board (e.g. `poe_fan_temp1=68500` for 68.5 C). |
 | `poe_fan_temp1_hyst` | | | Sets the temperature threshold hysteresis in millidegrees Kelvin for low high speed on the optional POE board (e.g. `poe_fan_temp1_hyst=2500` for 2.5K). |
-| `rtc` |  | `ds1307`/  `ds1339`/  `ds3231`/  `mcp7940x`/  `mcp7941x`/  `pcf2127`/  `pcf8523`/  `pcf8563` | Select an RTC if it is connected via I²C. |
+| `rtc` |  | `ds1307`/  `ds1339`/  `ds3231`/  `mcp7940x`/  `mcp7941x`/  `pcf2127`/  `pcf8523`/  `pcf8563`/  `abx80x` | Select an RTC if it is connected via I²C. |
 | `dt_overlays` |  |  | Enables additional device tree overlays (comma separated and quoted). (e.g. 'dt_overlays="hifiberry-dac,lirc-rpi"') |
 
 ## SSH
@@ -146,3 +160,4 @@
 | `disable_predictable_nin` | `1` | `0`/`1` | Disable Predictable Network Interface Names. Set to 0 if you want to use predictable network interface names, which means if you use the same SD card on a different RPi board, your network device might be named differently. This will result in the board having no network connectivity. |
 | `drivers_to_load` |  |  | Loads additional kernel modules at installation (comma separated and quoted). |
 | `online_config` |  |  | URL to extra config that will be executed after installer-config.txt |
+| `use_systemd_services` | `0` | `0`/`1` | Use systemd for networking and DNS resolution. |
