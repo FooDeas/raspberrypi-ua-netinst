@@ -487,6 +487,16 @@ dtoverlay_enable() {
 	fi
 }
 
+module_enable() {
+	local module="${1}"
+	local purpose="${2}"
+	if [ "${init_system}" = "systemd" ]; then
+		echo "${module}" > "/rootfs/etc/modules-load.d/${purpose}.conf"
+	else
+		echo "${module}" >> /rootfs/etc/modules
+	fi
+}
+
 #######################
 ###    INSTALLER    ###
 #######################
@@ -755,7 +765,7 @@ fi
 if [ -n "${rtc}" ] ; then
 	echo -n "  Enabling RTC configuration... "
 	if ! grep -q "^dtoverlay=i2c-rtc,${rtc}\>" /boot/config.txt; then
-		echo -e "\ndtoverlay=i2c-rtc,${rtc}" >> /boot/config.txt
+		dtoverlay_enable "/boot/config.txt" "i2c-rtc,${rtc}"
 		preinstall_reboot=1
 	fi
 	echo "OK"
@@ -911,6 +921,17 @@ if [ -n "${drivers_to_load}" ]; then
 		echo "OK"
 	done
 	echo
+fi
+
+if [ -n "${rtc}" ] ; then
+	echo -n "Ensuring RTC module has been loaded... "
+	modprobe "rtc-${rtc}" || fail
+	echo "OK"
+	echo -n "Checking hardware clock access... "
+	mdev -s
+	sleep 3s
+	/opt/busybox/bin/hwclock --show &> /dev/null || fail
+	echo "OK"
 fi
 
 echo -n "Waiting for ${ifname}... "
@@ -1390,13 +1411,6 @@ for i in $(seq 1 5); do
 	sleep 1
 done
 echo
-
-if [ -n "${rtc}" ] ; then
-	echo -n "Checking hardware clock access... "
-	/opt/busybox/bin/hwclock --show &> /dev/null || fail
-	echo "OK"
-	echo
-fi
 
 # fdisk's boot offset is 2048, so only handle $bootoffset is it's larger then that
 if [ -n "${bootoffset}" ] && [ "${bootoffset}" -gt 2048 ]; then
@@ -2025,8 +2039,25 @@ if [ "${use_systemd_services}" = "0" ]; then
 		sed -i "s/^\(exit 0\)/\/sbin\/hwclock --hctosys\n\1/" /rootfs/etc/rc.local
 	fi
 else
-	# enable systemd-timesyncd
 	ln -s /lib/systemd/system/systemd-timesyncd.service /rootfs/etc/systemd/system/multi-user.target.wants/systemd-timesyncd.service
+
+	if [ -n "${rtc}" ]; then
+		cat > /rootfs/etc/systemd/system/hwclock-to-sysclock.service << EOF
+[Unit]
+Description=Set system clock from hardware clock
+After=systemd-modules-load.service
+
+[Service]
+Type=oneshot
+ExecStart=/sbin/hwclock --hctosys --utc
+
+[Install]
+WantedBy=basic.target
+
+EOF
+		mkdir /rootfs/etc/systemd/system/basic.target.wants
+		ln -s /etc/systemd/system/hwclock-to-sysclock.service /rootfs/etc/systemd/system/basic.target.wants/hwclock-to-sysclock.service
+	fi
 fi
 
 # copy apt's sources.list to the target system
@@ -2248,7 +2279,7 @@ if [ "${i2c_enable}" = "1" ]; then
 		sed -i "s/^\(dtparam=i2c_arm=.*\)/#\1/" /rootfs/boot/config.txt
 		echo "dtparam=i2c_arm=on" >> /rootfs/boot/config.txt
 	fi
-	echo "i2c-dev" >> /rootfs/etc/modules
+	module_enable "i2c-dev" "i2c"
 	if [ -n "${i2c_baudrate}" ]; then
 		if grep -q "i2c_baudrate=" /rootfs/boot/config.txt; then
 			sed -i "s/\(.*i2c_baudrate=.*\)/#\1/" /rootfs/boot/config.txt
@@ -2379,11 +2410,8 @@ fi
 
 # enable rtc if specified in the configuration file
 if [ -n "${rtc}" ]; then
-	sed -i "s/^#\(dtoverlay=i2c-rtc,${rtc}\)/\1/" /rootfs/boot/config.txt
-	if [ "$(grep -c "^dtoverlay=i2c-rtc,.*" /rootfs/boot/config.txt)" -ne 1 ]; then
-		sed -i "s/^\(dtoverlay=i2c-rtc,\)/#\1/" /rootfs/boot/config.txt
-		echo "dtoverlay=i2c-rtc,${rtc}" >> /rootfs/boot/config.txt
-	fi
+	dtoverlay_enable "/rootfs/boot/config.txt" "i2c-rtc,${rtc}"
+	module_enable "rtc-${rtc}" "rtc"
 fi
 
 # enable custom dtoverlays
@@ -2456,7 +2484,7 @@ if echo "${cdebootstrap_cmdline} ${packages_postinstall}" | grep -q "fake-hwcloc
 	echo "OK"
 elif [ -n "${rtc}" ]; then
 	echo -n "Saving current time to RTC... "
-	/opt/busybox/bin/hwclock --systohc || fail
+	/opt/busybox/bin/hwclock --systohc --utc || fail
 	echo "OK"
 fi
 
