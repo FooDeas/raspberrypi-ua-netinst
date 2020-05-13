@@ -2065,7 +2065,6 @@ echo "Configuring apt:"
 echo -n "  Configuring Raspbian repository... "
 if [ -e "/rootfs/boot/raspberrypi-ua-netinst/config/apt/sources.list" ]; then
 	sed "s/__RELEASE__/${release_raspbian}/g" "/rootfs/boot/raspberrypi-ua-netinst/config/apt/sources.list" > "/rootfs/etc/apt/sources.list" || fail
-	cp /rootfs/boot/raspberrypi-ua-netinst/config/apt/sources.list /rootfs/etc/apt/sources.list || fail
 else
 	sed "s/__RELEASE__/${release_raspbian}/g" "/opt/raspberrypi-ua-netinst/res/etc/apt/sources.list" > "/rootfs/etc/apt/sources.list" || fail
 fi
