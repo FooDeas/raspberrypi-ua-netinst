@@ -202,7 +202,7 @@ function create_cpio {
 		mkdir -p "rootfs/lib/modules/${kernel}/kernel/drivers/hwmon"
 	done
 	cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/rtc rootfs/lib/modules/kernel*/kernel/drivers/
-	cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/hwmon/hwmon.ko rootfs/lib/modules/kernel*/kernel/drivers/hwmon/
+	cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/hwmon/raspberrypi-hwmon.ko rootfs/lib/modules/kernel*/kernel/drivers/hwmon/
 
 	# create dependency lists
 	for kernel in "${kernels[@]}"; do
