@@ -1199,7 +1199,8 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	fi
 
 	# base
-	base_packages="kmod"
+	# gnupg is required for 'apt-key' used later in the script
+	base_packages="kmod,gnupg"
 	base_packages="${custom_packages},${base_packages}"
 	if [ "${init_system}" = "systemd" ]; then
 		base_packages="${base_packages},libpam-systemd"
