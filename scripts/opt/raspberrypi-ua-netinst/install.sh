@@ -1702,6 +1702,7 @@ if [ -n "${username}" ]; then
 			else
 				echo -n "... "
 				echo "${user_ssh_pubkey}" > "/rootfs/home/${username}/.ssh/authorized_keys"
+				echo "OK"
 			fi
 			echo -n "  Setting owner as '${username}' on SSH directory... "
 			chroot /rootfs /bin/chown -R "${username}:${username}" "/home/${username}/.ssh" || fail
