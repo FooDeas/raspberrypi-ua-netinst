@@ -717,7 +717,7 @@ rm -rf tmp && mkdir tmp
 
 # extract debs
 for i in ../packages/*.deb; do
-	cd tmp && ar x "../${i}" && tar -xf data.tar.*; rm data.tar.*; cd ..
+	cd tmp && ar x "../${i}" && tar -xf data.tar.*; rm -f data.tar.* control.tar.* debian-binary; cd ..
 done
 
 # get kernel versions
