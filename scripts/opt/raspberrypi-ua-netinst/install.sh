@@ -520,7 +520,7 @@ mkdir -p /usr/bin
 mkdir -p /usr/sbin
 mkdir -p /var/run
 mkdir -p /etc/raspberrypi-ua-netinst
-mkdir -p /rootfs/boot
+mkdir -p /rootfs
 mkdir -p /tmp
 mkdir -p "${tmp_bootfs}"
 mkdir -p /opt/busybox/bin
