@@ -181,6 +181,7 @@ function create_cpio {
 		mkdir -p "rootfs/lib/modules/${kernel}/kernel/drivers/net"
 		mkdir -p "rootfs/lib/modules/${kernel}/kernel/net"
 	done
+	cp_kernelfiles tmp/lib/modules/kernel*/kernel/net/ipv6 rootfs/lib/modules/kernel*/kernel/net/
 	cp_kernelfiles tmp/lib/modules/kernel*/kernel/net/mac80211 rootfs/lib/modules/kernel*/kernel/net/
 	cp_kernelfiles tmp/lib/modules/kernel*/kernel/net/rfkill rootfs/lib/modules/kernel*/kernel/net/
 	cp_kernelfiles tmp/lib/modules/kernel*/kernel/net/wireless rootfs/lib/modules/kernel*/kernel/net/

@@ -810,6 +810,7 @@ echo
 echo "Network configuration:"
 echo "  ifname = ${ifname}"
 echo "  ip_addr = ${ip_addr}"
+echo "  ip_ipv6 = ${ip_ipv6}"
 
 if [ "${ip_addr}" != "dhcp" ]; then
 	ip_addr_o1="$(echo "${ip_addr}" | awk -F. '{print $1}')"
@@ -988,6 +989,12 @@ else
 	for i in ${ip_nameservers}; do
 		echo "nameserver ${i}" >> /etc/resolv.conf
 	done
+	echo "OK"
+fi
+
+if [ "${ip_ipv6}" = "1" ]; then
+	echo -n "Enabling IPv6 support... "
+	modprobe ipv6 || fail
 	echo "OK"
 fi
 
