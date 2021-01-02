@@ -533,6 +533,7 @@ export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/bu
 echo "export PATH=${PATH}" > /etc/profile
 
 mount -t proc proc /proc
+ln -sf /proc/mounts /etc/mtab
 mount -t sysfs sysfs /sys
 
 mount -t tmpfs -o size=64k,mode=0755 tmpfs /dev
