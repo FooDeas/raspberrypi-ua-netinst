@@ -624,7 +624,7 @@ function create_cpio {
 
 	# libtinfo6 components
 	cp --preserve=xattr,timestamps tmp/lib/*/libtinfo.so.6.* rootfs/lib/libtinfo.so.6
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libtic.so.6.* rootfs/usr/lib/libtinfo.so.6
+	cp --preserve=xattr,timestamps tmp/usr/lib/*/libtic.so.6.* rootfs/usr/lib/libtic.so.6
 
 	# libuuid1 components
 	cp --preserve=xattr,timestamps tmp/lib/*/libuuid.so.1.* rootfs/lib/libuuid.so.1
