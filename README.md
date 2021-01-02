@@ -147,10 +147,12 @@ When an error occurs during install, the logfile is placed in the `raspberrypi-u
 
 ## Reinstalling or replacing an existing system
 
-If you want to reinstall with the same settings you did your first install you can just move the original _config.txt_ back and reboot.
+If you want to reinstall with the same settings you did your first install you can just copy the original _config.txt_ back and reboot.
+
+Note: If the original installation was performed with `cleanup` set to `1`, then the files necessary for a reinstallation will not be available.
 
 ```
-mv /boot/raspberrypi-ua-netinst/reinstall/config.txt /boot/config.txt
+cp /boot/raspberrypi-ua-netinst/config.txt /boot/config.txt
 reboot
 ```
 

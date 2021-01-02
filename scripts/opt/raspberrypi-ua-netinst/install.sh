@@ -719,15 +719,6 @@ variables_set_defaults
 preinstall_reboot=0
 echo
 echo "Checking if config.txt needs to be modified before starting installation..."
-# Reinstallation
-if [ -e "/boot/raspberrypi-ua-netinst/reinstall/kernel.img" ] && [ -e "/boot/raspberrypi-ua-netinst/reinstall/kernel7.img" ] && [ -e "/boot/raspberrypi-ua-netinst/reinstall/kernel7l.img" ] ; then
-	echo -n "  Reinstallation requested! Restoring files... "
-	mv /boot/raspberrypi-ua-netinst/reinstall/kernel.img /boot/kernel.img
-	mv /boot/raspberrypi-ua-netinst/reinstall/kernel7.img /boot/kernel7.img
-	mv /boot/raspberrypi-ua-netinst/reinstall/kernel7l.img /boot/kernel7l.img
-	echo "OK"
-	preinstall_reboot=1
-fi
 # HDMI settings
 if [ "${hdmi_system_only}" = "0" ]; then
 	echo -n "  Setting HDMI options... "
@@ -2225,14 +2216,6 @@ echo
 # remove cdebootstrap-helper-rc.d which prevents rc.d scripts from running
 echo -n "Removing cdebootstrap-helper-rc.d... "
 chroot /rootfs /usr/bin/dpkg -r cdebootstrap-helper-rc.d &> /dev/null || fail
-echo "OK"
-
-echo -n "Preserving original config.txt and kernels... "
-mkdir -p /rootfs/boot/raspberrypi-ua-netinst/reinstall
-cp /rootfs/boot/config.txt /rootfs/boot/raspberrypi-ua-netinst/reinstall/config.txt
-cp /rootfs/boot/kernel.img /rootfs/boot/raspberrypi-ua-netinst/reinstall/kernel.img
-cp /rootfs/boot/kernel7.img /rootfs/boot/raspberrypi-ua-netinst/reinstall/kernel7.img
-cp /rootfs/boot/kernel7l.img /rootfs/boot/raspberrypi-ua-netinst/reinstall/kernel7l.img
 echo "OK"
 
 echo -n "Configuring bootloader to start the installed system..."
