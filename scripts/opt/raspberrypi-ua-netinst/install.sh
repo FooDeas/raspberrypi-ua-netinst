@@ -77,6 +77,8 @@ variables_reset() {
 	cmdline=
 	rootfstype=
 	installer_telnet=
+	installer_telnet_host=
+	installer_telnet_port=
 	installer_retries=
 	installer_networktimeout=
 	installer_pkg_updateretries=
@@ -126,6 +128,15 @@ variables_set_defaults() {
 	if [ -n "${ip_broadcast}" ]; then
 		echo "  Variable 'ip_broadcast' is deprecated. This variable will be ignored!"
 	fi
+	if [ "${installer_telnet}" = "1" ]; then
+		echo "'installer_telnet' now accepts 'connect' and 'listen' settings, not '1'."
+		echo "'listen' mode is being enabled."
+		installer_telnet="listen"
+	elif [ "${installer_telnet}" = "0" ]; then
+		echo "'installer_telnet' now accepts 'connect' and 'listen' settings, not '0'."
+		echo "Neither mode is enabled."
+		installer_telnet="none"
+	fi
 
 	# set config defaults
 	variable_set "preset" "server"
@@ -153,7 +164,8 @@ variables_set_defaults() {
 	variable_set "cmdline" "dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 elevator=deadline fsck.repair=yes"
 	variable_set "rootfstype" "f2fs"
 	variable_set "final_action" "reboot"
-	variable_set "installer_telnet" "1"
+	variable_set "installer_telnet" "listen"
+	variable_set "installer_telnet_port" "9923"
 	variable_set "installer_retries" "3"
 	variable_set "installer_networktimeout" "15"
 	variable_set "installer_pkg_updateretries" "3"
@@ -991,15 +1003,24 @@ if [ "${ip_ipv6}" = "1" ]; then
 fi
 
 # Start telnet console output
-if [ "${installer_telnet}" = "1" ]; then
+if [ "${installer_telnet}" = "listen" ] || [ "${installer_telnet}" = "connect" ]; then
 	mkfifo telnet.pipe
 	mkfifo /dev/installer-telnet
 	tee < telnet.pipe /dev/installer-telnet &
+	if [ "${installer_telnet}" = "listen" ]; then
+		nc_opts=(-klC -p 23)
+	else # connect
+		if [ -z "${installer_telnet_host}" ]; then
+			echo "'installer_telnet' set to 'connect' but no 'installer_telnet_host' specified."
+			echo "Telnet mode will not be enabled."
+		fi
+		nc_opts=(-C "${installer_telnet_host}" "${installer_telnet_port}")
+	fi
 	while IFS= read -r line; do
 		if [[ ! "${line}" =~ userpw|rootpw ]]; then
 			echo "${line}"
 		fi
-	done < "/dev/installer-telnet" | /bin/nc -klC -p 23 > /dev/null &
+	done < "/dev/installer-telnet" | /bin/nc "${nc_opts[@]}" > /dev/null &
 	exec &> telnet.pipe
 	rm telnet.pipe
 	echo "Printing console to telnet output started."

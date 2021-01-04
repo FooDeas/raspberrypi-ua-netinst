@@ -141,7 +141,9 @@ Note that if the networking configuration is set to use DHCP, no additional pack
 | `cleanup_logfiles` | `0` | `0`/`1` | Removes installer log files after success. |
 | `cmdline` | `"dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 elevator=deadline fsck.repair=yes"` |  |  |
 | `final_action` | `reboot` | `reboot`/  `poweroff`/  `halt`/  `console` | Action at the end of install. |
-| `installer_telnet` | `1` | `0`/`1` | Send installer console output via telnet. |
+| `installer_telnet` | `listen` | `none`/`connect`/`listen` | Connect to, or listen for, a telnet connection to send installer console output. |
+| `installer_telnet_host` | | | Host name or address to use when `installer_telnet` is set to `connect`. |
+| `installer_telnet_port` | '9923' |  | Port number to use when `installer_telnet` is set to `connect`. |
 | `installer_retries` | `3` |  | Number of retries if installation fails. |
 | `installer_networktimeout` | `15` |  | Timeout in seconds for network interface initialization. |
 | `installer_pkg_updateretries` | `3` |  | Number of retries if package update fails. |
