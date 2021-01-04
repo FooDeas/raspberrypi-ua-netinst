@@ -181,6 +181,7 @@ function create_cpio {
 		mkdir -p "rootfs/lib/modules/${kernel}/kernel/drivers/net"
 		mkdir -p "rootfs/lib/modules/${kernel}/kernel/net"
 	done
+	cp_kernelfiles tmp/lib/modules/kernel*/kernel/net/ipv6 rootfs/lib/modules/kernel*/kernel/net/
 	cp_kernelfiles tmp/lib/modules/kernel*/kernel/net/mac80211 rootfs/lib/modules/kernel*/kernel/net/
 	cp_kernelfiles tmp/lib/modules/kernel*/kernel/net/rfkill rootfs/lib/modules/kernel*/kernel/net/
 	cp_kernelfiles tmp/lib/modules/kernel*/kernel/net/wireless rootfs/lib/modules/kernel*/kernel/net/
@@ -623,7 +624,7 @@ function create_cpio {
 
 	# libtinfo6 components
 	cp --preserve=xattr,timestamps tmp/lib/*/libtinfo.so.6.* rootfs/lib/libtinfo.so.6
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libtic.so.6.* rootfs/usr/lib/libtinfo.so.6
+	cp --preserve=xattr,timestamps tmp/usr/lib/*/libtic.so.6.* rootfs/usr/lib/libtic.so.6
 
 	# libuuid1 components
 	cp --preserve=xattr,timestamps tmp/lib/*/libuuid.so.1.* rootfs/lib/libuuid.so.1
@@ -716,7 +717,7 @@ rm -rf tmp && mkdir tmp
 
 # extract debs
 for i in ../packages/*.deb; do
-	cd tmp && ar x "../${i}" && tar -xf data.tar.*; rm data.tar.*; cd ..
+	cd tmp && ar x "../${i}" && tar -xf data.tar.*; rm -f data.tar.* control.tar.* debian-binary; cd ..
 done
 
 # get kernel versions
@@ -724,28 +725,35 @@ get_kernels
 
 # initialize bootfs
 rm -rf bootfs
-mkdir bootfs
+mkdir -p bootfs/raspberrypi-ua-netinst
 
 # raspberrypi-bootloader components and kernel
 cp --preserve=xattr,timestamps -r tmp/boot/* bootfs/
+mv bootfs/kernel*.img bootfs/raspberrypi-ua-netinst/
+mv bootfs/*.dtb bootfs/raspberrypi-ua-netinst/
+mv bootfs/overlays bootfs/raspberrypi-ua-netinst/
 
 if [ ! -f bootfs/config.txt ] ; then
 	touch bootfs/config.txt
 fi
 
 create_cpio
-mkdir -p bootfs/raspberrypi-ua-netinst
-mv raspberrypi-ua-netinst.cpio.gz bootfs/raspberrypi-ua-netinst/
+mv raspberrypi-ua-netinst.cpio.gz bootfs/raspberrypi-ua-netinst/initramfs.gz
 
 {
 	echo "[all]"
-	echo "initramfs raspberrypi-ua-netinst/raspberrypi-ua-netinst.cpio.gz"
+	echo "os_prefix=raspberrypi-ua-netinst/"
+	echo "initramfs initramfs.gz"
 	echo "gpu_mem=16"
 	echo "[pi3]"
-	echo "enable_uart=1"
-} >> bootfs/config.txt
+	echo "dtoverlay=disable-bt"
+	echo "[pi4]"
+	echo "dtoverlay=disable-bt"
+} >> bootfs/raspberrypi-ua-netinst/config.txt
 
-echo "dwc_otg.lpm_enable=0 consoleblank=0 console=serial0,115200 console=tty1 elevator=deadline rootwait" > bootfs/cmdline.txt
+cp bootfs/raspberrypi-ua-netinst/config.txt bootfs/config.txt
+
+echo "dwc_otg.lpm_enable=0 consoleblank=0 console=serial0,115200 console=tty1 elevator=deadline rootwait" > bootfs/raspberrypi-ua-netinst/cmdline.txt
 
 if [ ! -f bootfs/TIMEOUT ] ; then
 	touch bootfs/TIMEOUT

@@ -520,7 +520,7 @@ mkdir -p /usr/bin
 mkdir -p /usr/sbin
 mkdir -p /var/run
 mkdir -p /etc/raspberrypi-ua-netinst
-mkdir -p /rootfs/boot
+mkdir -p /rootfs
 mkdir -p /tmp
 mkdir -p "${tmp_bootfs}"
 mkdir -p /opt/busybox/bin
@@ -533,6 +533,7 @@ export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/bu
 echo "export PATH=${PATH}" > /etc/profile
 
 mount -t proc proc /proc
+ln -sf /proc/mounts /etc/mtab
 mount -t sysfs sysfs /sys
 
 mount -t tmpfs -o size=64k,mode=0755 tmpfs /dev
@@ -719,15 +720,6 @@ variables_set_defaults
 preinstall_reboot=0
 echo
 echo "Checking if config.txt needs to be modified before starting installation..."
-# Reinstallation
-if [ -e "/boot/raspberrypi-ua-netinst/reinstall/kernel.img" ] && [ -e "/boot/raspberrypi-ua-netinst/reinstall/kernel7.img" ] && [ -e "/boot/raspberrypi-ua-netinst/reinstall/kernel7l.img" ] ; then
-	echo -n "  Reinstallation requested! Restoring files... "
-	mv /boot/raspberrypi-ua-netinst/reinstall/kernel.img /boot/kernel.img
-	mv /boot/raspberrypi-ua-netinst/reinstall/kernel7.img /boot/kernel7.img
-	mv /boot/raspberrypi-ua-netinst/reinstall/kernel7l.img /boot/kernel7l.img
-	echo "OK"
-	preinstall_reboot=1
-fi
 # HDMI settings
 if [ "${hdmi_system_only}" = "0" ]; then
 	echo -n "  Setting HDMI options... "
@@ -810,6 +802,7 @@ echo
 echo "Network configuration:"
 echo "  ifname = ${ifname}"
 echo "  ip_addr = ${ip_addr}"
+echo "  ip_ipv6 = ${ip_ipv6}"
 
 if [ "${ip_addr}" != "dhcp" ]; then
 	ip_addr_o1="$(echo "${ip_addr}" | awk -F. '{print $1}')"
@@ -988,6 +981,12 @@ else
 	for i in ${ip_nameservers}; do
 		echo "nameserver ${i}" >> /etc/resolv.conf
 	done
+	echo "OK"
+fi
+
+if [ "${ip_ipv6}" = "1" ]; then
+	echo -n "Enabling IPv6 support... "
+	modprobe ipv6 || fail
 	echo "OK"
 fi
 
@@ -1200,7 +1199,8 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	fi
 
 	# base
-	base_packages="kmod"
+	# gnupg is required for 'apt-key' used later in the script
+	base_packages="kmod,gnupg"
 	base_packages="${custom_packages},${base_packages}"
 	if [ "${init_system}" = "systemd" ]; then
 		base_packages="${base_packages},libpam-systemd"
@@ -1702,6 +1702,7 @@ if [ -n "${username}" ]; then
 			else
 				echo -n "... "
 				echo "${user_ssh_pubkey}" > "/rootfs/home/${username}/.ssh/authorized_keys"
+				echo "OK"
 			fi
 			echo -n "  Setting owner as '${username}' on SSH directory... "
 			chroot /rootfs /bin/chown -R "${username}:${username}" "/home/${username}/.ssh" || fail
@@ -2218,14 +2219,6 @@ echo
 # remove cdebootstrap-helper-rc.d which prevents rc.d scripts from running
 echo -n "Removing cdebootstrap-helper-rc.d... "
 chroot /rootfs /usr/bin/dpkg -r cdebootstrap-helper-rc.d &> /dev/null || fail
-echo "OK"
-
-echo -n "Preserving original config.txt and kernels... "
-mkdir -p /rootfs/boot/raspberrypi-ua-netinst/reinstall
-cp /rootfs/boot/config.txt /rootfs/boot/raspberrypi-ua-netinst/reinstall/config.txt
-cp /rootfs/boot/kernel.img /rootfs/boot/raspberrypi-ua-netinst/reinstall/kernel.img
-cp /rootfs/boot/kernel7.img /rootfs/boot/raspberrypi-ua-netinst/reinstall/kernel7.img
-cp /rootfs/boot/kernel7l.img /rootfs/boot/raspberrypi-ua-netinst/reinstall/kernel7l.img
 echo "OK"
 
 echo -n "Configuring bootloader to start the installed system..."

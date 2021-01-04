@@ -456,10 +456,14 @@ fi
 	download_remote_file https://downloads.raspberrypi.org/raspbian/ "boot.tar.xz" xzcat ./config.txt
 	sed -i "s/^\(dtparam=audio=on\)/#\1/" config.txt # disable audio
 	{
-		echo -e "\n[pi3]"
-		echo -e "# Enable serial port\nenable_uart=1"
-		echo -e "\n[all]"
-		echo -e "# Add other config parameters below this line."
+		echo ""
+		echo "[pi3]"
+		echo "dtoverlay=disable-bt"
+		echo "[pi4]"
+		echo "dtoverlay=disable-bt"
+		echo ""
+		echo "[all]"
+		echo "# Add other config parameters below this line."
 	} >> config.txt
 	chmod 644 config.txt
 	cd ../.. || exit 1

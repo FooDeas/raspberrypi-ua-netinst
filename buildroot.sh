@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# shellcheck source=./buildroot.conf
+# shellcheck disable=SC1091
 
 set -e # exit if any command fails
 
@@ -14,9 +16,8 @@ compress_xz=1
 use_sudo=0
 
 # If a configuration file exists, import its settings
-if [ -e buildroot.conf ]; then
-	# shellcheck disable=SC1091
-	source buildroot.conf
+if [ -r buildroot.conf ]; then
+	source <(tr -d "\015" < buildroot.conf)
 fi
 
 if [ "$use_sudo" = "1" ]; then
