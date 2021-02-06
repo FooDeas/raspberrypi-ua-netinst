@@ -152,7 +152,7 @@ If you want to reinstall with the same settings you did your first install you c
 Note: If the original installation was performed with `cleanup` set to `1`, then the files necessary for a reinstallation will not be available.
 
 ```
-cp /boot/raspberrypi-ua-netinst/config.txt /boot/config.txt
+cp /boot/raspberrypi-ua-netinst/reinstall/config.txt /boot/config.txt
 reboot
 ```
 
