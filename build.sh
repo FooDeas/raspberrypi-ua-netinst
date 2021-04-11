@@ -38,7 +38,7 @@ function get_kernels {
 # copies files replacing "kernel*" with kernel versions in path
 function cp_kernelfiles {
 	for kernel in "${kernels[@]}"; do
-		eval cp --preserve=xattr,timestamps -r "${1//kernel\*/${kernel}}" "${2//kernel\*/${kernel}}"
+		eval cp --preserve=xattr,timestamps -r "${1//kernel\*/${kernel}}" "${2//kernel\*/${kernel}}" || true
 	done
 }
 
