@@ -218,7 +218,7 @@ function create_cpio {
 	sed -i "s/__DATE__/$(date)/" rootfs/opt/raspberrypi-ua-netinst/install.sh
 
 	# btrfs-progs components
-	cp --preserve=xattr,timestamps tmp/bin/mkfs.btrfs rootfs/bin/
+	cp --preserve=xattr,timestamps tmp/sbin/mkfs.btrfs rootfs/sbin/
 	cp --preserve=xattr,timestamps tmp/usr/lib/*/libbtrfs.so.0 rootfs/lib/
 
 	# busybox components
