@@ -872,7 +872,7 @@ if [ "${ip_addr}" != "dhcp" ]; then
 fi
 
 if echo "${ifname}" | grep -q "wlan"; then
-	addgroup -S -g netdev
+	addgroup -S netdev
 	if [ -e "${tmp_bootfs}"/raspberrypi-ua-netinst/config/wpa_supplicant.conf ]; then
 		cp "${tmp_bootfs}"/raspberrypi-ua-netinst/config/wpa_supplicant.conf "${wlan_configfile}"
 		inputfile_sanitize "${wlan_configfile}"
