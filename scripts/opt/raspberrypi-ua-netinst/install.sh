@@ -285,10 +285,11 @@ fail() {
 			echo "  The maximum number of retries is reached!"
 			echo "  Check the logfiles for errors. Then delete or edit \"installer-retries.txt\" in installer folder to (re)set the counter."
 		fi
-		echo "  The system is stopped to prevent an infinite loop."
+		echo "  Dropping to shell to prevent an infinite loop."
 		while true; do
 			led_sos
-		done
+		done &
+		exit
 	else
 		echo "  ${installer_retries} retries left."
 	fi
