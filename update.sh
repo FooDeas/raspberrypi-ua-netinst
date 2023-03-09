@@ -12,10 +12,27 @@ RASPBERRYPI_ARCHIVE_KEY_FILE_NAME="raspberrypi.gpg.key"
 RASPBERRYPI_ARCHIVE_KEY_URL="${RASPBERRYPI_ARCHIVE_KEY_DIRECTORY}/${RASPBERRYPI_ARCHIVE_KEY_FILE_NAME}"
 RASPBERRYPI_ARCHIVE_KEY_FINGERPRINT="CF8A1AF502A2AA2D763BAE7E82B129927FA3303E"
 
+DEBIAN_ARCHIVE10_KEY_DIRECTORY="https://ftp-master.debian.org/keys"
+DEBIAN_ARCHIVE10_KEY_FILE_NAME="archive-key-10.asc"
+DEBIAN_ARCHIVE10_KEY_URL="${DEBIAN_ARCHIVE10_KEY_DIRECTORY}/${DEBIAN_ARCHIVE10_KEY_FILE_NAME}"
+DEBIAN_ARCHIVE10_KEY_FINGERPRINT="80D15823B7FD1561F9F7BCDDDC30D7C23CBBABEE"
+
+DEBIAN_ARCHIVE_KEY_DIRECTORY="https://ftp-master.debian.org/keys"
+DEBIAN_ARCHIVE_KEY_FILE_NAME="archive-key-11.asc"
+DEBIAN_ARCHIVE_KEY_URL="${DEBIAN_ARCHIVE_KEY_DIRECTORY}/${DEBIAN_ARCHIVE_KEY_FILE_NAME}"
+DEBIAN_ARCHIVE_KEY_FINGERPRINT="1F89983E0081FDE018F3CC9673A4F27B8DD47936"
+
+DEBIAN_RELEASE_KEY_DIRECTORY="https://ftp-master.debian.org/keys"
+DEBIAN_RELEASE_KEY_FILE_NAME="release-11.asc"
+DEBIAN_RELEASE_KEY_URL="${DEBIAN_RELEASE_KEY_DIRECTORY}/${DEBIAN_RELEASE_KEY_FILE_NAME}"
+DEBIAN_RELEASE_KEY_FINGERPRINT="A4285295FC7B1A81600062A9605C66F00D6C9793"
+
 mirror_raspbian=http://mirrordirector.raspbian.org/raspbian
 mirror_raspberrypi=http://archive.raspberrypi.org/debian
+mirror_debian=http://deb.debian.org/debian
 declare mirror_raspbian_cache
 declare mirror_raspberrypi_cache
+declare mirror_debian_cache
 release=bullseye
 
 packages=()
@@ -43,6 +60,7 @@ packages+=("netbase")
 packages+=("netcat-openbsd")
 packages+=("ntpdate")
 packages+=("raspbian-archive-keyring")
+packages+=("debian-archive-keyring")
 packages+=("rng-tools5")
 packages+=("tar")
 packages+=("fdisk")
@@ -226,6 +244,57 @@ setup_archive_keys() {
 		# GPG key checks out, thus import it into our own keyring
 		echo -n "Importing '${RASPBERRYPI_ARCHIVE_KEY_FILE_NAME}' into keyring..."
 		if gpg -q --homedir gnupg --import "${RASPBERRYPI_ARCHIVE_KEY_FILE_NAME}"; then
+			echo "OK"
+		else
+			echo "FAILED!"
+			return 1
+		fi
+	else
+		return 1
+	fi
+
+	echo ""
+
+	echo "Downloading ${DEBIAN_ARCHIVE10_KEY_FILE_NAME}."
+	download_file ${DEBIAN_ARCHIVE10_KEY_URL}
+	if check_key "${DEBIAN_ARCHIVE10_KEY_FILE_NAME}" "${DEBIAN_ARCHIVE10_KEY_FINGERPRINT}"; then
+		# GPG key checks out, thus import it into our own keyring
+		echo -n "Importing '${DEBIAN_ARCHIVE10_KEY_FILE_NAME}' into keyring... "
+		if gpg -q --homedir gnupg --import "${DEBIAN_ARCHIVE10_KEY_FILE_NAME}"; then
+			echo "OK"
+		else
+			echo "FAILED!"
+			return 1
+		fi
+	else
+		return 1
+	fi
+
+	echo ""
+
+	echo "Downloading ${DEBIAN_ARCHIVE_KEY_FILE_NAME}."
+	download_file ${DEBIAN_ARCHIVE_KEY_URL}
+	if check_key "${DEBIAN_ARCHIVE_KEY_FILE_NAME}" "${DEBIAN_ARCHIVE_KEY_FINGERPRINT}"; then
+		# GPG key checks out, thus import it into our own keyring
+		echo -n "Importing '${DEBIAN_ARCHIVE_KEY_FILE_NAME}' into keyring... "
+		if gpg -q --homedir gnupg --import "${DEBIAN_ARCHIVE_KEY_FILE_NAME}"; then
+			echo "OK"
+		else
+			echo "FAILED!"
+			return 1
+		fi
+	else
+		return 1
+	fi
+
+	echo ""
+
+	echo "Downloading ${DEBIAN_RELEASE_KEY_FILE_NAME}."
+	download_file ${DEBIAN_RELEASE_KEY_URL}
+	if check_key "${DEBIAN_RELEASE_KEY_FILE_NAME}" "${DEBIAN_RELEASE_KEY_FINGERPRINT}"; then
+		# GPG key checks out, thus import it into our own keyring
+		echo -n "Importing '${DEBIAN_RELEASE_KEY_FILE_NAME}' into keyring... "
+		if gpg -q --homedir gnupg --import "${DEBIAN_RELEASE_KEY_FILE_NAME}"; then
 			echo "OK"
 		else
 			echo "FAILED!"
@@ -420,10 +489,14 @@ fi
 	if [ -n "${mirror_raspberrypi_cache}" ]; then
 		mirror_raspberrypi=${mirror_raspberrypi/:\/\//:\/\/${mirror_raspberrypi_cache}\/}
 	fi
+	if [ -n "${mirror_debian_cache}" ]; then
+		mirror_debian=${mirror_debian/:\/\//:\/\/${mirror_debian_cache}\/}
+	fi
 
 	## Download package list
 	download_package_lists raspberry ${mirror_raspberrypi}
 	download_package_lists raspbian ${mirror_raspbian}
+	download_package_lists debian ${mirror_debian}
 
 	## Select packages for download
 	packages_debs=()
@@ -431,6 +504,7 @@ fi
 
 	add_packages raspberry ${mirror_raspberrypi}
 	add_packages raspbian ${mirror_raspbian}
+	add_packages debian ${mirror_debian}
 	if ! allfound; then
 		echo "ERROR: Unable to find all required packages in package list!"
 		echo "Missing packages: '${packages[*]}'"

@@ -17,9 +17,10 @@
 | `preset` | `server` | `base`/  `minimal`/  `server` | The current packages that are installed by default are listed below. |
 | `packages` |  |  | Install these additional packages (comma separated and quoted). (e.g. "pi-bluetooth,cifs-utils,curl") |
 | `firmware_packages` | `0` | `0`/`1` | Set to "1" to install common firmware packages (Atheros, Broadcom, Libertas, Ralink and Realtek). |
-| `mirror` | `http:// mirrordirector.raspbian.org/ raspbian/` |  |  |
+| `mirror` | `http:// mirrordirector.raspbian.org/ raspbian/` or `http:// deb.debian.org/ debian/` |  | default value depends on arch |
 | `mirror_cache` |  |  | Set address and port for HTTP apt-cacher or apt-cacher-ng (e.g. "192.168.0.1:3142"). If set, the cacher will be used to cache packages during installation downloaded from the repository set in `mirror` as well as "http://archive.raspberrypi.org/debian". |
 | `release` | `buster` |  | Raspbian release name |
+| `arch` | `armhf` |  | Raspbian architecture: "armhf" = 32-bit (all Raspberry models), "arm64" = 64-bit (only for Model 3 and up, Zero 2) |
 
 ### Description: Presets
 
@@ -29,7 +30,7 @@
 |---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `base` | _\<essential\>,apt,gnupg,kmod_ |
 | `minimal` | _\<base\>,cpufrequtils,fake-hwclock,ifupdown,net-tools,ntp,openssh-server,dosfstools,raspberrypi-sys-mods_ |
-| `server` | _\<minimal\>,systemd-sysv,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,tzdata,less,man-db,logrotate,bash-completion,console-setup,apt-utils,libraspberrypi-bin,raspi-copies-and-fills_ |
+| `server` | _\<minimal\>,systemd-sysv,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,tzdata,less,man-db,logrotate,bash-completion,console-setup,apt-utils,libraspberrypi-bin,raspi-copies-and-fills (raspi-copies-and-fills is not available on arm64)_ |
 
 Note that if the networking configuration is set to use DHCP, `isc-dhcp-client` will also be installed.
 
@@ -39,7 +40,7 @@ Note that if the networking configuration is set to use DHCP, `isc-dhcp-client` 
 |---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `base` | _\<essential\>,apt,kmod_ |
 | `minimal` | _\<base\>,cpufrequtils,iproute2,openssh-server,dosfstools,raspberrypi-sys-mods_ |
-| `server` | _\<minimal\>,systemd-sysv,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,tzdata,less,man-db,logrotate,bash-completion,console-setup,apt-utils,libraspberrypi-bin,raspi-copies-and-fills_ |
+| `server` | _\<minimal\>,systemd-sysv,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,tzdata,less,man-db,logrotate,bash-completion,console-setup,apt-utils,libraspberrypi-bin,raspi-copies-and-fills (raspi-copies-and-fills is not available on arm64)_ |
 
 Note that if the networking configuration is set to use DHCP, no additional packages will be installed as `systemd-networkd` provides DHCP client support.
 

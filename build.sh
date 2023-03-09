@@ -411,8 +411,8 @@ function create_cpio {
 	# raspberrypi.org GPG key
 	cp --preserve=xattr,timestamps ../"${packages_dir}"/raspberrypi.gpg.key rootfs/usr/share/keyrings/
 
-	# raspbian-archive-keyring components
-	cp --preserve=xattr,timestamps tmp/usr/share/keyrings/raspbian-archive-keyring.gpg rootfs/usr/share/keyrings/
+	# *-archive-keyring components
+	cp --preserve=xattr,timestamps tmp/usr/share/keyrings/*.gpg rootfs/usr/share/keyrings/
 
 	# rng-tools5 components
 	cp --preserve=xattr,timestamps tmp/usr/bin/rngtest rootfs/usr/bin/
@@ -690,6 +690,7 @@ mv raspberrypi-ua-netinst.cpio.gz bootfs/raspberrypi-ua-netinst/initramfs.gz
 
 {
 	echo "[all]"
+	echo "arm_64bit=1"
 	echo "os_prefix=raspberrypi-ua-netinst/"
 	echo "initramfs initramfs.gz"
 	echo "gpu_mem=16"

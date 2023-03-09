@@ -23,6 +23,7 @@ variables_reset() {
 	mirror=
 	mirror_cache=
 	release=
+	arch=
 	hostname=
 	boot_volume_label=
 	root_volume_label=
@@ -140,7 +141,12 @@ variables_set_defaults() {
 
 	# set config defaults
 	variable_set "preset" "server"
-	variable_set "mirror" "http://mirrordirector.raspbian.org/raspbian/"
+	variable_set "arch" "armhf"
+	if [ "${arch}" = "arm64" ]; then
+		variable_set "mirror" "http://deb.debian.org/debian/"
+	else
+		variable_set "mirror" "http://mirrordirector.raspbian.org/raspbian/"
+	fi
 	variable_set "release" "bullseye"
 	variable_set "hostname" "pi"
 	variable_set "rootpw" "raspbian"
@@ -1269,7 +1275,10 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 		server_packages="${server_packages},systemd-sysv"
 	fi
 	server_packages_postinstall="${minimal_packages_postinstall},${server_packages_postinstall}"
-	server_packages_postinstall="${server_packages_postinstall},libraspberrypi-bin,raspi-copies-and-fills"
+	server_packages_postinstall="${server_packages_postinstall},libraspberrypi-bin"
+	if [ "${arch}" != "arm64" ]; then
+		server_packages_postinstall="${server_packages_postinstall},raspi-copies-and-fills"
+	fi
 
 	# cleanup package variables used by cdebootstrap_cmdline
 	variable_sanitize base_packages
@@ -1370,6 +1379,7 @@ echo "  firmware_packages = ${firmware_packages}"
 echo "  mirror = ${mirror}"
 echo "  mirror_cache = ${mirror_cache}"
 echo "  release = ${release_raspbian}"
+echo "  arch = ${arch}"
 echo "  hostname = ${hostname}"
 echo "  domainname = ${domainname}"
 echo "  rootpw = ${rootpw}"
@@ -1643,7 +1653,12 @@ for i in $(seq 1 "${installer_pkg_downloadretries}"); do
 	if [ -n "${mirror_cache}" ]; then
 		export http_proxy="http://${mirror_cache}/"
 	fi
-	eval cdebootstrap-static --arch=armhf "${cdebootstrap_cmdline}" "${release_raspbian}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg 2>&1 | output_filter
+	if [ "${arch}" = "arm64" ]; then
+		keyring="debian-archive-keyring.gpg"
+	else
+		keyring="raspbian-archive-keyring.gpg"
+	fi
+	eval cdebootstrap-static --arch="${arch}" "${cdebootstrap_cmdline}" "${release_raspbian}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/${keyring} 2>&1 | output_filter
 	cdebootstrap_exitcode="${PIPESTATUS[0]}"
 	if [ "${cdebootstrap_exitcode}" -eq 0 ]; then
 		unset http_proxy
@@ -2096,15 +2111,21 @@ fi
 
 # copy apt's sources.list to the target system
 echo "Configuring apt:"
-echo -n "  Configuring Raspbian repository... "
+echo -n "  Configuring Raspbian/Debian repository... "
 if [ -e "/rootfs/boot/raspberrypi-ua-netinst/config/apt/sources.list" ]; then
 	sed "s/__RELEASE__/${release_raspbian}/g" "/rootfs/boot/raspberrypi-ua-netinst/config/apt/sources.list" > "/rootfs/etc/apt/sources.list" || fail
 else
-	sed "s/__RELEASE__/${release_raspbian}/g" "/opt/raspberrypi-ua-netinst/res/etc/apt/sources.list" > "/rootfs/etc/apt/sources.list" || fail
+	if [ "${arch}" = "arm64" ]; then
+		echo "deb ${mirror} ${release_raspbian} main contrib non-free" > "/rootfs/etc/apt/sources.list" || fail
+		echo "deb http://security.debian.org/debian-security ${release_raspbian}-security main contrib non-free" >> "/rootfs/etc/apt/sources.list" || fail
+		echo "deb ${mirror} ${release_raspbian}-updates main contrib non-free" >> "/rootfs/etc/apt/sources.list" || fail
+	else
+		echo "deb ${mirror} ${release_raspbian} main contrib non-free firmware" > "/rootfs/etc/apt/sources.list" || fail
+	fi
 fi
 echo "OK"
 # if __RELEASE__ is still present, something went wrong
-echo -n "  Checking Raspbian repository entry... "
+echo -n "  Checking Raspbian/Debian repository entry... "
 if grep -l '__RELEASE__' /rootfs/etc/apt/sources.list > /dev/null; then
 	fail
 else
