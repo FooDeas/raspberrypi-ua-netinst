@@ -140,7 +140,7 @@ Note that if the networking configuration is set to use DHCP, no additional pack
 | `disable_splash` | `0` | `0`/`1` | Disables the rainbow splash screen on boot. |
 | `cleanup` | `0` | `0`/`1` | Remove installer files after success. To also remove log files, note the option below. |
 | `cleanup_logfiles` | `0` | `0`/`1` | Removes installer log files after success. |
-| `cmdline` | `"dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 elevator=deadline fsck.repair=yes"` |  |  |
+| `cmdline` | `"console=serial0,115200 console=tty1 fsck.repair=yes"` |  |  |
 | `final_action` | `reboot` | `reboot`/  `poweroff`/  `halt`/  `console` | Action at the end of install. |
 | `installer_telnet` | `listen` | `none`/`connect`/`listen` | Connect to, or listen for, a telnet connection to send installer console output. |
 | `installer_telnet_host` | | | Host name or address to use when `installer_telnet` is set to `connect`. |

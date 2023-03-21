@@ -702,7 +702,7 @@ mv raspberrypi-ua-netinst.cpio.gz bootfs/raspberrypi-ua-netinst/initramfs.gz
 
 cp bootfs/raspberrypi-ua-netinst/config.txt bootfs/config.txt
 
-echo "dwc_otg.lpm_enable=0 consoleblank=0 console=serial0,115200 console=tty1 elevator=deadline rootwait" > bootfs/raspberrypi-ua-netinst/cmdline.txt
+echo "consoleblank=0 console=serial0,115200 console=tty1 rootwait" > bootfs/raspberrypi-ua-netinst/cmdline.txt
 
 if [ ! -f bootfs/TIMEOUT ] ; then
 	touch bootfs/TIMEOUT

@@ -167,7 +167,7 @@ variables_set_defaults() {
 	variable_set "hdmi_system_only" "0"
 	variable_set "usbroot" "0"
 	variable_set "usbboot" "0"
-	variable_set "cmdline" "dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 elevator=deadline fsck.repair=yes"
+	variable_set "cmdline" "console=serial0,115200 console=tty1 fsck.repair=yes"
 	variable_set "rootfstype" "f2fs"
 	variable_set "final_action" "reboot"
 	variable_set "installer_telnet" "listen"
