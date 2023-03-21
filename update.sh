@@ -522,7 +522,7 @@ fi
 	## Download default /boot/config.txt and do default changes
 	mkdir -p initramfs/boot
 	cd initramfs/boot || exit 1
-	download_remote_file https://downloads.raspberrypi.org/raspbian/ "boot.tar.xz" xzcat ./config.txt
+	download_remote_file https://downloads.raspberrypi.org/raspios_armhf/ "boot.tar.xz" xzcat ./config.txt
 	sed -i "s/^\(dtparam=audio=on\)/#\1/" config.txt # disable audio
 	{
 		echo ""
