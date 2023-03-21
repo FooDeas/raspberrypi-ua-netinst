@@ -1961,12 +1961,12 @@ if [ "${use_systemd_services}" != "0" ]; then
 	echo "OK"
 fi
 
-# Customize cmdline.txt if predictable network interface names are not desired
+# Mask udev link files if predictable network interface names are not desired
 if [ "${disable_predictable_nin}" = "1" ]; then
 	# as described here: https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames
-	# adding net.ifnames=0 to /boot/cmdline and disabling the persistent-net-generator.rules
-	line_add cmdline_custom "net.ifnames=0"
-	ln -s /dev/null /rootfs/etc/udev/rules.d/75-persistent-net-generator.rules
+	# masking 99-default.link and also 73-usb-net-by-mac.link (as raspi-config does)
+	ln -s /dev/null /rootfs/etc/systemd/network/99-default.link
+	ln -s /dev/null /rootfs/etc/systemd/network/73-usb-net-by-mac.link
 fi
 
 # set timezone and reconfigure tzdata package
