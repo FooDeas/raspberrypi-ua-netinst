@@ -1810,17 +1810,20 @@ if [ -n "${username}" ]; then
 	fi
 fi
 
+bootpartition_uuid=PARTUUID=$(blkid -o value -s PARTUUID ${bootpartition})
+rootpartition_uuid=PARTUUID=$(blkid -o value -s PARTUUID ${rootpartition})
+
 # default mounts
 echo -n "  Configuring /etc/fstab... "
 touch /rootfs/etc/fstab || fail
 {
-	echo "${bootpartition} /boot vfat defaults 0 2"
+	echo "${bootpartition_uuid} /boot vfat defaults 0 2"
 	if [ "${rootfstype}" = "f2fs" ]; then
-		echo "${rootpartition} / ${rootfstype} ${rootfs_mount_options} 0 0"
+		echo "${rootpartition_uuid} / ${rootfstype} ${rootfs_mount_options} 0 0"
 	elif [ "${rootfstype}" = "btrfs" ]; then
-		echo "${rootpartition} / ${rootfstype} ${rootfs_mount_options} 0 0"
+		echo "${rootpartition_uuid} / ${rootfstype} ${rootfs_mount_options} 0 0"
 	else
-		echo "${rootpartition} / ${rootfstype} ${rootfs_mount_options} 0 1"
+		echo "${rootpartition_uuid} / ${rootfstype} ${rootfs_mount_options} 0 1"
 	fi
 	# also specify /tmp on tmpfs in /etc/fstab so it works across init systems
 	echo "tmpfs /tmp tmpfs defaults,nodev,nosuid 0 0"
@@ -2293,7 +2296,7 @@ echo "OK"
 
 # create cmdline.txt
 echo -n "Creating cmdline.txt... "
-line_add cmdline "root=${rootpartition} rootfstype=${rootfstype} rootwait"
+line_add cmdline "root=${rootpartition_uuid} rootfstype=${rootfstype} rootwait"
 line_add_if_boolean quiet_boot cmdline_custom "quiet" "loglevel=3"
 line_add_if_boolean disable_raspberries cmdline_custom "logo.nologo"
 line_add_if_set console_blank cmdline_custom "consoleblank=${console_blank}"
