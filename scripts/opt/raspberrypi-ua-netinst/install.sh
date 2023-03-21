@@ -1280,6 +1280,21 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 		server_packages_postinstall="${server_packages_postinstall},raspi-copies-and-fills"
 	fi
 
+	# if using base or minimal preset and custom packages include console-setup, keyboard-configuration or tzdata,
+	# install them early using cdebootstrap or the initial configuration of keyboard layout or timezone will fail
+	if echo "${packages}" | grep -q "console-setup"; then
+		base_packages="${base_packages},console-setup"
+		minimal_packages="${minimal_packages},console-setup"
+	fi
+	if echo "${packages}" | grep -q "keyboard-configuration"; then
+		base_packages="${base_packages},keyboard-configuration"
+		minimal_packages="${minimal_packages},keyboard-configuration"
+	fi
+	if echo "${packages}" | grep -q "tzdata"; then
+		base_packages="${base_packages},tzdata"
+		minimal_packages="${minimal_packages},tzdata"
+	fi
+
 	# cleanup package variables used by cdebootstrap_cmdline
 	variable_sanitize base_packages
 	variable_sanitize minimal_packages
