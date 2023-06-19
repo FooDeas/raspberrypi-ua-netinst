@@ -690,14 +690,21 @@ mv raspberrypi-ua-netinst.cpio.gz bootfs/raspberrypi-ua-netinst/initramfs.gz
 
 {
 	echo "[all]"
-	echo "arm_64bit=1"
 	echo "os_prefix=raspberrypi-ua-netinst/"
 	echo "initramfs initramfs.gz"
 	echo "gpu_mem=16"
 	echo "[pi3]"
 	echo "dtoverlay=disable-bt"
+	echo "arm_64bit=1"
 	echo "[pi4]"
 	echo "dtoverlay=disable-bt"
+	echo "arm_64bit=1"
+	echo "[pi02]"
+	echo "arm_64bit=1"
+	echo "[board-type=a02042]"
+	echo "arm_64bit=1"
+	echo "[board-type=a22042]"
+	echo "arm_64bit=1"
 } >> bootfs/raspberrypi-ua-netinst/config.txt
 
 cp bootfs/raspberrypi-ua-netinst/config.txt bootfs/config.txt
