@@ -308,13 +308,6 @@ setup_archive_keys() {
 
 }
 
-required() {
-	for i in "${packages[@]}"; do
-		[[ $i = "${1}" ]] && return 0
-	done
-	return 1
-}
-
 unset_required() {
 	for i in "${!packages[@]}"; do
 		[[ ${packages[$i]} = "${1}" ]] && unset "packages[$i]" && return 0
@@ -407,28 +400,27 @@ download_package_lists() {
 
 add_packages() {
 	echo -e "\nAdding required packages..."
-	while read -r k v
-	do
-		if [ "${k}" = "Package:" ]; then
-			current_package=${v}
-		elif [ "${k}" = "Filename:" ]; then
-			current_filename=${v}
-		elif [ "${k}" = "SHA256:" ]; then
-			current_sha256=${v}
-		elif [ "${k}" = "" ]; then
-			if required "${current_package}"; then
+	filter_package_list < "${1}_Packages" >"${1}_Packages.tmp"
+	for pkg in "${packages[@]}"; do
+		while read -r k v
+		do
+			if [ "${k}" = "Package:" ]; then
+				current_package=${v}
+			elif [ "${k}" = "Filename:" ]; then
+				current_filename=${v}
+			elif [ "${k}" = "SHA256:" ]; then
+				current_sha256=${v}
+			elif [ "${k}" = "" ]; then
 				printf "  %-32s %s\n" "${current_package}" "$(basename "${current_filename}")"
 				unset_required "${current_package}"
 				packages_debs+=("${2}/${current_filename}")
 				packages_sha256+=("${current_sha256}  $(basename "${current_filename}")")
-				allfound && break
+				current_package=
+				current_filename=
+				current_sha256=
 			fi
-
-			current_package=
-			current_filename=
-			current_sha256=
-		fi
-	done < <(filter_package_list <"${1}_Packages")
+		done < <(grep -A 3 -m 1 ^Package:\ "$pkg"$ "${1}_Packages.tmp")
+	done
 }
 
 download_packages() {
