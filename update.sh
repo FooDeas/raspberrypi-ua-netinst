@@ -2,30 +2,12 @@
 # shellcheck source=./build.conf
 # shellcheck disable=SC1091
 
-RASPBIAN_ARCHIVE_KEY_DIRECTORY="https://archive.raspbian.org"
-RASPBIAN_ARCHIVE_KEY_FILE_NAME="raspbian.public.key"
-RASPBIAN_ARCHIVE_KEY_URL="${RASPBIAN_ARCHIVE_KEY_DIRECTORY}/${RASPBIAN_ARCHIVE_KEY_FILE_NAME}"
-RASPBIAN_ARCHIVE_KEY_FINGERPRINT="A0DA38D0D76E8B5D638872819165938D90FDDD2E"
-
-RASPBERRYPI_ARCHIVE_KEY_DIRECTORY="https://archive.raspberrypi.org/debian"
-RASPBERRYPI_ARCHIVE_KEY_FILE_NAME="raspberrypi.gpg.key"
-RASPBERRYPI_ARCHIVE_KEY_URL="${RASPBERRYPI_ARCHIVE_KEY_DIRECTORY}/${RASPBERRYPI_ARCHIVE_KEY_FILE_NAME}"
-RASPBERRYPI_ARCHIVE_KEY_FINGERPRINT="CF8A1AF502A2AA2D763BAE7E82B129927FA3303E"
-
-DEBIAN_ARCHIVE10_KEY_DIRECTORY="https://ftp-master.debian.org/keys"
-DEBIAN_ARCHIVE10_KEY_FILE_NAME="archive-key-10.asc"
-DEBIAN_ARCHIVE10_KEY_URL="${DEBIAN_ARCHIVE10_KEY_DIRECTORY}/${DEBIAN_ARCHIVE10_KEY_FILE_NAME}"
-DEBIAN_ARCHIVE10_KEY_FINGERPRINT="80D15823B7FD1561F9F7BCDDDC30D7C23CBBABEE"
-
-DEBIAN_ARCHIVE_KEY_DIRECTORY="https://ftp-master.debian.org/keys"
-DEBIAN_ARCHIVE_KEY_FILE_NAME="archive-key-11.asc"
-DEBIAN_ARCHIVE_KEY_URL="${DEBIAN_ARCHIVE_KEY_DIRECTORY}/${DEBIAN_ARCHIVE_KEY_FILE_NAME}"
-DEBIAN_ARCHIVE_KEY_FINGERPRINT="1F89983E0081FDE018F3CC9673A4F27B8DD47936"
-
-DEBIAN_RELEASE_KEY_DIRECTORY="https://ftp-master.debian.org/keys"
-DEBIAN_RELEASE_KEY_FILE_NAME="release-11.asc"
-DEBIAN_RELEASE_KEY_URL="${DEBIAN_RELEASE_KEY_DIRECTORY}/${DEBIAN_RELEASE_KEY_FILE_NAME}"
-DEBIAN_RELEASE_KEY_FINGERPRINT="A4285295FC7B1A81600062A9605C66F00D6C9793"
+ARCHIVE_KEYS=()
+ARCHIVE_KEYS+=("https://archive.raspbian.org;raspbian.public.key;A0DA38D0D76E8B5D638872819165938D90FDDD2E")
+ARCHIVE_KEYS+=("https://archive.raspberrypi.org/debian;raspberrypi.gpg.key;CF8A1AF502A2AA2D763BAE7E82B129927FA3303E")
+ARCHIVE_KEYS+=("https://ftp-master.debian.org/keys;archive-key-10.asc;80D15823B7FD1561F9F7BCDDDC30D7C23CBBABEE")
+ARCHIVE_KEYS+=("https://ftp-master.debian.org/keys;archive-key-11.asc;1F89983E0081FDE018F3CC9673A4F27B8DD47936")
+ARCHIVE_KEYS+=("https://ftp-master.debian.org/keys;release-11.asc;A4285295FC7B1A81600062A9605C66F00D6C9793")
 
 mirror_raspbian=http://mirrordirector.raspbian.org/raspbian
 mirror_raspberrypi=http://archive.raspberrypi.org/debian
@@ -219,93 +201,27 @@ setup_archive_keys() {
 	# Let gpg set itself up already in the 'gnupg' dir before we actually use it
 	echo "Setting up gpg... "
 	gpg --homedir gnupg --list-secret-keys
-	echo ""
 
-	echo "Downloading ${RASPBIAN_ARCHIVE_KEY_FILE_NAME}."
-	download_file ${RASPBIAN_ARCHIVE_KEY_URL}
-	if check_key "${RASPBIAN_ARCHIVE_KEY_FILE_NAME}" "${RASPBIAN_ARCHIVE_KEY_FINGERPRINT}"; then
-		# GPG key checks out, thus import it into our own keyring
-		echo -n "Importing '${RASPBIAN_ARCHIVE_KEY_FILE_NAME}' into keyring... "
-		if gpg -q --homedir gnupg --import "${RASPBIAN_ARCHIVE_KEY_FILE_NAME}"; then
-			echo "OK"
+	for archive_key in ${ARCHIVE_KEYS[@]}; do
+		echo ""
+		IFS=';' read -r KEY_URL KEY_FILE KEY_FINGERPRINT <<< "$archive_key"
+		echo "Downloading ${KEY_FILE}."
+		download_file ${KEY_URL}/${KEY_FILE}
+		if check_key "${KEY_FILE}" "${KEY_FINGERPRINT}"; then
+			# GPG key checks out, thus import it into our own keyring
+			echo -n "Importing '${KEY_FILE}' into keyring... "
+			if gpg -q --homedir gnupg --import "${KEY_FILE}"; then
+				echo "OK"
+			else
+				echo "FAILED!"
+				return 1
+			fi
 		else
-			echo "FAILED!"
 			return 1
 		fi
-	else
-		return 1
-	fi
-
-	echo ""
-
-	echo "Downloading ${RASPBERRYPI_ARCHIVE_KEY_FILE_NAME}."
-	download_file ${RASPBERRYPI_ARCHIVE_KEY_URL}
-	if check_key "${RASPBERRYPI_ARCHIVE_KEY_FILE_NAME}" "${RASPBERRYPI_ARCHIVE_KEY_FINGERPRINT}"; then
-		# GPG key checks out, thus import it into our own keyring
-		echo -n "Importing '${RASPBERRYPI_ARCHIVE_KEY_FILE_NAME}' into keyring..."
-		if gpg -q --homedir gnupg --import "${RASPBERRYPI_ARCHIVE_KEY_FILE_NAME}"; then
-			echo "OK"
-		else
-			echo "FAILED!"
-			return 1
-		fi
-	else
-		return 1
-	fi
-
-	echo ""
-
-	echo "Downloading ${DEBIAN_ARCHIVE10_KEY_FILE_NAME}."
-	download_file ${DEBIAN_ARCHIVE10_KEY_URL}
-	if check_key "${DEBIAN_ARCHIVE10_KEY_FILE_NAME}" "${DEBIAN_ARCHIVE10_KEY_FINGERPRINT}"; then
-		# GPG key checks out, thus import it into our own keyring
-		echo -n "Importing '${DEBIAN_ARCHIVE10_KEY_FILE_NAME}' into keyring... "
-		if gpg -q --homedir gnupg --import "${DEBIAN_ARCHIVE10_KEY_FILE_NAME}"; then
-			echo "OK"
-		else
-			echo "FAILED!"
-			return 1
-		fi
-	else
-		return 1
-	fi
-
-	echo ""
-
-	echo "Downloading ${DEBIAN_ARCHIVE_KEY_FILE_NAME}."
-	download_file ${DEBIAN_ARCHIVE_KEY_URL}
-	if check_key "${DEBIAN_ARCHIVE_KEY_FILE_NAME}" "${DEBIAN_ARCHIVE_KEY_FINGERPRINT}"; then
-		# GPG key checks out, thus import it into our own keyring
-		echo -n "Importing '${DEBIAN_ARCHIVE_KEY_FILE_NAME}' into keyring... "
-		if gpg -q --homedir gnupg --import "${DEBIAN_ARCHIVE_KEY_FILE_NAME}"; then
-			echo "OK"
-		else
-			echo "FAILED!"
-			return 1
-		fi
-	else
-		return 1
-	fi
-
-	echo ""
-
-	echo "Downloading ${DEBIAN_RELEASE_KEY_FILE_NAME}."
-	download_file ${DEBIAN_RELEASE_KEY_URL}
-	if check_key "${DEBIAN_RELEASE_KEY_FILE_NAME}" "${DEBIAN_RELEASE_KEY_FINGERPRINT}"; then
-		# GPG key checks out, thus import it into our own keyring
-		echo -n "Importing '${DEBIAN_RELEASE_KEY_FILE_NAME}' into keyring... "
-		if gpg -q --homedir gnupg --import "${DEBIAN_RELEASE_KEY_FILE_NAME}"; then
-			echo "OK"
-		else
-			echo "FAILED!"
-			return 1
-		fi
-	else
-		return 1
-	fi
+	done
 
 	return 0
-
 }
 
 unset_required() {
