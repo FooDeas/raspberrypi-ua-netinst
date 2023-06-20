@@ -371,12 +371,6 @@ download_package_list() {
 }
 
 download_package_lists() {
-	if ! setup_archive_keys; then
-		echo -e "ERROR\nSetting up the archives failed! Exiting."
-		cd ..
-		exit 1
-	fi
-
 	echo -e "\nDownloading Release file and its signature..."
 	download_file "${2}/dists/$release/Release" "${1}_Release"
 	download_file "${2}/dists/$release/Release.gpg" "${1}_Release.gpg"
@@ -483,6 +477,12 @@ fi
 	fi
 	if [ -n "${mirror_debian_cache}" ]; then
 		mirror_debian=${mirror_debian/:\/\//:\/\/${mirror_debian_cache}\/}
+	fi
+
+	if ! setup_archive_keys; then
+		echo -e "ERROR\nSetting up the archives failed! Exiting."
+		cd ..
+		exit 1
 	fi
 
 	## Download package list
