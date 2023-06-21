@@ -31,7 +31,7 @@ packages+=("coreutils")
 packages+=("diffutils")
 packages+=("dosfstools")
 packages+=("dpkg")
-packages+=("libext2fs2")
+packages+=("libc-bin")
 packages+=("e2fsprogs")
 packages+=("f2fs-tools")
 packages+=("gpgv")
@@ -53,71 +53,10 @@ packages+=("xxd")
 packages+=("curl")
 packages+=("logsave")
 
-# libraries
-packages+=("libacl1")
-packages+=("libattr1")
-packages+=("libblkid1")
-packages+=("libbpf0")
-packages+=("libbrotli1")
-packages+=("libbsd0")
-packages+=("libbz2-1.0")
-packages+=("libc-bin")
-packages+=("libc6")
-packages+=("libcap2")
-packages+=("libcom-err2")
-packages+=("libcurl4")
-packages+=("libdb5.3")
-packages+=("libdbus-1-3")
-packages+=("libelf1")
-packages+=("libfdisk1")
-packages+=("libffi7")
-packages+=("libgcc-s1")
-packages+=("libgcrypt20")
-packages+=("libgmp10")
-packages+=("libgnutls30")
-packages+=("libgpg-error0")
-packages+=("libgssapi-krb5-2")
-packages+=("libhogweed6")
-packages+=("libidn2-0")
-packages+=("libk5crypto3")
-packages+=("libkeyutils1")
-packages+=("libkrb5-3")
-packages+=("libkrb5support0")
-packages+=("libldap-2.4-2")
-packages+=("liblz4-1")
-packages+=("liblzma5")
-packages+=("libmd0")
-packages+=("libmount1")
-packages+=("libmnl0")
-packages+=("libnettle8")
-packages+=("libnghttp2-14")
-packages+=("libnl-3-200")
-packages+=("libnl-genl-3-200")
-packages+=("libnl-route-3-200")
-packages+=("libpcre2-8-0")
-packages+=("libpcsclite1")
-packages+=("libp11-kit0")
-packages+=("libpsl5")
-packages+=("libraspberrypi0")
-packages+=("librtmp1")
-packages+=("libsasl2-2")
-packages+=("libselinux1")
-packages+=("libsmartcols1")
-packages+=("libss2")
-packages+=("libssh2-1")
-packages+=("libssl1.1")
-packages+=("libsystemd0")
-packages+=("libtasn1-6")
-packages+=("libtinfo6")
-packages+=("libunistring2")
-packages+=("libuuid1")
-packages+=("libxtables12")
-packages+=("libzstd1")
-packages+=("zlib1g")
-
 
 packages_debs=
 packages_sha256=
+packages_done=()
 
 download_file() {
 	local download_source=$1
@@ -237,7 +176,7 @@ allfound() {
 }
 
 filter_package_list() {
-	grep -E 'Package:|Filename:|SHA256:|^$'
+	grep -E '^Package:|^Pre-Depends:|^Depends:|^Filename:|^SHA256:|^$'
 }
 
 download_package_list() {
@@ -311,25 +250,49 @@ download_package_lists() {
 add_packages() {
 	echo -e "\nAdding required packages..."
 	filter_package_list < "${1}_Packages" >"${1}_Packages.tmp"
-	for pkg in "${packages[@]}"; do
-		while read -r k v
-		do
-			if [ "${k}" = "Package:" ]; then
-				current_package=${v}
-			elif [ "${k}" = "Filename:" ]; then
-				current_filename=${v}
-			elif [ "${k}" = "SHA256:" ]; then
-				current_sha256=${v}
-			elif [ "${k}" = "" ]; then
-				printf "  %-32s %s\n" "${current_package}" "$(basename "${current_filename}")"
-				unset_required "${current_package}"
-				packages_debs+=("${2}/${current_filename}")
-				packages_sha256+=("${current_sha256}  $(basename "${current_filename}")")
-				current_package=
-				current_filename=
-				current_sha256=
+	while true; do
+		libs=()
+		for pkg in "${packages[@]}"; do
+			current_package=
+			current_depends=()
+			current_filename=
+			current_sha256=
+			while read -r k v
+			do
+				if [ "${k}" = "Package:" ]; then
+					current_package=${v}
+				elif [ "${k}" = "Pre-Depends:" ]; then
+					current_depends+=($(echo "${v}" | sed -e 's/, /\n/g' -e 's/\ Pre-Depends:\ //' -e 's/ ([^)]*)//g'))
+				elif [ "${k}" = "Depends:" ]; then
+					current_depends+=($(echo "${v}" | sed -e 's/, /\n/g' -e 's/\ Depends:\ //' -e 's/ ([^)]*)//g'))
+				elif [ "${k}" = "Filename:" ]; then
+					current_filename=${v}
+				elif [ "${k}" = "SHA256:" ]; then
+					current_sha256=${v}
+				elif [ "${k}" = "" ]; then
+					break
+				fi
+			done < <(grep -A 4 -m 1 ^Package:\ "$pkg"$ "${1}_Packages.tmp")
+			if [ -z ${current_package} ]; then	# package not found
+				continue
 			fi
-		done < <(grep -A 3 -m 1 ^Package:\ "$pkg"$ "${1}_Packages.tmp")
+			printf "  %-32s %s\n" "${current_package}" "$(basename "${current_filename}")"
+			unset_required "${current_package}"
+			packages_debs+=("${2}/${current_filename}")
+			packages_sha256+=("${current_sha256}  $(basename "${current_filename}")")
+			packages_done+=("${current_package}")
+			libs+=($(printf '%s\n' "${current_depends[@]}" | grep "lib"))
+		done
+		# remove duplicate libs
+		libs=($(printf '%s\n' "${libs[@]}" | sort | uniq))
+		# remove libs already done
+		libs=($(printf '%s\n' "${packages_done[@]}" "${packages_done[@]}" "${libs[@]}" | sort | uniq -u))
+		# we're done if no libs to add
+		if [ ${#libs[@]} -eq 0 ]; then
+			break
+		fi
+		packages+=(${libs[@]})
+		echo -e "\nAdding dependency libraries..."
 	done
 }
 
