@@ -23,6 +23,7 @@ variables_reset() {
 	mirror=
 	mirror_cache=
 	release=
+	arch=
 	hostname=
 	boot_volume_label=
 	root_volume_label=
@@ -140,8 +141,13 @@ variables_set_defaults() {
 
 	# set config defaults
 	variable_set "preset" "server"
-	variable_set "mirror" "http://mirrordirector.raspbian.org/raspbian/"
-	variable_set "release" "buster"
+	variable_set "arch" "armhf"
+	if [ "${arch}" = "arm64" ]; then
+		variable_set "mirror" "http://deb.debian.org/debian/"
+	else
+		variable_set "mirror" "http://mirrordirector.raspbian.org/raspbian/"
+	fi
+	variable_set "release" "bullseye"
 	variable_set "hostname" "pi"
 	variable_set "rootpw" "raspbian"
 	variable_set "root_ssh_pwlogin" "1"
@@ -161,7 +167,7 @@ variables_set_defaults() {
 	variable_set "hdmi_system_only" "0"
 	variable_set "usbroot" "0"
 	variable_set "usbboot" "0"
-	variable_set "cmdline" "dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 elevator=deadline fsck.repair=yes"
+	variable_set "cmdline" "console=serial0,115200 console=tty1 fsck.repair=yes"
 	variable_set "rootfstype" "f2fs"
 	variable_set "final_action" "reboot"
 	variable_set "installer_telnet" "listen"
@@ -285,10 +291,11 @@ fail() {
 			echo "  The maximum number of retries is reached!"
 			echo "  Check the logfiles for errors. Then delete or edit \"installer-retries.txt\" in installer folder to (re)set the counter."
 		fi
-		echo "  The system is stopped to prevent an infinite loop."
+		echo "  Dropping to shell to prevent an infinite loop."
 		while true; do
 			led_sos
-		done
+		done &
+		exit
 	else
 		echo "  ${installer_retries} retries left."
 	fi
@@ -687,9 +694,19 @@ case "${rpi_hardware}" in
 	"a32082") rpi_hardware_version="3 Model B" ;;
 	"a020d3") rpi_hardware_version="3 Model B+" ;;
 	"9020e0") rpi_hardware_version="3 Model A+" ;;
+	"a02100") rpi_hardware_version="Compute Module 3+" ;;
 	"a03111") rpi_hardware_version="4 Model B" ;;
 	"b03111") rpi_hardware_version="4 Model B" ;;
+        "b03112") rpi_hardware_version="4 Model B" ;;
+        "b03114") rpi_hardware_version="4 Model B" ;;
+        "b03115") rpi_hardware_version="4 Model B" ;;
 	"c03111") rpi_hardware_version="4 Model B" ;;
+        "c03112") rpi_hardware_version="4 Model B" ;;
+        "c03114") rpi_hardware_version="4 Model B" ;;
+        "c03115") rpi_hardware_version="4 Model B" ;;
+        "d03114") rpi_hardware_version="4 Model B" ;;
+        "d03115") rpi_hardware_version="4 Model B" ;;
+        "902120") rpi_hardware_version="Zero 2 W" ;;
 	*) rpi_hardware_version="unknown (${rpi_hardware})" ;;
 esac
 
@@ -1172,7 +1189,7 @@ fi
 
 # determine available releases
 mirror_base=http://archive.raspberrypi.org/debian/dists/
-release_fallback=buster
+release_fallback=bullseye
 release_base="${release}"
 release_raspbian="${release}"
 if ! wget --spider "${mirror_base}/${release}/" &> /dev/null; then
@@ -1258,7 +1275,25 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 		server_packages="${server_packages},systemd-sysv"
 	fi
 	server_packages_postinstall="${minimal_packages_postinstall},${server_packages_postinstall}"
-	server_packages_postinstall="${server_packages_postinstall},libraspberrypi-bin,raspi-copies-and-fills"
+	server_packages_postinstall="${server_packages_postinstall},libraspberrypi-bin"
+	if [ "${arch}" != "arm64" ]; then
+		server_packages_postinstall="${server_packages_postinstall},raspi-copies-and-fills"
+	fi
+
+	# if using base or minimal preset and custom packages include console-setup, keyboard-configuration or tzdata,
+	# install them early using cdebootstrap or the initial configuration of keyboard layout or timezone will fail
+	if echo "${packages}" | grep -q "console-setup"; then
+		base_packages="${base_packages},console-setup"
+		minimal_packages="${minimal_packages},console-setup"
+	fi
+	if echo "${packages}" | grep -q "keyboard-configuration"; then
+		base_packages="${base_packages},keyboard-configuration"
+		minimal_packages="${minimal_packages},keyboard-configuration"
+	fi
+	if echo "${packages}" | grep -q "tzdata"; then
+		base_packages="${base_packages},tzdata"
+		minimal_packages="${minimal_packages},tzdata"
+	fi
 
 	# cleanup package variables used by cdebootstrap_cmdline
 	variable_sanitize base_packages
@@ -1359,6 +1394,7 @@ echo "  firmware_packages = ${firmware_packages}"
 echo "  mirror = ${mirror}"
 echo "  mirror_cache = ${mirror_cache}"
 echo "  release = ${release_raspbian}"
+echo "  arch = ${arch}"
 echo "  hostname = ${hostname}"
 echo "  domainname = ${domainname}"
 echo "  rootpw = ${rootpw}"
@@ -1632,7 +1668,12 @@ for i in $(seq 1 "${installer_pkg_downloadretries}"); do
 	if [ -n "${mirror_cache}" ]; then
 		export http_proxy="http://${mirror_cache}/"
 	fi
-	eval cdebootstrap-static --arch=armhf "${cdebootstrap_cmdline}" "${release_raspbian}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg 2>&1 | output_filter
+	if [ "${arch}" = "arm64" ]; then
+		keyring="debian-archive-keyring.gpg"
+	else
+		keyring="raspbian-archive-keyring.gpg"
+	fi
+	eval cdebootstrap-static --arch="${arch}" "${cdebootstrap_cmdline}" "${release_raspbian}" /rootfs "${mirror}" --keyring=/usr/share/keyrings/${keyring} 2>&1 | output_filter
 	cdebootstrap_exitcode="${PIPESTATUS[0]}"
 	if [ "${cdebootstrap_exitcode}" -eq 0 ]; then
 		unset http_proxy
@@ -1784,17 +1825,20 @@ if [ -n "${username}" ]; then
 	fi
 fi
 
+bootpartition_uuid=PARTUUID=$(blkid -o value -s PARTUUID ${bootpartition})
+rootpartition_uuid=PARTUUID=$(blkid -o value -s PARTUUID ${rootpartition})
+
 # default mounts
 echo -n "  Configuring /etc/fstab... "
 touch /rootfs/etc/fstab || fail
 {
-	echo "${bootpartition} /boot vfat defaults 0 2"
+	echo "${bootpartition_uuid} /boot vfat defaults 0 2"
 	if [ "${rootfstype}" = "f2fs" ]; then
-		echo "${rootpartition} / ${rootfstype} ${rootfs_mount_options} 0 0"
+		echo "${rootpartition_uuid} / ${rootfstype} ${rootfs_mount_options} 0 0"
 	elif [ "${rootfstype}" = "btrfs" ]; then
-		echo "${rootpartition} / ${rootfstype} ${rootfs_mount_options} 0 0"
+		echo "${rootpartition_uuid} / ${rootfstype} ${rootfs_mount_options} 0 0"
 	else
-		echo "${rootpartition} / ${rootfstype} ${rootfs_mount_options} 0 1"
+		echo "${rootpartition_uuid} / ${rootfstype} ${rootfs_mount_options} 0 1"
 	fi
 	# also specify /tmp on tmpfs in /etc/fstab so it works across init systems
 	echo "tmpfs /tmp tmpfs defaults,nodev,nosuid 0 0"
@@ -1935,12 +1979,12 @@ if [ "${use_systemd_services}" != "0" ]; then
 	echo "OK"
 fi
 
-# Customize cmdline.txt if predictable network interface names are not desired
+# Mask udev link files if predictable network interface names are not desired
 if [ "${disable_predictable_nin}" = "1" ]; then
 	# as described here: https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames
-	# adding net.ifnames=0 to /boot/cmdline and disabling the persistent-net-generator.rules
-	line_add cmdline_custom "net.ifnames=0"
-	ln -s /dev/null /rootfs/etc/udev/rules.d/75-persistent-net-generator.rules
+	# masking 99-default.link and also 73-usb-net-by-mac.link (as raspi-config does)
+	ln -s /dev/null /rootfs/etc/systemd/network/99-default.link
+	ln -s /dev/null /rootfs/etc/systemd/network/73-usb-net-by-mac.link
 fi
 
 # set timezone and reconfigure tzdata package
@@ -2085,15 +2129,21 @@ fi
 
 # copy apt's sources.list to the target system
 echo "Configuring apt:"
-echo -n "  Configuring Raspbian repository... "
+echo -n "  Configuring Raspbian/Debian repository... "
 if [ -e "/rootfs/boot/raspberrypi-ua-netinst/config/apt/sources.list" ]; then
 	sed "s/__RELEASE__/${release_raspbian}/g" "/rootfs/boot/raspberrypi-ua-netinst/config/apt/sources.list" > "/rootfs/etc/apt/sources.list" || fail
 else
-	sed "s/__RELEASE__/${release_raspbian}/g" "/opt/raspberrypi-ua-netinst/res/etc/apt/sources.list" > "/rootfs/etc/apt/sources.list" || fail
+	if [ "${arch}" = "arm64" ]; then
+		echo "deb ${mirror} ${release_raspbian} main contrib non-free" > "/rootfs/etc/apt/sources.list" || fail
+		echo "deb http://security.debian.org/debian-security ${release_raspbian}-security main contrib non-free" >> "/rootfs/etc/apt/sources.list" || fail
+		echo "deb ${mirror} ${release_raspbian}-updates main contrib non-free" >> "/rootfs/etc/apt/sources.list" || fail
+	else
+		echo "deb ${mirror} ${release_raspbian} main contrib non-free firmware" > "/rootfs/etc/apt/sources.list" || fail
+	fi
 fi
 echo "OK"
 # if __RELEASE__ is still present, something went wrong
-echo -n "  Checking Raspbian repository entry... "
+echo -n "  Checking Raspbian/Debian repository entry... "
 if grep -l '__RELEASE__' /rootfs/etc/apt/sources.list > /dev/null; then
 	fail
 else
@@ -2261,7 +2311,7 @@ echo "OK"
 
 # create cmdline.txt
 echo -n "Creating cmdline.txt... "
-line_add cmdline "root=${rootpartition} rootfstype=${rootfstype} rootwait"
+line_add cmdline "root=${rootpartition_uuid} rootfstype=${rootfstype} rootwait"
 line_add_if_boolean quiet_boot cmdline_custom "quiet" "loglevel=3"
 line_add_if_boolean disable_raspberries cmdline_custom "logo.nologo"
 line_add_if_set console_blank cmdline_custom "consoleblank=${console_blank}"
