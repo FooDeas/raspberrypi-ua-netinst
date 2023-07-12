@@ -411,16 +411,29 @@ function create_cpio {
 	cp_executable tmp/lib/*/libnss_dns.so.* rootfs/lib/arm-linux-gnueabihf/
 	cp_executable tmp/lib/*/libnss_files.so.* rootfs/lib/arm-linux-gnueabihf/
 
-	# Binary firmware for version 3 Model B wireless
+	# Binary firmware for version 3 Model B, Zero W wireless
 	mkdir -p rootfs/lib/firmware/brcm
-	cp --preserve=xattr,timestamps -r tmp/lib/firmware/brcm/brcmfmac43430-sdio.bin rootfs/lib/firmware/brcm/
-	cp --preserve=xattr,timestamps -r tmp/lib/firmware/brcm/brcmfmac43430-sdio.txt rootfs/lib/firmware/brcm/
+	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43430-sdio.bin rootfs/lib/firmware/brcm/
+	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43430-sdio.txt rootfs/lib/firmware/brcm/
+	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43430-sdio.clm_blob rootfs/lib/firmware/brcm/
 
-	# Binary firmware for version 3 Model B+ wireless
-	mkdir -p rootfs/lib/firmware/brcm
-	cp --preserve=xattr,timestamps -r tmp/lib/firmware/brcm/brcmfmac43455-sdio.bin rootfs/lib/firmware/brcm/
-	cp --preserve=xattr,timestamps -r tmp/lib/firmware/brcm/brcmfmac43455-sdio.clm_blob rootfs/lib/firmware/brcm/
-	cp --preserve=xattr,timestamps -r tmp/lib/firmware/brcm/brcmfmac43455-sdio.txt rootfs/lib/firmware/brcm/
+	# Binary firmware for Zero 2 W wireless
+	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43436-sdio.bin rootfs/lib/firmware/brcm/
+	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43436-sdio.clm_blob rootfs/lib/firmware/brcm/
+	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43436-sdio.txt rootfs/lib/firmware/brcm/
+	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43436s-sdio.bin rootfs/lib/firmware/brcm/
+	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43436s-sdio.txt rootfs/lib/firmware/brcm/
+
+	# Binary firmware for version 3 Model A+/B+, 4 Model B wireless
+	ln -s cyfmac43455-sdio-standard.bin tmp/lib/firmware/cypress/cyfmac43455-sdio.bin
+	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43455-sdio.bin rootfs/lib/firmware/brcm/
+	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43455-sdio.clm_blob rootfs/lib/firmware/brcm/
+	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43455-sdio.txt rootfs/lib/firmware/brcm/
+
+	# Binary firmware for version 4 Compute Module, 400 wireless
+	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43456-sdio.bin rootfs/lib/firmware/brcm/
+	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43456-sdio.clm_blob rootfs/lib/firmware/brcm/
+	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43456-sdio.txt rootfs/lib/firmware/brcm/
 
 	# vcgencmd
 	## libraspberrypi-bin
