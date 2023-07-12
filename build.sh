@@ -149,7 +149,7 @@ function create_cpio {
 	mkdir -p rootfs/bin/
 	mkdir -p rootfs/lib/arm-linux-gnueabihf/
 	mkdir -p rootfs/lib/lsb/init-functions.d/
-	mkdir -p rootfs/etc/{alternatives,cron.daily,default,init,init.d,iproute2,ld.so.conf.d,logrotate.d,network/if-up.d/}
+	mkdir -p rootfs/etc/{alternatives,cron.daily,default,init,init.d,ld.so.conf.d,logrotate.d,network/if-up.d/}
 	mkdir -p rootfs/etc/dpkg/dpkg.cfg.d/
 	mkdir -p rootfs/etc/network/{if-down.d,if-post-down.d,if-pre-up.d,if-up.d,interfaces.d}
 	mkdir -p rootfs/lib/ifupdown/
@@ -299,16 +299,8 @@ function create_cpio {
 	cp_executable tmp/usr/bin/cmp rootfs/usr/bin/
 
 	# dosfstools components
-	cp_executable tmp/sbin/fatlabel rootfs/sbin/
-	cp_executable tmp/sbin/fsck.fat rootfs/sbin/
 	cp_executable tmp/sbin/mkfs.fat rootfs/sbin/
 	cd rootfs/sbin
-	ln -s fatlabel dosfslabel
-	ln -s fsck.fat dosfsck
-	ln -s fsck.fat fsck.msdos
-	ln -s fsck.fat fsck.vfat
-	ln -s mkfs.fat mkdosfs
-	ln -s mkfs.fat mkfs.msdos
 	ln -s mkfs.fat mkfs.vfat
 	cd ../..
 
@@ -340,32 +332,9 @@ function create_cpio {
 
 	# e2fsprogs components
 	cp --preserve=xattr,timestamps tmp/etc/mke2fs.conf rootfs/etc/
-	cp_executable tmp/sbin/badblocks rootfs/sbin/
-	cp_executable tmp/sbin/debugfs rootfs/sbin/
-	cp_executable tmp/sbin/dumpe2fs rootfs/sbin/
-	cp_executable tmp/sbin/e2fsck rootfs/sbin/
-	cp_executable tmp/sbin/e2image rootfs/sbin/
-	cp_executable tmp/sbin/e2undo rootfs/sbin/
-	cp_executable tmp/sbin/logsave rootfs/sbin/
 	cp_executable tmp/sbin/mke2fs rootfs/sbin/
-	cp_executable tmp/sbin/resize2fs rootfs/sbin/
-	cp_executable tmp/sbin/tune2fs rootfs/sbin/
-	cp_executable tmp/usr/bin/chattr rootfs/usr/bin/
-	cp_executable tmp/usr/bin/lsattr rootfs/usr/bin/
-	cp_executable tmp/usr/sbin/e2freefrag rootfs/usr/sbin/
-	cp_executable tmp/usr/sbin/e4defrag rootfs/usr/sbin/
-	cp_executable tmp/usr/sbin/filefrag rootfs/usr/sbin/
-	cp_executable tmp/usr/sbin/mklost+found rootfs/usr/sbin/
 	cd rootfs/sbin
-	ln -s tune2fs e2lablel
-	ln -s e2fsck fsck.ext2
-	ln -s e2fsck fsck.ext3
-	ln -s e2fsck fsck.ext4
-	ln -s e2fsck fsck.ext4dev
-	ln -s mke2fs mkfs.ext2
-	ln -s mke2fs mkfs.ext3
 	ln -s mke2fs mkfs.ext4
-	ln -s mke2fs mkfs.ext4dev
 	cd ../..
 
 	# f2fs-tools components
@@ -386,30 +355,6 @@ function create_cpio {
 
 	# iproute2 components
 	cp_executable tmp/bin/ip rootfs/bin/
-	cp_executable tmp/bin/ss rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/etc/iproute2/ematch_map rootfs/etc/iproute2/
-	cp --preserve=xattr,timestamps tmp/etc/iproute2/group rootfs/etc/iproute2/
-	cp --preserve=xattr,timestamps tmp/etc/iproute2/rt_dsfield rootfs/etc/iproute2/
-	cp --preserve=xattr,timestamps tmp/etc/iproute2/rt_protos rootfs/etc/iproute2/
-	cp --preserve=xattr,timestamps tmp/etc/iproute2/rt_realms rootfs/etc/iproute2/
-	cp --preserve=xattr,timestamps tmp/etc/iproute2/rt_scopes rootfs/etc/iproute2/
-	cp --preserve=xattr,timestamps tmp/etc/iproute2/rt_tables rootfs/etc/iproute2/
-	cp_executable tmp/sbin/bridge rootfs/sbin/
-	cp_executable tmp/sbin/rtacct rootfs/sbin/
-	cp_executable tmp/sbin/rtmon rootfs/sbin/
-	cp_executable tmp/sbin/tc rootfs/sbin/
-	cd rootfs/sbin
-	ln -s ../bin/ip ip
-	cd ../..
-	cp_executable tmp/usr/bin/lnstat rootfs/usr/bin/
-	cp_executable tmp/usr/bin/nstat rootfs/usr/bin/
-	cp_executable tmp/usr/bin/routef rootfs/usr/bin/
-	cp_executable tmp/usr/bin/routel rootfs/usr/bin/
-	cd rootfs/usr/bin
-	ln -s lnstat ctstat
-	ln -s lnstat rtstat
-	cd ../../..
-	cp_executable tmp/usr/sbin/arpd rootfs/usr/sbin/
 
 	# lsb-base components
 	cp --preserve=xattr,timestamps tmp/lib/lsb/init-functions rootfs/lib/lsb/
@@ -436,22 +381,17 @@ function create_cpio {
 	cp --preserve=xattr,timestamps tmp/usr/share/keyrings/*.gpg rootfs/usr/share/keyrings/
 
 	# rng-tools5 components
-	cp_executable tmp/usr/bin/rngtest rootfs/usr/bin/
 	cp_executable tmp/usr/sbin/rngd rootfs/usr/sbin/
 
 	# tar components
 	cp_executable tmp/bin/tar rootfs/bin/
-	cp_executable tmp/usr/sbin/tarcat rootfs/usr/sbin/
 
 	# fdisk components
 	cp_executable tmp/sbin/fdisk rootfs/sbin/
 
 	# util-linux components
 	cp_executable tmp/sbin/blkid rootfs/sbin/
-	cp_executable tmp/sbin/blockdev rootfs/sbin/
-	cp_executable tmp/sbin/fsck rootfs/sbin/
 	cp_executable tmp/sbin/mkswap rootfs/sbin/
-	cp_executable tmp/sbin/swaplabel rootfs/sbin/
 
 	# wpa_supplicant components
 	cp_executable tmp/sbin/wpa_supplicant rootfs/sbin/wpa_supplicant
@@ -464,19 +404,7 @@ function create_cpio {
 	cp --preserve=xattr,timestamps tmp/etc/gai.conf rootfs/etc/
 	cp --preserve=xattr,timestamps tmp/etc/ld.so.conf rootfs/etc/
 	cp_executable tmp/sbin/ldconfig rootfs/sbin/
-	cp_executable tmp/usr/bin/catchsegv rootfs/usr/bin/
-	cp_executable tmp/usr/bin/getconf rootfs/usr/bin/
-	cp_executable tmp/usr/bin/getent rootfs/usr/bin/
-	cp_executable tmp/usr/bin/iconv rootfs/usr/bin/
-	cp_executable tmp/usr/bin/ldd rootfs/usr/bin/
-	cp_executable tmp/usr/bin/locale rootfs/usr/bin/
-	cp_executable tmp/usr/bin/localedef rootfs/usr/bin/
-	cp_executable tmp/usr/bin/pldd rootfs/usr/bin/
-	cp_executable tmp/usr/bin/tzselect rootfs/usr/bin/
-	cp_executable tmp/usr/bin/zdump rootfs/usr/bin/
 	# lib/locale ?
-	cp_executable tmp/usr/sbin/iconvconfig rootfs/usr/sbin/
-	cp_executable tmp/usr/sbin/zic rootfs/usr/sbin/
 	cp --preserve=xattr,timestamps tmp/usr/share/libc-bin/nsswitch.conf rootfs/usr/share/libc-bin/
 
 	# libc6 components
