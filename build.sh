@@ -453,7 +453,7 @@ function create_cpio {
 
 	# copy all libraries needed by executable files above
 	for lib in "${libs_to_copy[@]}"; do
-		cp --preserve=xattr,timestamps "$lib" $(echo "$lib" | sed -e 's/^tmp\//rootfs\//')
+		cp --preserve=xattr,timestamps "${lib}" $(echo "${lib}" | sed -e 's/^tmp\//rootfs\//')
 	done
 
 	INITRAMFS="../raspberrypi-ua-netinst.cpio.gz"

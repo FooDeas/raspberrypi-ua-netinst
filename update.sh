@@ -141,11 +141,11 @@ setup_archive_keys() {
 	echo "Setting up gpg... "
 	gpg --homedir gnupg --list-secret-keys
 
-	for archive_key in ${ARCHIVE_KEYS[@]}; do
+	for archive_key in "${ARCHIVE_KEYS[@]}"; do
 		echo ""
 		IFS=';' read -r KEY_URL KEY_FILE KEY_FINGERPRINT <<< "$archive_key"
 		echo "Downloading ${KEY_FILE}."
-		download_file ${KEY_URL}/${KEY_FILE}
+		download_file "${KEY_URL}/${KEY_FILE}"
 		if check_key "${KEY_FILE}" "${KEY_FINGERPRINT}"; then
 			# GPG key checks out, thus import it into our own keyring
 			echo -n "Importing '${KEY_FILE}' into keyring... "
@@ -300,7 +300,7 @@ download_packages() {
 	echo -e "\nDownloading packages..."
 	for package in "${packages_debs[@]}"; do
 		echo -e "Downloading package: '${package}'"
-		if ! download_file ${package}; then
+		if ! download_file "${package}"; then
 			echo -e "ERROR\nDownloading '${package}' failed! Exiting."
 			cd ..
 			exit 1
@@ -365,17 +365,17 @@ fi
 	fi
 
 	## Download package list
-	download_package_lists raspberry ${mirror_raspberrypi}
-	download_package_lists raspbian ${mirror_raspbian}
-	download_package_lists debian ${mirror_debian}
+	download_package_lists raspberry "${mirror_raspberrypi}"
+	download_package_lists raspbian "${mirror_raspbian}"
+	download_package_lists debian "${mirror_debian}"
 
 	## Select packages for download
 	packages_debs=()
 	packages_sha256=()
 
-	add_packages raspberry ${mirror_raspberrypi}
-	add_packages raspbian ${mirror_raspbian}
-	add_packages debian ${mirror_debian}
+	add_packages raspberry "${mirror_raspberrypi}"
+	add_packages raspbian "${mirror_raspbian}"
+	add_packages debian "${mirror_debian}"
 	if ! allfound; then
 		echo "ERROR: Unable to find all required packages in package list!"
 		echo "Missing packages: '${packages[*]}'"

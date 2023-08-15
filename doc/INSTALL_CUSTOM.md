@@ -24,7 +24,7 @@
 
 ### Description: Presets
 
-#### Default configuration (when `use_systemd_services` is unset or set to `0`):
+#### Default configuration (when `use_systemd_services` is unset or set to `0`)
 
 | Preset | Packages |
 |---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -34,7 +34,7 @@
 
 Note that if the networking configuration is set to use DHCP, `isc-dhcp-client` will also be installed.
 
-#### Advanced configuration (when `use_systemd_services` is set to `1`):
+#### Advanced configuration (when `use_systemd_services` is set to `1`)
 
 | Preset | Packages |
 |---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
