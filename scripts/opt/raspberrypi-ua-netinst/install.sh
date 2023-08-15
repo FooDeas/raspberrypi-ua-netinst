@@ -1943,7 +1943,7 @@ if [ "${use_systemd_services}" != "0" ]; then
 	if [ "${ip_addr}" = "dhcp" ]; then
 		echo "DHCP=yes" >> ${NETFILE}
 	else
-		NETPREFIX=$(/bin/busybox ipcalc -p ${ip_addr} ${ip_netmask} | cut -f2 -d=)
+		NETPREFIX=$(/bin/busybox ipcalc -p "${ip_addr}" "${ip_netmask}" | cut -f2 -d=)
 		{
 			echo "Address=${ip_addr}/${NETPREFIX}"
 			for i in ${ip_nameservers}; do
@@ -1968,11 +1968,11 @@ if [ "${use_systemd_services}" != "0" ]; then
 		if [ -e "${wlan_configfile}" ]; then
 			# copy the installer version of `wpa_supplicant.conf`
 			mkdir -p /rootfs/etc/wpa_supplicant
-			cp "${wlan_configfile}" /rootfs/etc/wpa_supplicant/wpa_supplicant-${ifname}.conf
-			chmod 600 /rootfs/etc/wpa_supplicant/wpa_supplicant-${ifname}.conf
+			cp "${wlan_configfile}" "/rootfs/etc/wpa_supplicant/wpa_supplicant-${ifname}.conf"
+			chmod 600 "/rootfs/etc/wpa_supplicant/wpa_supplicant-${ifname}.conf"
 		fi
 		# enable wpa_supplicant service
-		ln -s /lib/systemd/system/wpa_supplicant@.service /rootfs/etc/systemd/system/multi-user.target.wants/wpa_supplicant@${ifname}.service
+		ln -s /lib/systemd/system/wpa_supplicant@.service "/rootfs/etc/systemd/system/multi-user.target.wants/wpa_supplicant@${ifname}.service"
 		rm /rootfs/etc/systemd/system/multi-user.target.wants/wpa_supplicant.service
 	fi
 
