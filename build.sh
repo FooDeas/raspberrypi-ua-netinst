@@ -247,8 +247,6 @@ function create_cpio {
 	sed -i "s/__VERSION__/${version_info}/" rootfs/opt/raspberrypi-ua-netinst/install.sh
 	sed -i "s/__DATE__/$(date)/" rootfs/opt/raspberrypi-ua-netinst/install.sh
 
-	ln -s arm-linux-gnueabihf/ld-linux-armhf.so.3 rootfs/lib/ld-linux-armhf.so.3
-
 	# btrfs-progs components
 	cp_executable tmp/sbin/mkfs.btrfs rootfs/sbin/
 
