@@ -194,8 +194,8 @@ variables_set_defaults() {
 }
 
 led_sos() {
-	local led0=/sys/class/leds/led0 # Power LED
-	local led1=/sys/class/leds/led1 # Activity LED
+	local led0=/sys/class/leds/PWR # Power LED
+	local led1=/sys/class/leds/ACT # Activity LED
 	local led_on
 	local led_off
 
@@ -209,32 +209,32 @@ led_sos() {
 		led_off=1
 	fi
 
-	if [ -e /sys/class/leds/led0 ]; then (echo none > /sys/class/leds/led0/trigger || true) &> /dev/null; else led0=; fi
-	if [ -e /sys/class/leds/led1 ]; then (echo none > /sys/class/leds/led1/trigger || true) &> /dev/null; else led1=; fi
+	if [ -e "${led0}" ]; then (echo none > "${led0}/trigger" || true) &> /dev/null; else led0=; fi
+	if [ -e "${led1}" ]; then (echo none > "${led1}/trigger" || true) &> /dev/null; else led1=; fi
 	for i in $(seq 1 3); do
-		if [ -n "$led0" ]; then (echo ${led_on} > "${led0}"/brightness || true) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo ${led_on} > "${led1}"/brightness || true) &> /dev/null; fi
+		if [ -n "${led0}" ]; then (echo ${led_on} > "${led0}"/brightness || true) &> /dev/null; fi
+		if [ -n "${led1}" ]; then (echo ${led_on} > "${led1}"/brightness || true) &> /dev/null; fi
 		sleep 0.225s;
-		if [ -n "$led0" ]; then (echo ${led_off} > "${led0}"/brightness || true) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo ${led_off} > "${led1}"/brightness || true) &> /dev/null; fi
+		if [ -n "${led0}" ]; then (echo ${led_off} > "${led0}"/brightness || true) &> /dev/null; fi
+		if [ -n "${led1}" ]; then (echo ${led_off} > "${led1}"/brightness || true) &> /dev/null; fi
 		sleep 0.15s;
 	done
 	sleep 0.075s;
 	for i in $(seq 1 3); do
-		if [ -n "$led0" ]; then (echo ${led_on} > "${led0}"/brightness || true) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo ${led_on} > "${led1}"/brightness || true) &> /dev/null; fi
+		if [ -n "${led0}" ]; then (echo ${led_on} > "${led0}"/brightness || true) &> /dev/null; fi
+		if [ -n "${led1}" ]; then (echo ${led_on} > "${led1}"/brightness || true) &> /dev/null; fi
 		sleep 0.6s;
-		if [ -n "$led0" ]; then (echo ${led_off} > "${led0}"/brightness || true) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo ${led_off} > "${led1}"/brightness || true) &> /dev/null; fi
+		if [ -n "${led0}" ]; then (echo ${led_off} > "${led0}"/brightness || true) &> /dev/null; fi
+		if [ -n "${led1}" ]; then (echo ${led_off} > "${led1}"/brightness || true) &> /dev/null; fi
 		sleep 0.15s;
 	done
 	sleep 0.075s;
 	for i in $(seq 1 3); do
-		if [ -n "$led0" ]; then (echo ${led_on} > "${led0}"/brightness || true) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo ${led_on} > "${led1}"/brightness || true) &> /dev/null; fi
+		if [ -n "${led0}" ]; then (echo ${led_on} > "${led0}"/brightness || true) &> /dev/null; fi
+		if [ -n "${led1}" ]; then (echo ${led_on} > "${led1}"/brightness || true) &> /dev/null; fi
 		sleep 0.225s;
-		if [ -n "$led0" ]; then (echo ${led_off} > "${led0}"/brightness || true) &> /dev/null; fi
-		if [ -n "$led1" ]; then (echo ${led_off} > "${led1}"/brightness || true) &> /dev/null; fi
+		if [ -n "${led0}" ]; then (echo ${led_off} > "${led0}"/brightness || true) &> /dev/null; fi
+		if [ -n "${led1}" ]; then (echo ${led_off} > "${led1}"/brightness || true) &> /dev/null; fi
 		sleep 0.15s;
 	done
 	sleep 1.225s;
@@ -291,7 +291,7 @@ fail() {
 			echo "  The maximum number of retries is reached!"
 			echo "  Check the logfiles for errors. Then delete or edit \"installer-retries.txt\" in installer folder to (re)set the counter."
 		fi
-		echo "  Dropping to shell to prevent an infinite loop."
+		sleep 3s
 		while true; do
 			led_sos
 		done &
