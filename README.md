@@ -149,6 +149,8 @@ When an error occurs during install, the logfile is placed in the `raspberrypi-u
 
 If you want to reinstall with the same settings you did your first install you can just copy the original _config.txt_ back and reboot.
 
+The reinstallation can fail if the kernel of the current system environment is not supporting the old installer environment. In this case, you should replace the boot partition with the current installer version and replace the custom configuration if you had any.
+
 Note: If the original installation was performed with `cleanup` set to `1`, then the files necessary for a reinstallation will not be available.
 
 ```
