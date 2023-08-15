@@ -738,7 +738,7 @@ echo "OK"
 if [ -e "${tmp_bootfs}"/raspberrypi-ua-netinst/config/installer-config.txt ]; then
 	echo "Executing installer-config.txt..."
 	inputfile_sanitize "${tmp_bootfs}"/raspberrypi-ua-netinst/config/installer-config.txt
-	# shellcheck disable=SC1090
+	# shellcheck disable=SC1091
 	source "${tmp_bootfs}"/raspberrypi-ua-netinst/config/installer-config.txt
 	echo "OK"
 fi
