@@ -1,6 +1,0 @@
-language: bash
-sudo: false
-install: gem install chef-utils:16.6.14 mdl
-script:
- - bash -c 'shopt -s globstar; shellcheck **/*.sh'
- - mdl --verbose --rules '~MD013, ~MD036' .
