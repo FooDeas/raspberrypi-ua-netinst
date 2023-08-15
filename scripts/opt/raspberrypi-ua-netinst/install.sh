@@ -697,16 +697,16 @@ case "${rpi_hardware}" in
 	"a02100") rpi_hardware_version="Compute Module 3+" ;;
 	"a03111") rpi_hardware_version="4 Model B" ;;
 	"b03111") rpi_hardware_version="4 Model B" ;;
-        "b03112") rpi_hardware_version="4 Model B" ;;
-        "b03114") rpi_hardware_version="4 Model B" ;;
-        "b03115") rpi_hardware_version="4 Model B" ;;
+	"b03112") rpi_hardware_version="4 Model B" ;;
+	"b03114") rpi_hardware_version="4 Model B" ;;
+	"b03115") rpi_hardware_version="4 Model B" ;;
 	"c03111") rpi_hardware_version="4 Model B" ;;
-        "c03112") rpi_hardware_version="4 Model B" ;;
-        "c03114") rpi_hardware_version="4 Model B" ;;
-        "c03115") rpi_hardware_version="4 Model B" ;;
-        "d03114") rpi_hardware_version="4 Model B" ;;
-        "d03115") rpi_hardware_version="4 Model B" ;;
-        "902120") rpi_hardware_version="Zero 2 W" ;;
+	"c03112") rpi_hardware_version="4 Model B" ;;
+	"c03114") rpi_hardware_version="4 Model B" ;;
+	"c03115") rpi_hardware_version="4 Model B" ;;
+	"d03114") rpi_hardware_version="4 Model B" ;;
+	"d03115") rpi_hardware_version="4 Model B" ;;
+	"902120") rpi_hardware_version="Zero 2 W" ;;
 	*) rpi_hardware_version="unknown (${rpi_hardware})" ;;
 esac
 
