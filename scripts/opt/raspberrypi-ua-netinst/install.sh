@@ -794,20 +794,25 @@ fi
 # MSD boot
 if [ "${usbboot}" = "1" ] ; then
 	echo -n "  Checking USB boot flag... "
-	msd_boot_enabled="$(vcgencmd otp_dump | grep 17: | cut -b 4-5)"
-	msd_boot_enabled="$(printf "%s" "${msd_boot_enabled}" | xxd -r -p | xxd -b | cut -d' ' -f2 | cut -b 3)"
-	if [ "${msd_boot_enabled}" = "0" ]; then
-		if ! config_check "/boot/config.txt" "program_usb_boot_mode" "1"; then
-			echo -e "\n    Set flag to allow USB boot on next reboot. "
-			config_set "/boot/config.txt" "program_usb_boot_mode" "1"
-			preinstall_reboot=1;
+	if [ "${rpi_hardware_version}" = "A" ] || [ "${rpi_hardware_version}" = "A+" ] || [ "${rpi_hardware_version}" = "B" ] || [ "${rpi_hardware_version}" = "B+" ] || [ "${rpi_hardware_version}" = "Zero" ] || [ "${rpi_hardware_version}" = "Zero W" ] || [ "${rpi_hardware_version}" = "Compute Module 1" ]; then
+		echo -e "\n    Your device does not allow booting from USB. Disable booting from USB in installer-config.txt to proceed."
+		fail_blocking
+	elif [ "${rpi_hardware_version}" = "2 Model B" ] || [ "${rpi_hardware_version}" = "2 Model B+" ] || [ "${rpi_hardware_version}" = "3 Model A" ] || [ "${rpi_hardware_version}" = "3 Model A+" ] || [ "${rpi_hardware_version}" = "3 Model B" ] || [ "${rpi_hardware_version}" = "Zero 2 W" ] || [ "${rpi_hardware_version}" = "Compute Module 3 (Lite)" ] || [ "${rpi_hardware_version}" = "Compute Module 3+" ]; then
+		msd_boot_enabled="$(vcgencmd otp_dump | grep 17: | cut -b 4-5)"
+		msd_boot_enabled="$(printf "%s" "${msd_boot_enabled}" | xxd -r -p | xxd -b | cut -d' ' -f2 | cut -b 3)"
+		if [ "${msd_boot_enabled}" = "0" ]; then
+			if ! config_check "/boot/config.txt" "program_usb_boot_mode" "1"; then
+				echo -e "\n    Set flag to allow USB boot on next reboot. "
+				config_set "/boot/config.txt" "program_usb_boot_mode" "1"
+				preinstall_reboot=1;
+			else
+				echo -e "\n    Enabling USB boot flag failed!"
+				echo "    Your device does not allow booting from USB. Disable booting from USB in installer-config.txt to proceed."
+				fail_blocking
+			fi
 		else
-			echo -e "\n    Enabling USB boot flag failed!"
-			echo "    Your device does not allow booting from USB. Disable booting from USB in installer-config.txt to proceed."
-			fail_blocking
+			sed -i "/^program_usb_boot_mode=1/d" "/boot/config.txt"
 		fi
-	else
-		sed -i "/^program_usb_boot_mode=1/d" "/boot/config.txt"
 	fi
 	echo "OK"
 fi
