@@ -8,6 +8,8 @@ packages_dir=./packages
 resources_dir=./res
 scripts_dir=./scripts
 
+libs_to_copy=()
+
 # update version and date
 version_tag="$(git describe --exact-match --tags HEAD 2> /dev/null || true)"
 version_commit="$(git rev-parse --short "@{0}" 2> /dev/null || true)"
@@ -38,7 +40,7 @@ function get_kernels {
 # copies files replacing "kernel*" with kernel versions in path
 function cp_kernelfiles {
 	for kernel in "${kernels[@]}"; do
-		eval cp --preserve=xattr,timestamps -r "${1//kernel\*/${kernel}}" "${2//kernel\*/${kernel}}"
+		eval cp --preserve=xattr,timestamps -r "${1//kernel\*/${kernel}}" "${2//kernel\*/${kernel}}" || true
 	done
 }
 
@@ -108,6 +110,37 @@ function create_tempfile {
 	fi
 }
 
+# copy an executable file and add all needed libraries to libs_to_copy array
+function cp_executable {
+	echo "Copying executable $1"
+	cp --preserve=xattr,timestamps "$1" "$2"
+
+	LIB_PATH=("tmp/lib" "tmp/usr/lib")
+	libs_todo=("$1")
+	while true; do
+		needed_libs=($(readelf -d "${libs_todo[0]}" 2>/dev/null | grep \(NEEDED\) | sed -e 's/.*\[//' -e 's/\]//'))
+		for lib in "${needed_libs[@]}"; do
+			if printf '%s\n' "${libs_to_copy[@]}" | grep -q "/$lib$"; then
+				continue
+			fi
+			echo -n " Adding dependency $lib => "
+			lib_found=$(find -L "${LIB_PATH[@]}" -name "$lib" 2>/dev/null | head -n 1)
+			if [ -n "$lib_found" ]; then
+				echo "$lib_found"
+				libs_to_copy+=("$lib_found")
+				libs_todo+=("$lib_found")
+			else
+				echo " not found!"
+				exit 1
+			fi
+		done
+		libs_todo=("${libs_todo[@]:1}")
+		if [ ${#libs_todo[@]} -eq 0 ]; then
+			break
+		fi
+	done
+}
+
 function create_cpio {
 	# initialize rootfs
 	rm -rf rootfs
@@ -116,7 +149,7 @@ function create_cpio {
 	mkdir -p rootfs/bin/
 	mkdir -p rootfs/lib/arm-linux-gnueabihf/
 	mkdir -p rootfs/lib/lsb/init-functions.d/
-	mkdir -p rootfs/etc/{alternatives,cron.daily,default,init,init.d,iproute2,ld.so.conf.d,logrotate.d,network/if-up.d/}
+	mkdir -p rootfs/etc/{alternatives,cron.daily,default,init,init.d,ld.so.conf.d,logrotate.d,network/if-up.d/}
 	mkdir -p rootfs/etc/dpkg/dpkg.cfg.d/
 	mkdir -p rootfs/etc/network/{if-down.d,if-post-down.d,if-pre-up.d,if-up.d,interfaces.d}
 	mkdir -p rootfs/lib/ifupdown/
@@ -124,10 +157,7 @@ function create_cpio {
 	mkdir -p rootfs/lib/modules/
 	mkdir -p rootfs/sbin/
 	mkdir -p rootfs/usr/bin/
-	mkdir -p rootfs/usr/lib/mime/packages/
-	mkdir -p rootfs/usr/lib/openssl-1.0.2/engines/
-	mkdir -p rootfs/usr/lib/engines-1.1/
-	mkdir -p rootfs/usr/lib/{tar,tc}
+	mkdir -p rootfs/usr/lib/arm-linux-gnueabihf/
 	mkdir -p rootfs/usr/sbin/
 	mkdir -p rootfs/usr/share/{dpkg,keyrings,libc-bin}
 	mkdir -p rootfs/var/lib/dpkg/{alternatives,info,parts,updates}
@@ -181,6 +211,7 @@ function create_cpio {
 		mkdir -p "rootfs/lib/modules/${kernel}/kernel/drivers/net"
 		mkdir -p "rootfs/lib/modules/${kernel}/kernel/net"
 	done
+	cp_kernelfiles tmp/lib/modules/kernel*/kernel/net/ipv6 rootfs/lib/modules/kernel*/kernel/net/
 	cp_kernelfiles tmp/lib/modules/kernel*/kernel/net/mac80211 rootfs/lib/modules/kernel*/kernel/net/
 	cp_kernelfiles tmp/lib/modules/kernel*/kernel/net/rfkill rootfs/lib/modules/kernel*/kernel/net/
 	cp_kernelfiles tmp/lib/modules/kernel*/kernel/net/wireless rootfs/lib/modules/kernel*/kernel/net/
@@ -193,8 +224,8 @@ function create_cpio {
 	for kernel in "${kernels[@]}"; do
 		mkdir -p "rootfs/lib/modules/${kernel}/kernel/drivers/i2c/busses"
 	done
-	cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/i2c/busses/i2c-bcm2708.ko rootfs/lib/modules/kernel*/kernel/drivers/i2c/busses/
-	cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/i2c/busses/i2c-bcm2835.ko rootfs/lib/modules/kernel*/kernel/drivers/i2c/busses/
+	cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/i2c/busses/i2c-bcm2708.ko* rootfs/lib/modules/kernel*/kernel/drivers/i2c/busses/
+	cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/i2c/busses/i2c-bcm2835.ko* rootfs/lib/modules/kernel*/kernel/drivers/i2c/busses/
 
 	# copy rtc drivers
 	for kernel in "${kernels[@]}"; do
@@ -202,7 +233,7 @@ function create_cpio {
 		mkdir -p "rootfs/lib/modules/${kernel}/kernel/drivers/hwmon"
 	done
 	cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/rtc rootfs/lib/modules/kernel*/kernel/drivers/
-	cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/hwmon/hwmon.ko rootfs/lib/modules/kernel*/kernel/drivers/hwmon/
+	cp_kernelfiles tmp/lib/modules/kernel*/kernel/drivers/hwmon/raspberrypi-hwmon.ko* rootfs/lib/modules/kernel*/kernel/drivers/hwmon/
 
 	# create dependency lists
 	for kernel in "${kernels[@]}"; do
@@ -217,11 +248,10 @@ function create_cpio {
 	sed -i "s/__DATE__/$(date)/" rootfs/opt/raspberrypi-ua-netinst/install.sh
 
 	# btrfs-progs components
-	cp --preserve=xattr,timestamps tmp/bin/mkfs.btrfs rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libbtrfs.so.0 rootfs/lib/
+	cp_executable tmp/sbin/mkfs.btrfs rootfs/sbin/
 
 	# busybox components
-	cp --preserve=xattr,timestamps tmp/bin/busybox rootfs/bin
+	cp_executable tmp/bin/busybox rootfs/bin
 	cd rootfs && ln -s bin/busybox init; cd ..
 	echo "\$MODALIAS=.* 0:0 660 @/opt/busybox/bin/modprobe \"\$MODALIAS\"" > rootfs/etc/mdev.conf
 
@@ -234,49 +264,41 @@ function create_cpio {
 	cp --preserve=xattr,timestamps tmp/usr/bin/cdebootstrap-static rootfs/usr/bin/
 
 	# coreutils components
-	cp --preserve=xattr,timestamps tmp/bin/cat rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/bin/chgrp rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/bin/chmod rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/bin/chown rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/bin/cp --preserve=xattr,timestamps rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/bin/date rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/bin/dd rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/bin/df rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/bin/dir rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/bin/echo rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/bin/false rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/bin/ln rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/bin/ls rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/bin/mkdir rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/bin/mknod rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/bin/mktemp rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/bin/mv rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/bin/pwd rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/bin/readlink rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/bin/rm rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/bin/rmdir rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/bin/sleep rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/bin/stty rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/bin/sync rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/bin/touch rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/bin/true rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/bin/uname rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/bin/vdir rootfs/bin/
+	cp_executable tmp/bin/cat rootfs/bin/
+	cp_executable tmp/bin/chgrp rootfs/bin/
+	cp_executable tmp/bin/chmod rootfs/bin/
+	cp_executable tmp/bin/chown rootfs/bin/
+	cp_executable tmp/bin/cp rootfs/bin/
+	cp_executable tmp/bin/date rootfs/bin/
+	cp_executable tmp/bin/dd rootfs/bin/
+	cp_executable tmp/bin/df rootfs/bin/
+	cp_executable tmp/bin/dir rootfs/bin/
+	cp_executable tmp/bin/echo rootfs/bin/
+	cp_executable tmp/bin/false rootfs/bin/
+	cp_executable tmp/bin/ln rootfs/bin/
+	cp_executable tmp/bin/ls rootfs/bin/
+	cp_executable tmp/bin/mkdir rootfs/bin/
+	cp_executable tmp/bin/mknod rootfs/bin/
+	cp_executable tmp/bin/mktemp rootfs/bin/
+	cp_executable tmp/bin/mv rootfs/bin/
+	cp_executable tmp/bin/pwd rootfs/bin/
+	cp_executable tmp/bin/readlink rootfs/bin/
+	cp_executable tmp/bin/rm rootfs/bin/
+	cp_executable tmp/bin/rmdir rootfs/bin/
+	cp_executable tmp/bin/sleep rootfs/bin/
+	cp_executable tmp/bin/stty rootfs/bin/
+	cp_executable tmp/bin/sync rootfs/bin/
+	cp_executable tmp/bin/touch rootfs/bin/
+	cp_executable tmp/bin/true rootfs/bin/
+	cp_executable tmp/bin/uname rootfs/bin/
+	cp_executable tmp/bin/vdir rootfs/bin/
 
 	# diffutils components
-	cp --preserve=xattr,timestamps tmp/usr/bin/cmp rootfs/usr/bin/
+	cp_executable tmp/usr/bin/cmp rootfs/usr/bin/
 
 	# dosfstools components
-	cp --preserve=xattr,timestamps tmp/sbin/fatlabel rootfs/sbin/
-	cp --preserve=xattr,timestamps tmp/sbin/fsck.fat rootfs/sbin/
-	cp --preserve=xattr,timestamps tmp/sbin/mkfs.fat rootfs/sbin/
+	cp_executable tmp/sbin/mkfs.fat rootfs/sbin/
 	cd rootfs/sbin
-	ln -s fatlabel dosfslabel
-	ln -s fsck.fat dosfsck
-	ln -s fsck.fat fsck.msdos
-	ln -s fsck.fat fsck.vfat
-	ln -s mkfs.fat mkdosfs
-	ln -s mkfs.fat mkfs.msdos
 	ln -s mkfs.fat mkfs.vfat
 	cd ../..
 
@@ -285,16 +307,16 @@ function create_cpio {
 	cp --preserve=xattr,timestamps tmp/etc/cron.daily/dpkg rootfs/etc/cron.daily/
 	cp --preserve=xattr,timestamps tmp/etc/dpkg/dpkg.cfg rootfs/etc/dpkg/
 	cp --preserve=xattr,timestamps tmp/etc/logrotate.d/dpkg rootfs/etc/logrotate.d/
-	cp --preserve=xattr,timestamps tmp/sbin/start-stop-daemon rootfs/sbin/
-	cp --preserve=xattr,timestamps tmp/usr/bin/dpkg rootfs/usr/bin/
-	cp --preserve=xattr,timestamps tmp/usr/bin/dpkg-deb rootfs/usr/bin/
-	cp --preserve=xattr,timestamps tmp/usr/bin/dpkg-divert rootfs/usr/bin/
-	cp --preserve=xattr,timestamps tmp/usr/bin/dpkg-maintscript-helper rootfs/usr/bin/
-	cp --preserve=xattr,timestamps tmp/usr/bin/dpkg-query rootfs/usr/bin/
-	cp --preserve=xattr,timestamps tmp/usr/bin/dpkg-split rootfs/usr/bin/
-	cp --preserve=xattr,timestamps tmp/usr/bin/dpkg-statoverride rootfs/usr/bin/
-	cp --preserve=xattr,timestamps tmp/usr/bin/dpkg-trigger rootfs/usr/bin/
-	cp --preserve=xattr,timestamps tmp/usr/bin/update-alternatives rootfs/usr/bin/
+	cp_executable tmp/sbin/start-stop-daemon rootfs/sbin/
+	cp_executable tmp/usr/bin/dpkg rootfs/usr/bin/
+	cp_executable tmp/usr/bin/dpkg-deb rootfs/usr/bin/
+	cp_executable tmp/usr/bin/dpkg-divert rootfs/usr/bin/
+	cp_executable tmp/usr/bin/dpkg-maintscript-helper rootfs/usr/bin/
+	cp_executable tmp/usr/bin/dpkg-query rootfs/usr/bin/
+	cp_executable tmp/usr/bin/dpkg-split rootfs/usr/bin/
+	cp_executable tmp/usr/bin/dpkg-statoverride rootfs/usr/bin/
+	cp_executable tmp/usr/bin/dpkg-trigger rootfs/usr/bin/
+	cp_executable tmp/usr/bin/update-alternatives rootfs/usr/bin/
 	cp --preserve=xattr,timestamps tmp/usr/share/dpkg/abitable rootfs/usr/share/dpkg/
 	cp --preserve=xattr,timestamps tmp/usr/share/dpkg/cputable rootfs/usr/share/dpkg/
 	cp --preserve=xattr,timestamps tmp/usr/share/dpkg/ostable rootfs/usr/share/dpkg/
@@ -306,98 +328,35 @@ function create_cpio {
 	cd ../../..
 	touch rootfs/var/lib/dpkg/status
 
-	# libext2fs2 components
-	cp --preserve=xattr,timestamps tmp/lib/*/libe2p.so.2.* rootfs/lib/libe2p.so.2
-	cp --preserve=xattr,timestamps tmp/lib/*/libext2fs.so.2.*  rootfs/lib/libext2fs.so.2
-
 	# e2fsprogs components
 	cp --preserve=xattr,timestamps tmp/etc/mke2fs.conf rootfs/etc/
-	cp --preserve=xattr,timestamps tmp/sbin/badblocks rootfs/sbin/
-	cp --preserve=xattr,timestamps tmp/sbin/debugfs rootfs/sbin/
-	cp --preserve=xattr,timestamps tmp/sbin/dumpe2fs rootfs/sbin/
-	cp --preserve=xattr,timestamps tmp/sbin/e2fsck rootfs/sbin/
-	cp --preserve=xattr,timestamps tmp/sbin/e2image rootfs/sbin/
-	cp --preserve=xattr,timestamps tmp/sbin/e2undo rootfs/sbin/
-	cp --preserve=xattr,timestamps tmp/sbin/logsave rootfs/sbin/
-	cp --preserve=xattr,timestamps tmp/sbin/mke2fs rootfs/sbin/
-	cp --preserve=xattr,timestamps tmp/sbin/resize2fs rootfs/sbin/
-	cp --preserve=xattr,timestamps tmp/sbin/tune2fs rootfs/sbin/
-	cp --preserve=xattr,timestamps tmp/usr/bin/chattr rootfs/usr/bin/
-	cp --preserve=xattr,timestamps tmp/usr/bin/lsattr rootfs/usr/bin/
-	cp --preserve=xattr,timestamps tmp/usr/sbin/e2freefrag rootfs/usr/sbin/
-	cp --preserve=xattr,timestamps tmp/usr/sbin/e4defrag rootfs/usr/sbin/
-	cp --preserve=xattr,timestamps tmp/usr/sbin/filefrag rootfs/usr/sbin/
-	cp --preserve=xattr,timestamps tmp/usr/sbin/mklost+found rootfs/usr/sbin/
+	cp_executable tmp/sbin/mke2fs rootfs/sbin/
 	cd rootfs/sbin
-	ln -s tune2fs e2lablel
-	ln -s e2fsck fsck.ext2
-	ln -s e2fsck fsck.ext3
-	ln -s e2fsck fsck.ext4
-	ln -s e2fsck fsck.ext4dev
-	ln -s mke2fs mkfs.ext2
-	ln -s mke2fs mkfs.ext3
 	ln -s mke2fs mkfs.ext4
-	ln -s mke2fs mkfs.ext4dev
 	cd ../..
 
-	# libf2fs5 components
-	cp --preserve=xattr,timestamps tmp/lib/*/libf2fs.so.5.*  rootfs/lib/libf2fs.so.5
-
 	# f2fs-tools components
-	cp --preserve=xattr,timestamps tmp/sbin/mkfs.f2fs rootfs/sbin/
+	cp_executable tmp/sbin/mkfs.f2fs rootfs/sbin/
 
 	# gpgv components
-	cp --preserve=xattr,timestamps tmp/usr/bin/gpgv rootfs/usr/bin/
+	cp_executable tmp/usr/bin/gpgv rootfs/usr/bin/
 
 	# ifupdown components
 	cp --preserve=xattr,timestamps tmp/etc/default/networking rootfs/etc/default/
 	cp --preserve=xattr,timestamps tmp/etc/init.d/networking rootfs/etc/init.d/
 	cp --preserve=xattr,timestamps tmp/lib/ifupdown/settle-dad.sh rootfs/lib/ifupdown/
-	cp --preserve=xattr,timestamps tmp/sbin/ifup rootfs/sbin/
+	cp_executable tmp/sbin/ifup rootfs/sbin/
 	cd rootfs/sbin
 	ln -s ifup ifdown
 	ln -s ifup ifquery
 	cd ../..
 
 	# iproute2 components
-	cp --preserve=xattr,timestamps tmp/bin/ip rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/bin/ss rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/etc/iproute2/ematch_map rootfs/etc/iproute2/
-	cp --preserve=xattr,timestamps tmp/etc/iproute2/group rootfs/etc/iproute2/
-	cp --preserve=xattr,timestamps tmp/etc/iproute2/rt_dsfield rootfs/etc/iproute2/
-	cp --preserve=xattr,timestamps tmp/etc/iproute2/rt_protos rootfs/etc/iproute2/
-	cp --preserve=xattr,timestamps tmp/etc/iproute2/rt_realms rootfs/etc/iproute2/
-	cp --preserve=xattr,timestamps tmp/etc/iproute2/rt_scopes rootfs/etc/iproute2/
-	cp --preserve=xattr,timestamps tmp/etc/iproute2/rt_tables rootfs/etc/iproute2/
-	cp --preserve=xattr,timestamps tmp/sbin/bridge rootfs/sbin/
-	cp --preserve=xattr,timestamps tmp/sbin/rtacct rootfs/sbin/
-	cp --preserve=xattr,timestamps tmp/sbin/rtmon rootfs/sbin/
-	cp --preserve=xattr,timestamps tmp/sbin/tc rootfs/sbin/
-	cd rootfs/sbin
-	ln -s ../bin/ip ip
-	cd ../..
-	cp --preserve=xattr,timestamps tmp/usr/bin/lnstat rootfs/usr/bin/
-	cp --preserve=xattr,timestamps tmp/usr/bin/nstat rootfs/usr/bin/
-	cp --preserve=xattr,timestamps tmp/usr/bin/routef rootfs/usr/bin/
-	cp --preserve=xattr,timestamps tmp/usr/bin/routel rootfs/usr/bin/
-	cd rootfs/usr/bin
-	ln -s lnstat ctstat
-	ln -s lnstat rtstat
-	cd ../../..
-	cp --preserve=xattr,timestamps tmp/usr/lib/tc/experimental.dist rootfs/usr/lib/tc
-	cp --preserve=xattr,timestamps tmp/usr/lib/tc/m_xt.so rootfs/usr/lib/tc
-	cp --preserve=xattr,timestamps tmp/usr/lib/tc/normal.dist rootfs/usr/lib/tc
-	cp --preserve=xattr,timestamps tmp/usr/lib/tc/pareto.dist rootfs/usr/lib/tc
-	cp --preserve=xattr,timestamps tmp/usr/lib/tc/paretonormal.dist rootfs/usr/lib/tc
-	cp --preserve=xattr,timestamps tmp/usr/lib/tc/q_atm.so rootfs/usr/lib/tc
-	cd rootfs/usr/lib/tc
-	ln -s m_xt.so m_ipt.so
-	cd ../../../..
-	cp --preserve=xattr,timestamps tmp/usr/sbin/arpd rootfs/usr/sbin/
+	cp_executable tmp/bin/ip rootfs/bin/
 
 	# lsb-base components
 	cp --preserve=xattr,timestamps tmp/lib/lsb/init-functions rootfs/lib/lsb/
-	cp --preserve=xattr,timestamps tmp/lib/lsb/init-functions.d/20-left-info-blocks rootfs/lib/lsb/init-functions.d/
+	cp --preserve=xattr,timestamps tmp/lib/lsb/init-functions.d/00-verbose rootfs/lib/lsb/init-functions.d/
 
 	# netbase components
 	cp --preserve=xattr,timestamps tmp/etc/protocols rootfs/etc/
@@ -405,262 +364,83 @@ function create_cpio {
 	cp --preserve=xattr,timestamps tmp/etc/services rootfs/etc/
 
 	# netcat-openbsd
-	cp --preserve=xattr,timestamps tmp/bin/nc.openbsd rootfs/bin/nc
+	cp_executable tmp/bin/nc.openbsd rootfs/bin/nc
 
 	# ntpdate components
 	cp --preserve=xattr,timestamps tmp/etc/default/ntpdate rootfs/etc/default/
 	sed -i s/NTPDATE_USE_NTP_CONF=yes/NTPDATE_USE_NTP_CONF=no/ rootfs/etc/default/ntpdate
-	cp --preserve=xattr,timestamps tmp/usr/sbin/ntpdate rootfs/usr/sbin/
-	cp --preserve=xattr,timestamps tmp/usr/sbin/ntpdate-debian rootfs/usr/sbin/
+	cp_executable tmp/usr/sbin/ntpdate rootfs/usr/sbin/
+	cp_executable tmp/usr/sbin/ntpdate-debian rootfs/usr/sbin/
 
 	# raspberrypi.org GPG key
 	cp --preserve=xattr,timestamps ../"${packages_dir}"/raspberrypi.gpg.key rootfs/usr/share/keyrings/
 
-	# raspbian-archive-keyring components
-	cp --preserve=xattr,timestamps tmp/usr/share/keyrings/raspbian-archive-keyring.gpg rootfs/usr/share/keyrings/
+	# *-archive-keyring components
+	cp --preserve=xattr,timestamps tmp/usr/share/keyrings/*.gpg rootfs/usr/share/keyrings/
 
-	# rng-tools components
-	cp --preserve=xattr,timestamps tmp/usr/bin/rngtest rootfs/usr/bin/
-	cp --preserve=xattr,timestamps tmp/usr/sbin/rngd rootfs/usr/sbin/
-	cp --preserve=xattr,timestamps tmp/etc/default/rng-tools rootfs/etc/default/
-	cp --preserve=xattr,timestamps tmp/etc/init.d/rng-tools rootfs/etc/init.d/
+	# rng-tools5 components
+	cp_executable tmp/usr/sbin/rngd rootfs/usr/sbin/
 
 	# tar components
-	cp --preserve=xattr,timestamps tmp/bin/tar rootfs/bin/
-	cp --preserve=xattr,timestamps tmp/etc/rmt rootfs/etc/
-	cp --preserve=xattr,timestamps tmp/usr/lib/mime/packages/tar rootfs/usr/lib/mime/packages/
-	cp --preserve=xattr,timestamps tmp/usr/sbin/rmt-tar rootfs/usr/sbin/
-	cp --preserve=xattr,timestamps tmp/usr/sbin/tarcat rootfs/usr/sbin/
+	cp_executable tmp/bin/tar rootfs/bin/
 
 	# fdisk components
-	cp --preserve=xattr,timestamps tmp/sbin/fdisk rootfs/sbin/
+	cp_executable tmp/sbin/fdisk rootfs/sbin/
 
 	# util-linux components
-	cp --preserve=xattr,timestamps tmp/sbin/blkid rootfs/sbin/
-	cp --preserve=xattr,timestamps tmp/sbin/blockdev rootfs/sbin/
-	cp --preserve=xattr,timestamps tmp/sbin/fsck rootfs/sbin/
-	cp --preserve=xattr,timestamps tmp/sbin/mkswap rootfs/sbin/
-	cp --preserve=xattr,timestamps tmp/sbin/swaplabel rootfs/sbin/
+	cp_executable tmp/sbin/blkid rootfs/sbin/
+	cp_executable tmp/sbin/mkswap rootfs/sbin/
 
 	# wpa_supplicant components
-	cp --preserve=xattr,timestamps tmp/sbin/wpa_supplicant rootfs/sbin/wpa_supplicant
+	cp_executable tmp/sbin/wpa_supplicant rootfs/sbin/wpa_supplicant
 	cp --preserve=xattr,timestamps -r tmp/etc/wpa_supplicant rootfs/etc/wpa_supplicant
-
-	# libacl1 components
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libacl.so.1.* rootfs/usr/lib/libacl.so.1
-
-	# libatm1 components
-	cp --preserve=xattr,timestamps tmp/lib/*/libatm.so.1.* rootfs/lib/libatm.so.1
-
-	# libattr1 components
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libattr.so.1.* rootfs/usr/lib/libattr.so.1
-
-	# libaudit-common components
-	cp --preserve=xattr,timestamps tmp/etc/libaudit.conf rootfs/etc/
-
-	# libaudit1 components
-	cp --preserve=xattr,timestamps tmp/lib/*/libaudit.so.1.* rootfs/lib/libaudit.so.1
-
-	# libblkid1 components
-	cp --preserve=xattr,timestamps tmp/lib/*/libblkid.so.1.* rootfs/lib/libblkid.so.1
-
-	# libbsd0 components
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libbsd.so.0.* rootfs/usr/lib/libbsd.so.0
-
-	# libbz2-1.0 components
-	cp --preserve=xattr,timestamps tmp/lib/*/libbz2.so.1.0.* rootfs/lib/libbz2.so.1.0
 
 	# libc-bin components
 	cp --preserve=xattr,timestamps tmp/etc/default/nss rootfs/etc/default/
-	cp --preserve=xattr,timestamps tmp/etc/ld.so.conf.d/libc.conf rootfs/etc/ld.so.conf.d/
+	cp --preserve=xattr,timestamps tmp/etc/ld.so.conf.d/* rootfs/etc/ld.so.conf.d/
 	cp --preserve=xattr,timestamps tmp/etc/bindresvport.blacklist rootfs/etc/
 	cp --preserve=xattr,timestamps tmp/etc/gai.conf rootfs/etc/
 	cp --preserve=xattr,timestamps tmp/etc/ld.so.conf rootfs/etc/
-	cp --preserve=xattr,timestamps tmp/sbin/ldconfig rootfs/sbin/
-	cp --preserve=xattr,timestamps tmp/usr/bin/catchsegv rootfs/usr/bin/
-	cp --preserve=xattr,timestamps tmp/usr/bin/getconf rootfs/usr/bin/
-	cp --preserve=xattr,timestamps tmp/usr/bin/getent rootfs/usr/bin/
-	cp --preserve=xattr,timestamps tmp/usr/bin/iconv rootfs/usr/bin/
-	cp --preserve=xattr,timestamps tmp/usr/bin/ldd rootfs/usr/bin/
-	cp --preserve=xattr,timestamps tmp/usr/bin/locale rootfs/usr/bin/
-	cp --preserve=xattr,timestamps tmp/usr/bin/localedef rootfs/usr/bin/
-	cp --preserve=xattr,timestamps tmp/usr/bin/pldd rootfs/usr/bin/
-	cp --preserve=xattr,timestamps tmp/usr/bin/tzselect rootfs/usr/bin/
-	cp --preserve=xattr,timestamps tmp/usr/bin/zdump rootfs/usr/bin/
+	cp_executable tmp/sbin/ldconfig rootfs/sbin/
 	# lib/locale ?
-	cp --preserve=xattr,timestamps tmp/usr/sbin/iconvconfig rootfs/usr/sbin/
-	cp --preserve=xattr,timestamps tmp/usr/sbin/zic rootfs/usr/sbin/
 	cp --preserve=xattr,timestamps tmp/usr/share/libc-bin/nsswitch.conf rootfs/usr/share/libc-bin/
 
 	# libc6 components
-	cp --preserve=xattr,timestamps tmp/lib/*/ld-*.so rootfs/lib/ld-linux-armhf.so.3
-	# some executables require the dynamic linker to be found
-	# at this path, so leave a symlink there
-	ln -s /lib/ld-linux-armhf.so.3 rootfs/lib/arm-linux-gnueabihf/ld-linux.so.3
-	cp --preserve=xattr,timestamps tmp/lib/*/libanl-*.so rootfs/lib/libanl.so.1
-	cp --preserve=xattr,timestamps tmp/lib/*/libBrokenLocale-*.so rootfs/lib/libBrokenLocale.so.1
-	cp --preserve=xattr,timestamps tmp/lib/*/libc-*.so rootfs/lib/libc.so.6
-	cp --preserve=xattr,timestamps tmp/lib/*/libcrypt-*.so rootfs/lib/libcrypt.so.1
-	cp --preserve=xattr,timestamps tmp/lib/*/libdl-*.so rootfs/lib/libdl.so.2
-	cp --preserve=xattr,timestamps tmp/lib/*/libm-*.so  rootfs/lib/libm.so.6
-	cp --preserve=xattr,timestamps tmp/lib/*/libmemusage.so rootfs/lib/
-	cp --preserve=xattr,timestamps tmp/lib/*/libnsl-*.so rootfs/lib/libnsl.so.1
-	cp --preserve=xattr,timestamps tmp/lib/*/libnss_compat-*.so rootfs/lib/libnss_compat.so.2
-	cp --preserve=xattr,timestamps tmp/lib/*/libnss_dns-*.so rootfs/lib/libnss_dns.so.2
-	cp --preserve=xattr,timestamps tmp/lib/*/libnss_files-*.so rootfs/lib/libnss_files.so.2
-	cp --preserve=xattr,timestamps tmp/lib/*/libnss_hesiod-*.so rootfs/lib/libnss_hesiod.so.2
-	cp --preserve=xattr,timestamps tmp/lib/*/libnss_nis-*.so rootfs/lib/libnss_nis.so.2
-	cp --preserve=xattr,timestamps tmp/lib/*/libpcprofile.so rootfs/lib/
-	cp --preserve=xattr,timestamps tmp/lib/*/libpthread-*.so rootfs/lib/libpthread.so.0
-	cp --preserve=xattr,timestamps tmp/lib/*/libresolv-*.so rootfs/lib/libresolv.so.2
-	cp --preserve=xattr,timestamps tmp/lib/*/librt-*.so rootfs/lib/librt.so.1
-	cp --preserve=xattr,timestamps tmp/lib/*/libSegFault.so rootfs/lib/
-	cp --preserve=xattr,timestamps tmp/lib/*/libthread_db-*.so rootfs/lib/libthread_db.so.1
-	cp --preserve=xattr,timestamps tmp/lib/*/libutil-*.so rootfs/lib/libutil.so.1
+	cp_executable tmp/lib/*/libnss_dns.so.* rootfs/lib/arm-linux-gnueabihf/
+	cp_executable tmp/lib/*/libnss_files.so.* rootfs/lib/arm-linux-gnueabihf/
 
-	# libcap2 components
-	cp --preserve=xattr,timestamps tmp/lib/*/libcap.so.2.* rootfs/lib/libcap.so.2
-
-	# libcom-err2 components
-	cp --preserve=xattr,timestamps tmp/lib/*/libcom_err.so.2.* rootfs/lib/libcom_err.so.2
-
-	# libdb5.3 components
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libdb-5.3.so rootfs/usr/lib/libdb5.3.so
-
-	# libdbus-1-3 components
-	cp --preserve=xattr,timestamps tmp/lib/*/libdbus-1.so.3 rootfs/lib/libdbus-1.so.3
-	cp --preserve=xattr,timestamps tmp/lib/*/libdl.so.2 rootfs/lib/libdl.so.2
-
-	# libelf1 components
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libelf.so.1 rootfs/usr/lib/libelf.so.1
-
-	# libfdisk1 components
-	cp --no-dereference --preserve=xattr,timestamps tmp/lib/*/libfdisk.so.1.* rootfs/lib/libfdisk.so.1
-
-	# libgcc1 components
-	cp --preserve=xattr,timestamps tmp/lib/*/libgcc_s.so.1 rootfs/lib/
-	cp --preserve=xattr,timestamps tmp/lib/*/librt.so.1 rootfs/lib/
-
-	# libgcrypt20 components
-	cp --no-dereference --preserve=xattr,timestamps tmp/lib/*/libgcrypt.so.20.* rootfs/lib/libgcrypt.so.20
-
-	# libgpg-error0 components
-	cp --no-dereference --preserve=xattr,timestamps tmp/lib/*/libgpg-error.so.0.* rootfs/lib/libgpg-error.so.0
-
-	# liblz4-1 components
-	cp --no-dereference --preserve=xattr,timestamps tmp/usr/lib/*/liblz4.so.1.* rootfs/usr/lib/liblz4.so.1
-
-	# liblzma5 components
-	cp --preserve=xattr,timestamps tmp/lib/*/liblzma.so.5.* rootfs/lib/liblzma.so.5
-
-	# liblzo2-2 components
-	cp --preserve=xattr,timestamps tmp/lib/*/liblzo2.so.2 rootfs/lib/
-
-	# libmount1 components
-	cp --preserve=xattr,timestamps tmp/lib/*/libmount.so.1.* rootfs/lib/libmount.so.1
-
-	# libmnl0 components
-	cp --preserve=xattr,timestamps tmp/lib/*/libmnl.so.0.* rootfs/lib/libmnl.so.0
-
-	# libncurses5 components
-	cp --preserve=xattr,timestamps tmp/lib/*/libncurses.so.5.* rootfs/lib/libncurses.so.5
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libform.so.5.* rootfs/usr/lib/libform.so.5
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libmenu.so.5.* rootfs/usr/lib/libmenu.so.5
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libpanel.so.5.* rootfs/usr/lib/libpanel.so.5
-
-	# libnl-3-200 components
-	cp --preserve=xattr,timestamps tmp/lib/*/libnl-3.so.200 rootfs/lib/libnl-3.so.200
-
-	# libnl-genl-3-200 components
-	cp --preserve=xattr,timestamps tmp/lib/*/libnl-genl-3.so.200 rootfs/lib/libnl-genl-3.so.200
-
-	# libnl-route-3-200 components
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libnl-route-3.so.200.* rootfs/usr/lib/libnl-route-3.so.200
-
-	# libpam0g components
-	cp --preserve=xattr,timestamps tmp/lib/*/libpam.so.0.* rootfs/lib/libpam.so.0
-	cp --preserve=xattr,timestamps tmp/lib/*/libpam_misc.so.0.* rootfs/lib/libpam_misc.so.0
-	cp --preserve=xattr,timestamps tmp/lib/*/libpamc.so.0.* rootfs/lib/libpamc.so.0
-
-	# libpcre3 components
-	cp --preserve=xattr,timestamps tmp/lib/*/libpcre.so.3.* rootfs/lib/libpcre.so.3
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libpcreposix.so.3.* rootfs/usr/lib/libpcreposix.so.3
-
-	# libpcsclite components
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libpcsclite.so.1 rootfs/lib/libpcsclite.so.1
-
-	# libselinux1 components
-	cp --preserve=xattr,timestamps tmp/lib/*/libselinux.so.1 rootfs/lib/
-
-	# libslang2 components
-	cp --preserve=xattr,timestamps tmp/lib/*/libslang.so.2.* rootfs/lib/libslang.so.2
-
-	# libsmartcols1 components
-	cp --preserve=xattr,timestamps tmp/lib/*/libsmartcols.so.1.* rootfs/lib/libsmartcols.so.1
-
-	# libssl1.0.2 components
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libcrypto.so.1.0.2 rootfs/usr/lib/
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libssl.so.1.0.2 rootfs/usr/lib/
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/openssl-1.0.2/engines/lib4758cca.so rootfs/usr/lib/openssl-1.0.2/engines/
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/openssl-1.0.2/engines/libaep.so rootfs/usr/lib/openssl-1.0.2/engines/
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/openssl-1.0.2/engines/libatalla.so rootfs/usr/lib/openssl-1.0.2/engines/
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/openssl-1.0.2/engines/libcapi.so rootfs/usr/lib/openssl-1.0.2/engines/
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/openssl-1.0.2/engines/libchil.so rootfs/usr/lib/openssl-1.0.2/engines/
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/openssl-1.0.2/engines/libcswift.so rootfs/usr/lib/openssl-1.0.2/engines/
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/openssl-1.0.2/engines/libgmp.so rootfs/usr/lib/openssl-1.0.2/engines/
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/openssl-1.0.2/engines/libgost.so rootfs/usr/lib/openssl-1.0.2/engines/
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/openssl-1.0.2/engines/libnuron.so rootfs/usr/lib/openssl-1.0.2/engines/
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/openssl-1.0.2/engines/libpadlock.so rootfs/usr/lib/openssl-1.0.2/engines/
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/openssl-1.0.2/engines/libsureware.so rootfs/usr/lib/openssl-1.0.2/engines/
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/openssl-1.0.2/engines/libubsec.so rootfs/usr/lib/openssl-1.0.2/engines/
-
-	# libssl1.1 components
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libcrypto.so.1.1 rootfs/usr/lib/
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libssl.so.1.1 rootfs/usr/lib/
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/engines-1.1/capi.so rootfs/usr/lib/engines-1.1/
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/engines-1.1/padlock.so rootfs/usr/lib/engines-1.1/
-
-	# libsystemd0 components
-	cp --no-dereference --preserve=xattr,timestamps tmp/lib/*/libsystemd.so* rootfs/lib/
-
-	# libtinfo6 components
-	cp --preserve=xattr,timestamps tmp/lib/*/libtinfo.so.6.* rootfs/lib/libtinfo.so.6
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libtic.so.6.* rootfs/usr/lib/libtinfo.so.6
-
-	# libuuid1 components
-	cp --preserve=xattr,timestamps tmp/lib/*/libuuid.so.1.* rootfs/lib/libuuid.so.1
-
-	# zlib1g components
-	cp --preserve=xattr,timestamps tmp/lib/*/libz.so.1  rootfs/lib/
-
-	# Binary firmware for version 3 Model B wireless
+	# Binary firmware for version 3 Model B, Zero W wireless
 	mkdir -p rootfs/lib/firmware/brcm
-	cp --preserve=xattr,timestamps -r tmp/lib/firmware/brcm/brcmfmac43430-sdio.bin rootfs/lib/firmware/brcm/
-	cp --preserve=xattr,timestamps -r tmp/lib/firmware/brcm/brcmfmac43430-sdio.txt rootfs/lib/firmware/brcm/
+	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43430-sdio.bin rootfs/lib/firmware/brcm/
+	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43430-sdio.txt rootfs/lib/firmware/brcm/
+	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43430-sdio.clm_blob rootfs/lib/firmware/brcm/
 
-	# Binary firmware for version 3 Model B+ wireless
-	mkdir -p rootfs/lib/firmware/brcm
-	cp --preserve=xattr,timestamps -r tmp/lib/firmware/brcm/brcmfmac43455-sdio.bin rootfs/lib/firmware/brcm/
-	cp --preserve=xattr,timestamps -r tmp/lib/firmware/brcm/brcmfmac43455-sdio.clm_blob rootfs/lib/firmware/brcm/
-	cp --preserve=xattr,timestamps -r tmp/lib/firmware/brcm/brcmfmac43455-sdio.txt rootfs/lib/firmware/brcm/
+	# Binary firmware for Zero 2 W wireless
+	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43436-sdio.bin rootfs/lib/firmware/brcm/
+	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43436-sdio.clm_blob rootfs/lib/firmware/brcm/
+	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43436-sdio.txt rootfs/lib/firmware/brcm/
+	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43436s-sdio.bin rootfs/lib/firmware/brcm/
+	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43436s-sdio.txt rootfs/lib/firmware/brcm/
+
+	# Binary firmware for version 3 Model A+/B+, 4 Model B wireless
+	ln -s cyfmac43455-sdio-standard.bin tmp/lib/firmware/cypress/cyfmac43455-sdio.bin
+	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43455-sdio.bin rootfs/lib/firmware/brcm/
+	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43455-sdio.clm_blob rootfs/lib/firmware/brcm/
+	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43455-sdio.txt rootfs/lib/firmware/brcm/
+
+	# Binary firmware for version 4 Compute Module, 400 wireless
+	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43456-sdio.bin rootfs/lib/firmware/brcm/
+	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43456-sdio.clm_blob rootfs/lib/firmware/brcm/
+	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43456-sdio.txt rootfs/lib/firmware/brcm/
 
 	# vcgencmd
 	## libraspberrypi-bin
-	mkdir -p rootfs/opt/vc/bin
-	cp --preserve=xattr,timestamps tmp/opt/vc/bin/vcgencmd rootfs/opt/vc/bin/
 	mkdir -p rootfs/usr/bin
-	ln -s /opt/vc/bin/vcgencmd rootfs/usr/bin/vcgencmd
-	cp --preserve=xattr,timestamps tmp/usr/share/doc/libraspberrypi-bin/LICENCE rootfs/opt/vc/
-	## libraspberrypi0
-	mkdir -p rootfs/etc/ld.so.conf.d
-	cp --preserve=xattr,timestamps tmp/etc/ld.so.conf.d/00-vmcs.conf rootfs/etc/ld.so.conf.d/
-	mkdir -p rootfs/opt/vc/lib
-	cp --preserve=xattr,timestamps tmp/opt/vc/lib/libvcos.so rootfs/opt/vc/lib/
-	cp --preserve=xattr,timestamps tmp/opt/vc/lib/libvchiq_arm.so rootfs/opt/vc/lib/
+	cp_executable tmp/usr/bin/vcgencmd rootfs/usr/bin/
 
 	# xxd
 	mkdir -p rootfs/usr/bin
-	cp --preserve=xattr,timestamps tmp/usr/bin/xxd rootfs/usr/bin/
+	cp_executable tmp/usr/bin/xxd rootfs/usr/bin/
 
 	# install additional resources
 	mkdir -p rootfs/opt/raspberrypi-ua-netinst/res
@@ -669,35 +449,12 @@ function create_cpio {
 	(cd ../"${resources_dir}"/initramfs/ && find . -type f -exec echo rootfs/opt/raspberrypi-ua-netinst/res/{} \;) | xargs chmod +r
 
 	# curl
-	cp --preserve=xattr,timestamps tmp/usr/bin/curl rootfs/usr/bin/
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libcurl.so.4 rootfs/lib/arm-linux-gnueabihf/libcurl.so.4
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libnghttp2.so.14 rootfs/lib/arm-linux-gnueabihf/libnghttp2.so.14
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libidn2.so.0 rootfs/lib/arm-linux-gnueabihf/libidn2.so.0
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/librtmp.so.1 rootfs/lib/arm-linux-gnueabihf/librtmp.so.1
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libssh2.so.1 rootfs/lib/arm-linux-gnueabihf/libssh2.so.1
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libpsl.so.5 rootfs/lib/arm-linux-gnueabihf/libpsl.so.5
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libgssapi_krb5.so.2 rootfs/lib/arm-linux-gnueabihf/libgssapi_krb5.so.2
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libkrb5.so.3 rootfs/lib/arm-linux-gnueabihf/libkrb5.so.3
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libk5crypto.so.3 rootfs/lib/arm-linux-gnueabihf/libk5crypto.so.3
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/liblber-2.4.so.2 rootfs/lib/arm-linux-gnueabihf/liblber-2.4.so.2
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libldap_r-2.4.so.2 rootfs/lib/arm-linux-gnueabihf/libldap_r-2.4.so.2
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libunistring.so.2.* rootfs/lib/arm-linux-gnueabihf/libunistring.so.2
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libgnutls.so.30 rootfs/lib/arm-linux-gnueabihf/libgnutls.so.30
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libhogweed.so.4 rootfs/lib/arm-linux-gnueabihf/libhogweed.so.4
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libnettle.so.6 rootfs/lib/arm-linux-gnueabihf/libnettle.so.6
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libgmp.so.10 rootfs/lib/arm-linux-gnueabihf/libgmp.so.10
-	cp --preserve=xattr,timestamps tmp/lib/*/libgcrypt.so.20 rootfs/lib/arm-linux-gnueabihf/libgcrypt.so.20
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libkrb5support.so.0 rootfs/lib/arm-linux-gnueabihf/libkrb5support.so.0
-	cp --preserve=xattr,timestamps tmp/lib/*/libkeyutils.so.1 rootfs/lib/arm-linux-gnueabihf/libkeyutils.so.1
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libsasl2.so.2 rootfs/lib/arm-linux-gnueabihf/libsasl2.so.2
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libp11-kit.so.0 rootfs/lib/arm-linux-gnueabihf/libp11-kit.so.0
-	cp --preserve=xattr,timestamps tmp/lib/*/libidn.so.11 rootfs/lib/arm-linux-gnueabihf/libidn.so.11
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libtasn1.so.6 rootfs/lib/arm-linux-gnueabihf/libtasn1.so.6
-	cp --preserve=xattr,timestamps tmp/lib/*/libgpg-error.so.0 rootfs/lib/arm-linux-gnueabihf/libgpg-error.so.0
-	cp --preserve=xattr,timestamps tmp/usr/lib/*/libffi.so.6 rootfs/lib/arm-linux-gnueabihf/libffi.so.6
+	cp_executable tmp/usr/bin/curl rootfs/usr/bin/
 
-	# libudev
-	cp --preserve=xattr,timestamps tmp/lib/*/libudev.so.1 rootfs/lib/arm-linux-gnueabihf/libudev.so.1
+	# copy all libraries needed by executable files above
+	for lib in "${libs_to_copy[@]}"; do
+		cp --preserve=xattr,timestamps "$lib" $(echo "$lib" | sed -e 's/^tmp\//rootfs\//')
+	done
 
 	INITRAMFS="../raspberrypi-ua-netinst.cpio.gz"
 	(cd rootfs && find . | cpio -H newc -ov | gzip --best > $INITRAMFS)
@@ -718,7 +475,7 @@ rm -rf tmp && mkdir tmp
 
 # extract debs
 for i in ../packages/*.deb; do
-	cd tmp && ar x "../${i}" && tar -xf data.tar.*; rm data.tar.*; cd ..
+	cd tmp && ar x "../${i}" && tar -xf data.tar.*; rm -f data.tar.* control.tar.* debian-binary; cd ..
 done
 
 # get kernel versions
@@ -726,28 +483,43 @@ get_kernels
 
 # initialize bootfs
 rm -rf bootfs
-mkdir bootfs
+mkdir -p bootfs/raspberrypi-ua-netinst
 
 # raspberrypi-bootloader components and kernel
 cp --preserve=xattr,timestamps -r tmp/boot/* bootfs/
+mv bootfs/kernel*.img bootfs/raspberrypi-ua-netinst/
+mv bootfs/*.dtb bootfs/raspberrypi-ua-netinst/
+mv bootfs/overlays bootfs/raspberrypi-ua-netinst/
 
 if [ ! -f bootfs/config.txt ] ; then
 	touch bootfs/config.txt
 fi
 
 create_cpio
-mkdir -p bootfs/raspberrypi-ua-netinst
-mv raspberrypi-ua-netinst.cpio.gz bootfs/raspberrypi-ua-netinst/
+mv raspberrypi-ua-netinst.cpio.gz bootfs/raspberrypi-ua-netinst/initramfs.gz
 
 {
 	echo "[all]"
-	echo "initramfs raspberrypi-ua-netinst/raspberrypi-ua-netinst.cpio.gz"
+	echo "os_prefix=raspberrypi-ua-netinst/"
+	echo "initramfs initramfs.gz"
 	echo "gpu_mem=16"
 	echo "[pi3]"
-	echo "enable_uart=1"
-} >> bootfs/config.txt
+	echo "dtoverlay=disable-bt"
+	echo "arm_64bit=1"
+	echo "[pi4]"
+	echo "dtoverlay=disable-bt"
+	echo "arm_64bit=1"
+	echo "[pi02]"
+	echo "arm_64bit=1"
+	echo "[board-type=a02042]"
+	echo "arm_64bit=1"
+	echo "[board-type=a22042]"
+	echo "arm_64bit=1"
+} >> bootfs/raspberrypi-ua-netinst/config.txt
 
-echo "dwc_otg.lpm_enable=0 consoleblank=0 console=serial0,115200 console=tty1 elevator=deadline rootwait" > bootfs/cmdline.txt
+cp bootfs/raspberrypi-ua-netinst/config.txt bootfs/config.txt
+
+echo "consoleblank=0 console=serial0,115200 console=tty1 rootwait" > bootfs/raspberrypi-ua-netinst/cmdline.txt
 
 if [ ! -f bootfs/TIMEOUT ] ; then
 	touch bootfs/TIMEOUT

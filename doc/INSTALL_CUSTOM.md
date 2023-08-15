@@ -17,17 +17,32 @@
 | `preset` | `server` | `base`/  `minimal`/  `server` | The current packages that are installed by default are listed below. |
 | `packages` |  |  | Install these additional packages (comma separated and quoted). (e.g. "pi-bluetooth,cifs-utils,curl") |
 | `firmware_packages` | `0` | `0`/`1` | Set to "1" to install common firmware packages (Atheros, Broadcom, Libertas, Ralink and Realtek). |
-| `mirror` | `http:// mirrordirector.raspbian.org/ raspbian/` |  |  |
+| `mirror` | `http:// mirrordirector.raspbian.org/ raspbian/` or `http:// deb.debian.org/ debian/` |  | default value depends on arch |
 | `mirror_cache` |  |  | Set address and port for HTTP apt-cacher or apt-cacher-ng (e.g. "192.168.0.1:3142"). If set, the cacher will be used to cache packages during installation downloaded from the repository set in `mirror` as well as "http://archive.raspberrypi.org/debian". |
-| `release` | `buster` |  | Raspbian release name |
+| `release` | `bullseye` |  | Raspbian release name |
+| `arch` | `armhf` |  | Raspbian architecture: "armhf" = 32-bit (all Raspberry models), "arm64" = 64-bit (only for Model 3 and up, Zero 2) |
 
 ### Description: Presets
+
+#### Default configuration (when `use_systemd_services` is unset or set to `0`):
+
+| Preset | Packages |
+|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `base` | _\<essential\>,apt,gnupg,kmod_ |
+| `minimal` | _\<base\>,cpufrequtils,fake-hwclock,ifupdown,net-tools,ntp,openssh-server,dosfstools,raspberrypi-sys-mods_ |
+| `server` | _\<minimal\>,systemd-sysv,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,tzdata,less,man-db,logrotate,bash-completion,console-setup,apt-utils,libraspberrypi-bin,raspi-copies-and-fills (raspi-copies-and-fills is not available on arm64)_ |
+
+Note that if the networking configuration is set to use DHCP, `isc-dhcp-client` will also be installed.
+
+#### Advanced configuration (when `use_systemd_services` is set to `1`):
 
 | Preset | Packages |
 |---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `base` | _\<essential\>,apt,kmod_ |
-| `minimal` | _\<base\>,cpufrequtils,fake-hwclock,ifupdown,net-tools,ntp,openssh-server,dosfstools,raspberrypi-sys-mods_ |
-| `server` | _\<minimal\>,systemd-sysv,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,tzdata,less,man-db,logrotate,bash-completion,console-setup,apt-utils,libraspberrypi-bin,raspi-copies-and-fills_ |
+| `minimal` | _\<base\>,cpufrequtils,iproute2,openssh-server,dosfstools,raspberrypi-sys-mods_ |
+| `server` | _\<minimal\>,systemd-sysv,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,tzdata,less,man-db,logrotate,bash-completion,console-setup,apt-utils,libraspberrypi-bin,raspi-copies-and-fills (raspi-copies-and-fills is not available on arm64)_ |
+
+Note that if the networking configuration is set to use DHCP, no additional packages will be installed as `systemd-networkd` provides DHCP client support.
 
 ## Device / peripheral
 
@@ -41,7 +56,7 @@
 | `sound_usb_first` | `0` | `0`/`1` | Set to "1" to define USB audio as default if onboard audio is also enabled. The options `sound_enable=1` and `sound_usb_enable=1` have to be set to take effect. |
 | `camera_enable` | `0` | `0`/`1` | Set to "1" to enable the camera module. This enables all camera-related parameters in config.txt. |
 | `camera_disable_led` | `0` | `0`/`1` | Disables the camera LED. The option `camera_enable=1` has to be set to take effect. |
-| `rtc` |  | `ds1307`/  `ds1339`/  `ds3231`/  `mcp7940x`/  `mcp7941x`/  `pcf2127`/  `pcf8523`/  `pcf8563` | Select an RTC if it is connected via I²C. |
+| `rtc` |  | `ds1307`/  `ds1339`/  `ds3231`/  `mcp7940x`/  `mcp7941x`/  `pcf2127`/  `pcf8523`/  `pcf8563`/  `abx80x` | Select an RTC if it is connected via I²C. |
 | `dt_overlays` |  |  | Enables additional device tree overlays (comma separated and quoted). (e.g. 'dt_overlays="hifiberry-dac,lirc-rpi"') |
 
 ## SSH
@@ -125,9 +140,11 @@
 | `disable_splash` | `0` | `0`/`1` | Disables the rainbow splash screen on boot. |
 | `cleanup` | `0` | `0`/`1` | Remove installer files after success. To also remove log files, note the option below. |
 | `cleanup_logfiles` | `0` | `0`/`1` | Removes installer log files after success. |
-| `cmdline` | `"dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 elevator=deadline fsck.repair=yes"` |  |  |
+| `cmdline` | `"console=serial0,115200 console=tty1 fsck.repair=yes"` |  |  |
 | `final_action` | `reboot` | `reboot`/  `poweroff`/  `halt`/  `console` | Action at the end of install. |
-| `installer_telnet` | `1` | `0`/`1` | Send installer console output via telnet. |
+| `installer_telnet` | `listen` | `none`/`connect`/`listen` | Connect to, or listen for, a telnet connection to send installer console output. |
+| `installer_telnet_host` | | | Host name or address to use when `installer_telnet` is set to `connect`. |
+| `installer_telnet_port` | '9923' |  | Port number to use when `installer_telnet` is set to `connect`. |
 | `installer_retries` | `3` |  | Number of retries if installation fails. |
 | `installer_networktimeout` | `15` |  | Timeout in seconds for network interface initialization. |
 | `installer_pkg_updateretries` | `3` |  | Number of retries if package update fails. |
@@ -142,3 +159,4 @@
 | `disable_predictable_nin` | `1` | `0`/`1` | Disable Predictable Network Interface Names. Set to 0 if you want to use predictable network interface names, which means if you use the same SD card on a different RPi board, your network device might be named differently. This will result in the board having no network connectivity. |
 | `drivers_to_load` |  |  | Loads additional kernel modules at installation (comma separated and quoted). |
 | `online_config` |  |  | URL to extra config that will be executed after installer-config.txt |
+| `use_systemd_services` | `0` | `0`/`1` | Use systemd for networking and DNS resolution. |

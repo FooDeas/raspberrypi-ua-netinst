@@ -2,21 +2,20 @@
 # shellcheck source=./build.conf
 # shellcheck disable=SC1091
 
-RASPBIAN_ARCHIVE_KEY_DIRECTORY="https://archive.raspbian.org"
-RASPBIAN_ARCHIVE_KEY_FILE_NAME="raspbian.public.key"
-RASPBIAN_ARCHIVE_KEY_URL="${RASPBIAN_ARCHIVE_KEY_DIRECTORY}/${RASPBIAN_ARCHIVE_KEY_FILE_NAME}"
-RASPBIAN_ARCHIVE_KEY_FINGERPRINT="A0DA38D0D76E8B5D638872819165938D90FDDD2E"
-
-RASPBERRYPI_ARCHIVE_KEY_DIRECTORY="https://archive.raspberrypi.org/debian"
-RASPBERRYPI_ARCHIVE_KEY_FILE_NAME="raspberrypi.gpg.key"
-RASPBERRYPI_ARCHIVE_KEY_URL="${RASPBERRYPI_ARCHIVE_KEY_DIRECTORY}/${RASPBERRYPI_ARCHIVE_KEY_FILE_NAME}"
-RASPBERRYPI_ARCHIVE_KEY_FINGERPRINT="CF8A1AF502A2AA2D763BAE7E82B129927FA3303E"
+ARCHIVE_KEYS=()
+ARCHIVE_KEYS+=("https://archive.raspbian.org;raspbian.public.key;A0DA38D0D76E8B5D638872819165938D90FDDD2E")
+ARCHIVE_KEYS+=("https://archive.raspberrypi.org/debian;raspberrypi.gpg.key;CF8A1AF502A2AA2D763BAE7E82B129927FA3303E")
+ARCHIVE_KEYS+=("https://ftp-master.debian.org/keys;archive-key-10.asc;80D15823B7FD1561F9F7BCDDDC30D7C23CBBABEE")
+ARCHIVE_KEYS+=("https://ftp-master.debian.org/keys;archive-key-11.asc;1F89983E0081FDE018F3CC9673A4F27B8DD47936")
+ARCHIVE_KEYS+=("https://ftp-master.debian.org/keys;release-11.asc;A4285295FC7B1A81600062A9605C66F00D6C9793")
 
 mirror_raspbian=http://mirrordirector.raspbian.org/raspbian
 mirror_raspberrypi=http://archive.raspberrypi.org/debian
+mirror_debian=http://deb.debian.org/debian
 declare mirror_raspbian_cache
 declare mirror_raspberrypi_cache
-release=buster
+declare mirror_debian_cache
+release=bullseye
 
 packages=()
 
@@ -25,7 +24,6 @@ packages+=("raspberrypi-bootloader")
 packages+=("raspberrypi-kernel")
 packages+=("firmware-brcm80211")
 packages+=("btrfs-progs")
-packages+=("libbtrfs0")
 packages+=("busybox")
 packages+=("bash-static")
 packages+=("cdebootstrap-static")
@@ -33,7 +31,7 @@ packages+=("coreutils")
 packages+=("diffutils")
 packages+=("dosfstools")
 packages+=("dpkg")
-packages+=("libext2fs2")
+packages+=("libc-bin")
 packages+=("e2fsprogs")
 packages+=("f2fs-tools")
 packages+=("gpgv")
@@ -44,7 +42,8 @@ packages+=("netbase")
 packages+=("netcat-openbsd")
 packages+=("ntpdate")
 packages+=("raspbian-archive-keyring")
-packages+=("rng-tools")
+packages+=("debian-archive-keyring")
+packages+=("rng-tools5")
 packages+=("tar")
 packages+=("fdisk")
 packages+=("util-linux")
@@ -52,77 +51,12 @@ packages+=("wpasupplicant")
 packages+=("libraspberrypi-bin")
 packages+=("xxd")
 packages+=("curl")
-
-# libraries
-packages+=("libacl1")
-packages+=("libatm1")
-packages+=("libattr1")
-packages+=("libaudit-common")
-packages+=("libaudit1")
-packages+=("libblkid1")
-packages+=("libbsd0")
-packages+=("libbz2-1.0")
-packages+=("libc-bin")
-packages+=("libc6")
-packages+=("libcap2")
-packages+=("libcom-err2")
-packages+=("libcurl4")
-packages+=("libdb5.3")
-packages+=("libdbus-1-3")
-packages+=("libelf1")
-packages+=("libf2fs5")
-packages+=("libfdisk1")
-packages+=("libffi6")
-packages+=("libgcc1")
-packages+=("libgcrypt20")
-packages+=("libgmp10")
-packages+=("libgnutls30")
-packages+=("libgpg-error0")
-packages+=("libgssapi-krb5-2")
-packages+=("libhogweed4")
-packages+=("libidn11")
-packages+=("libidn2-0")
-packages+=("libk5crypto3")
-packages+=("libkeyutils1")
-packages+=("libkrb5-3")
-packages+=("libkrb5support0")
-packages+=("libldap-2.4-2")
-packages+=("liblz4-1")
-packages+=("liblzma5")
-packages+=("liblzo2-2")
-packages+=("libmount1")
-packages+=("libmnl0")
-packages+=("libncurses5")
-packages+=("libnettle6")
-packages+=("libnghttp2-14")
-packages+=("libnl-3-200")
-packages+=("libnl-genl-3-200")
-packages+=("libnl-route-3-200")
-packages+=("libpam0g")
-packages+=("libpcre3")
-packages+=("libpcsclite1")
-packages+=("libp11-kit0")
-packages+=("libpsl5")
-packages+=("libraspberrypi0")
-packages+=("librtmp1")
-packages+=("libsasl2-2")
-packages+=("libselinux1")
-packages+=("libslang2")
-packages+=("libsmartcols1")
-packages+=("libssh2-1")
-packages+=("libssl1.1")
-packages+=("libssl1.0.2")
-packages+=("libsystemd0")
-packages+=("libtasn1-6")
-packages+=("libtinfo6")
-packages+=("libudev1")
-packages+=("libunistring2")
-packages+=("libuuid1")
-packages+=("zlib1g")
+packages+=("logsave")
 
 
 packages_debs=
 packages_sha256=
+packages_done=()
 
 download_file() {
 	local download_source=$1
@@ -206,49 +140,27 @@ setup_archive_keys() {
 	# Let gpg set itself up already in the 'gnupg' dir before we actually use it
 	echo "Setting up gpg... "
 	gpg --homedir gnupg --list-secret-keys
-	echo ""
 
-	echo "Downloading ${RASPBIAN_ARCHIVE_KEY_FILE_NAME}."
-	download_file ${RASPBIAN_ARCHIVE_KEY_URL}
-	if check_key "${RASPBIAN_ARCHIVE_KEY_FILE_NAME}" "${RASPBIAN_ARCHIVE_KEY_FINGERPRINT}"; then
-		# GPG key checks out, thus import it into our own keyring
-		echo -n "Importing '${RASPBIAN_ARCHIVE_KEY_FILE_NAME}' into keyring... "
-		if gpg -q --homedir gnupg --import "${RASPBIAN_ARCHIVE_KEY_FILE_NAME}"; then
-			echo "OK"
+	for archive_key in ${ARCHIVE_KEYS[@]}; do
+		echo ""
+		IFS=';' read -r KEY_URL KEY_FILE KEY_FINGERPRINT <<< "$archive_key"
+		echo "Downloading ${KEY_FILE}."
+		download_file ${KEY_URL}/${KEY_FILE}
+		if check_key "${KEY_FILE}" "${KEY_FINGERPRINT}"; then
+			# GPG key checks out, thus import it into our own keyring
+			echo -n "Importing '${KEY_FILE}' into keyring... "
+			if gpg -q --homedir gnupg --import "${KEY_FILE}"; then
+				echo "OK"
+			else
+				echo "FAILED!"
+				return 1
+			fi
 		else
-			echo "FAILED!"
 			return 1
 		fi
-	else
-		return 1
-	fi
-
-	echo ""
-
-	echo "Downloading ${RASPBERRYPI_ARCHIVE_KEY_FILE_NAME}."
-	download_file ${RASPBERRYPI_ARCHIVE_KEY_URL}
-	if check_key "${RASPBERRYPI_ARCHIVE_KEY_FILE_NAME}" "${RASPBERRYPI_ARCHIVE_KEY_FINGERPRINT}"; then
-		# GPG key checks out, thus import it into our own keyring
-		echo -n "Importing '${RASPBERRYPI_ARCHIVE_KEY_FILE_NAME}' into keyring..."
-		if gpg -q --homedir gnupg --import "${RASPBERRYPI_ARCHIVE_KEY_FILE_NAME}"; then
-			echo "OK"
-		else
-			echo "FAILED!"
-			return 1
-		fi
-	else
-		return 1
-	fi
+	done
 
 	return 0
-
-}
-
-required() {
-	for i in "${packages[@]}"; do
-		[[ $i = "${1}" ]] && return 0
-	done
-	return 1
 }
 
 unset_required() {
@@ -264,7 +176,7 @@ allfound() {
 }
 
 filter_package_list() {
-	grep -E 'Package:|Filename:|SHA256:|^$'
+	grep -E '^Package:|^Pre-Depends:|^Depends:|^Filename:|^SHA256:|^$'
 }
 
 download_package_list() {
@@ -314,12 +226,6 @@ download_package_list() {
 }
 
 download_package_lists() {
-	if ! setup_archive_keys; then
-		echo -e "ERROR\nSetting up the archives failed! Exiting."
-		cd ..
-		exit 1
-	fi
-
 	echo -e "\nDownloading Release file and its signature..."
 	download_file "${2}/dists/$release/Release" "${1}_Release"
 	download_file "${2}/dists/$release/Release.gpg" "${1}_Release.gpg"
@@ -343,28 +249,51 @@ download_package_lists() {
 
 add_packages() {
 	echo -e "\nAdding required packages..."
-	while read -r k v
-	do
-		if [ "${k}" = "Package:" ]; then
-			current_package=${v}
-		elif [ "${k}" = "Filename:" ]; then
-			current_filename=${v}
-		elif [ "${k}" = "SHA256:" ]; then
-			current_sha256=${v}
-		elif [ "${k}" = "" ]; then
-			if required "${current_package}"; then
-				printf "  %-32s %s\n" "${current_package}" "$(basename "${current_filename}")"
-				unset_required "${current_package}"
-				packages_debs+=("${2}/${current_filename}")
-				packages_sha256+=("${current_sha256}  $(basename "${current_filename}")")
-				allfound && break
-			fi
-
+	filter_package_list < "${1}_Packages" >"${1}_Packages.tmp"
+	while true; do
+		libs=()
+		for pkg in "${packages[@]}"; do
 			current_package=
+			current_depends=()
 			current_filename=
 			current_sha256=
+			while read -r k v
+			do
+				if [ "${k}" = "Package:" ]; then
+					current_package=${v}
+				elif [ "${k}" = "Pre-Depends:" ]; then
+					current_depends+=($(echo "${v}" | sed -e 's/, /\n/g' -e 's/\ Pre-Depends:\ //' -e 's/ ([^)]*)//g'))
+				elif [ "${k}" = "Depends:" ]; then
+					current_depends+=($(echo "${v}" | sed -e 's/, /\n/g' -e 's/\ Depends:\ //' -e 's/ ([^)]*)//g'))
+				elif [ "${k}" = "Filename:" ]; then
+					current_filename=${v}
+				elif [ "${k}" = "SHA256:" ]; then
+					current_sha256=${v}
+				elif [ "${k}" = "" ]; then
+					break
+				fi
+			done < <(grep -A 4 -m 1 ^Package:\ "$pkg"$ "${1}_Packages.tmp")
+			if [ -z ${current_package} ]; then	# package not found
+				continue
+			fi
+			printf "  %-32s %s\n" "${current_package}" "$(basename "${current_filename}")"
+			unset_required "${current_package}"
+			packages_debs+=("${2}/${current_filename}")
+			packages_sha256+=("${current_sha256}  $(basename "${current_filename}")")
+			packages_done+=("${current_package}")
+			libs+=($(printf '%s\n' "${current_depends[@]}" | grep "lib"))
+		done
+		# remove duplicate libs
+		libs=($(printf '%s\n' "${libs[@]}" | sort | uniq))
+		# remove libs already done
+		libs=($(printf '%s\n' "${packages_done[@]}" "${packages_done[@]}" "${libs[@]}" | sort | uniq -u))
+		# we're done if no libs to add
+		if [ ${#libs[@]} -eq 0 ]; then
+			break
 		fi
-	done < <(filter_package_list <"${1}_Packages")
+		packages+=(${libs[@]})
+		echo -e "\nAdding dependency libraries..."
+	done
 }
 
 download_packages() {
@@ -425,10 +354,20 @@ fi
 	if [ -n "${mirror_raspberrypi_cache}" ]; then
 		mirror_raspberrypi=${mirror_raspberrypi/:\/\//:\/\/${mirror_raspberrypi_cache}\/}
 	fi
+	if [ -n "${mirror_debian_cache}" ]; then
+		mirror_debian=${mirror_debian/:\/\//:\/\/${mirror_debian_cache}\/}
+	fi
+
+	if ! setup_archive_keys; then
+		echo -e "ERROR\nSetting up the archives failed! Exiting."
+		cd ..
+		exit 1
+	fi
 
 	## Download package list
 	download_package_lists raspberry ${mirror_raspberrypi}
 	download_package_lists raspbian ${mirror_raspbian}
+	download_package_lists debian ${mirror_debian}
 
 	## Select packages for download
 	packages_debs=()
@@ -436,6 +375,7 @@ fi
 
 	add_packages raspberry ${mirror_raspberrypi}
 	add_packages raspbian ${mirror_raspbian}
+	add_packages debian ${mirror_debian}
 	if ! allfound; then
 		echo "ERROR: Unable to find all required packages in package list!"
 		echo "Missing packages: '${packages[*]}'"
@@ -453,13 +393,17 @@ fi
 	## Download default /boot/config.txt and do default changes
 	mkdir -p initramfs/boot
 	cd initramfs/boot || exit 1
-	download_remote_file https://downloads.raspberrypi.org/raspbian/ "boot.tar.xz" xzcat ./config.txt
+	download_remote_file https://downloads.raspberrypi.org/raspios_armhf/ "boot.tar.xz" xzcat ./config.txt
 	sed -i "s/^\(dtparam=audio=on\)/#\1/" config.txt # disable audio
 	{
-		echo -e "\n[pi3]"
-		echo -e "# Enable serial port\nenable_uart=1"
-		echo -e "\n[all]"
-		echo -e "# Add other config parameters below this line."
+		echo ""
+		echo "[pi3]"
+		echo "dtoverlay=disable-bt"
+		echo "[pi4]"
+		echo "dtoverlay=disable-bt"
+		echo ""
+		echo "[all]"
+		echo "# Add other config parameters below this line."
 	} >> config.txt
 	chmod 644 config.txt
 	cd ../.. || exit 1
