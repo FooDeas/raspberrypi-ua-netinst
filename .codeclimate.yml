@@ -1,4 +1,5 @@
-engines:
+version: "2"
+plugins:
   shellcheck:
     enabled: true
     checks:
@@ -13,11 +14,7 @@ engines:
         enabled: false
       MD013:
         enabled: false
+      MD034:
+        enabled: false
       MD036:
         enabled: false
-    exclude_fingerprints:
-      - e7978957ce6c2ad804a97bc400e25ae8
-ratings:
-   paths:
-   - "**.sh"
-   - "**.md"

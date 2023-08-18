@@ -1,4 +1,6 @@
 #!/bin/bash
+# shellcheck disable=SC1090
+# shellcheck disable=SC1091
 
 variables_reset() {
 	# internal variables
@@ -277,7 +279,6 @@ fail() {
 
 	if [ -e "${installer_retriesfile}" ]; then
 		inputfile_sanitize "${installer_retriesfile}"
-		# shellcheck disable=SC1090
 		source "${installer_retriesfile}"
 	fi
 	variable_set "installer_retries" "3"
@@ -636,7 +637,6 @@ if [ -z "${am_subscript}" ]; then
 		echo "=== Start executing alternative rcS =============="
 		echo "--------------------------------------------------"
 		export am_subscript=true
-		# shellcheck disable=SC1091
 		source /opt/raspberrypi-ua-netinst/custom-rcS
 		echo "--------------------------------------------------"
 		echo "=== Execution of alternative rcS finished ========"
@@ -738,7 +738,6 @@ echo "OK"
 if [ -e "${tmp_bootfs}"/raspberrypi-ua-netinst/config/installer-config.txt ]; then
 	echo "Executing installer-config.txt..."
 	inputfile_sanitize "${tmp_bootfs}"/raspberrypi-ua-netinst/config/installer-config.txt
-	# shellcheck disable=SC1091
 	source "${tmp_bootfs}"/raspberrypi-ua-netinst/config/installer-config.txt
 	echo "OK"
 fi
@@ -1126,7 +1125,6 @@ if [ -n "${online_config}" ]; then
 
 	echo -n "Executing online-config.txt... "
 	inputfile_sanitize /opt/raspberrypi-ua-netinst/installer-config_online.txt
-	# shellcheck disable=SC1091
 	source /opt/raspberrypi-ua-netinst/installer-config_online.txt
 	variables_set_defaults
 	echo "OK"
@@ -2531,7 +2529,6 @@ if [ -e "/rootfs/boot/raspberrypi-ua-netinst/config/post-install.txt" ]; then
 	echo "================================================="
 	echo "=== Start executing post-install.txt. ==="
 	inputfile_sanitize /rootfs/boot/raspberrypi-ua-netinst/config/post-install.txt
-	# shellcheck disable=SC1091
 	source /rootfs/boot/raspberrypi-ua-netinst/config/post-install.txt
 	echo "=== Finished executing post-install.txt. ==="
 	echo "================================================="

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1090
+# shellcheck disable=SC1091
 
 set -e # exit if any command fails
 umask 022
@@ -118,7 +120,7 @@ function cp_executable {
 	LIB_PATH=("tmp/lib" "tmp/usr/lib")
 	libs_todo=("$1")
 	while true; do
-		needed_libs=($(readelf -d "${libs_todo[0]}" 2>/dev/null | grep \(NEEDED\) | sed -e 's/.*\[//' -e 's/\]//'))
+		while IFS='' read -r line; do needed_libs+=("$line"); done < <(readelf -d "${libs_todo[0]}" 2>/dev/null | grep \(NEEDED\) | sed -e 's/.*\[//' -e 's/\]//')
 		for lib in "${needed_libs[@]}"; do
 			if printf '%s\n' "${libs_to_copy[@]}" | grep -q "/$lib$"; then
 				continue
@@ -453,7 +455,7 @@ function create_cpio {
 
 	# copy all libraries needed by executable files above
 	for lib in "${libs_to_copy[@]}"; do
-		cp --preserve=xattr,timestamps "${lib}" $(echo "${lib}" | sed -e 's/^tmp\//rootfs\//')
+		cp --preserve=xattr,timestamps "${lib}" "$(echo "${lib}" | sed -e 's/^tmp\//rootfs\//')"
 	done
 
 	INITRAMFS="../raspberrypi-ua-netinst.cpio.gz"
@@ -464,20 +466,20 @@ function create_cpio {
 
 # Run update if never run
 if [ ! -d packages ]; then
-	# shellcheck disable=SC1091
 	. ./update.sh
 fi
 
 # Prepare
-
 rm -rf ${build_dir} && mkdir -p ${build_dir} && cd ${build_dir}
 rm -rf tmp && mkdir tmp
 
 # extract debs
+echo "Extracting packages..."
 for i in ../packages/*.deb; do
 	cd tmp && ar x "../${i}" && tar -xf data.tar.*; rm -f data.tar.* control.tar.* debian-binary; cd ..
 done
 
+echo "Preparing data and creating cpio..."
 # get kernel versions
 get_kernels
 

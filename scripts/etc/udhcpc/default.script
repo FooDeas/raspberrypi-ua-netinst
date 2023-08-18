@@ -44,7 +44,7 @@ case "${1}" in
 		fi
 		if [ "${interface}" = "$PEERNTP_IF" ]; then
 			[ -f "${NTP_CONF}" ] && mv -f "${NTP_CONF}" "${NTP_CONF}.dhcsave"
-			> "${NTP_CONF}"
+			true > "${NTP_CONF}"
 			for i in ${ntpsrv}; do
 				echo "server ${i}" >> "${NTP_CONF}"
 			done
@@ -81,7 +81,7 @@ case "${1}" in
 		done
 	fi
 	if [ -n "$REDO_NTP" ] && [ "${interface}" = "$PEERNTP_IF" ]; then
-		> "${NTP_CONF}"
+		true > "${NTP_CONF}"
 		for i in ${ntpsrv}; do
 			echo "server ${i}" >> "${NTP_CONF}"
 		done

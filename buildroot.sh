@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck source=./buildroot.conf
+# shellcheck disable=SC1090
 # shellcheck disable=SC1091
 
 set -e # exit if any command fails

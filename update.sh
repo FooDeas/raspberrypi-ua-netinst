@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck source=./build.conf
+# shellcheck disable=SC1090
 # shellcheck disable=SC1091
 
 ARCHIVE_KEYS=()
@@ -63,9 +63,9 @@ download_file() {
 	local download_target=$2
 	local progress_option
 	if wget --show-progress --version &> /dev/null; [ "${?}" -eq 2 ]; then
-	    progress_option=()
+		progress_option=()
 	else
-	    progress_option=("--show-progress")
+		progress_option=("--show-progress")
 	fi
 	if [ -z "${download_target}" ]; then
 		for i in $(seq 1 5); do
@@ -199,8 +199,7 @@ download_package_list() {
 
 			# Verify the checksum of the Packages file, assuming that the last checksums in the Release file are SHA256 sums
 			echo -n "Verifying ${package_section} package list... "
-			if [ "$(grep "${package_section}/binary-armhf/Packages${extension}" "${1}_Release" | tail -n1 | awk '{print $1}')" = \
-				 "$(sha256sum "tmp${extension}" | awk '{print $1}')" ]; then
+			if [ "$(grep "${package_section}/binary-armhf/Packages${extension}" "${1}_Release" | tail -n1 | awk '{print $1}')" = "$(sha256sum "tmp${extension}" | awk '{print $1}')" ]; then
 				echo "OK"
 			else
 				echo -e "ERROR\nThe checksum of file '${package_section}/binary-armhf/Packages${extension}' doesn't match!"
@@ -262,9 +261,9 @@ add_packages() {
 				if [ "${k}" = "Package:" ]; then
 					current_package=${v}
 				elif [ "${k}" = "Pre-Depends:" ]; then
-					current_depends+=($(echo "${v}" | sed -e 's/, /\n/g' -e 's/\ Pre-Depends:\ //' -e 's/ ([^)]*)//g'))
+					while IFS='' read -r line; do current_depends+=("$line"); done < <(echo "${v}" | sed -e 's/, /\n/g' -e 's/\ Pre-Depends:\ //' -e 's/ ([^)]*)//g')
 				elif [ "${k}" = "Depends:" ]; then
-					current_depends+=($(echo "${v}" | sed -e 's/, /\n/g' -e 's/\ Depends:\ //' -e 's/ ([^)]*)//g'))
+					while IFS='' read -r line; do current_depends+=("$line"); done < <(echo "${v}" | sed -e 's/, /\n/g' -e 's/\ Depends:\ //' -e 's/ ([^)]*)//g')
 				elif [ "${k}" = "Filename:" ]; then
 					current_filename=${v}
 				elif [ "${k}" = "SHA256:" ]; then
@@ -273,7 +272,7 @@ add_packages() {
 					break
 				fi
 			done < <(grep -A 4 -m 1 ^Package:\ "$pkg"$ "${1}_Packages.tmp")
-			if [ -z ${current_package} ]; then	# package not found
+			if [ -z "${current_package}" ]; then # package not found
 				continue
 			fi
 			printf "  %-32s %s\n" "${current_package}" "$(basename "${current_filename}")"
@@ -281,17 +280,17 @@ add_packages() {
 			packages_debs+=("${2}/${current_filename}")
 			packages_sha256+=("${current_sha256}  $(basename "${current_filename}")")
 			packages_done+=("${current_package}")
-			libs+=($(printf '%s\n' "${current_depends[@]}" | grep "lib"))
+			while IFS='' read -r line; do libs+=("$line"); done < <(printf '%s\n' "${current_depends[@]}" | grep "lib")
 		done
 		# remove duplicate libs
-		libs=($(printf '%s\n' "${libs[@]}" | sort | uniq))
+		mapfile -t libs < <(printf '%s\n' "${libs[@]}" | sort | uniq)
 		# remove libs already done
-		libs=($(printf '%s\n' "${packages_done[@]}" "${packages_done[@]}" "${libs[@]}" | sort | uniq -u))
+		mapfile -t libs < <(printf '%s\n' "${packages_done[@]}" "${packages_done[@]}" "${libs[@]}" | sort | uniq -u)
 		# we're done if no libs to add
-		if [ ${#libs[@]} -eq 0 ]; then
+		if [ -z "${libs[*]}" ]; then
 			break
 		fi
-		packages+=(${libs[@]})
+		packages+=("${libs[@]}")
 		echo -e "\nAdding dependency libraries..."
 	done
 }
