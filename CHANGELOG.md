@@ -1,5 +1,17 @@
 # Changelog
 
+## raspberrypi-ua-netinst v2.5.0
+
+- support for Debian 11 (bullseye)
+- support for version 4 model B
+- support for version Zero 2 W
+- added or changed configuration variables:
+  - `release` is set to "bullseye" by default
+
+**Bugfixes:**
+
+- upgrade initial packages
+
 ## raspberrypi-ua-netinst v2.4.0
 
 - support for version 4 model B
