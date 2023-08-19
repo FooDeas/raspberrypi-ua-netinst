@@ -436,6 +436,10 @@ function create_cpio {
 	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43456-sdio.clm_blob rootfs/lib/firmware/brcm/
 	cp --preserve=xattr,timestamps tmp/lib/firmware/brcm/brcmfmac43456-sdio.txt rootfs/lib/firmware/brcm/
 
+	# wireless regulatory database information
+	cp --preserve=xattr,timestamps tmp/lib/firmware/regulatory.db-debian rootfs/lib/firmware/regulatory.db
+	cp --preserve=xattr,timestamps tmp/lib/firmware/regulatory.db.p7s-debian rootfs/lib/firmware/regulatory.db.p7s
+
 	# vcgencmd
 	## libraspberrypi-bin
 	mkdir -p rootfs/usr/bin
