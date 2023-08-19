@@ -90,8 +90,9 @@ Note that if the networking configuration is set to use DHCP, no additional pack
 | `domainname` |  |  |  |
 | `ifname` | `eth0` |  | Change to 'wlan0' to use onboard WiFi. Use the 'wlan_*' options below or provide a 'wpa_supplicant.conf' with WiFi login data in the directory `config`. |
 | `wlan_country` |  | [ref: doc/wlan_country.txt](/doc/wlan_country.txt) | Sets the country code for the WiFi interface. |
-| `wlan_ssid` |  |  | Sets SSID for WiFi authentication if no 'wpa_supplicant.conf' is provided. |
-| `wlan_psk` |  |  | Sets PSK for Wifi authentication if no 'wpa_supplicant.conf' is provided. |
+| `wlan_ssid` |  |  | Sets SSID for Wifi authentication if no 'wpa_supplicant.conf' is provided. |
+| `wlan_psk` |  |  | Sets clear text PSK (WiFi password) for Wifi authentication if no 'wpa_supplicant.conf' is provided. The PSK will be converted to the respective encrypted variant. |
+| `wlan_psk_encrypted` |  |  | Sets encrypted PSK for Wifi authentication if no 'wpa_supplicant.conf' is provided. This value is not needed if `wlan_psk` is set. It overrides `wlan_psk` if both are set. |
 | `ip_addr` | `dhcp` |  | Use "dhcp" to let the network DHCP server dynamically assign an IP-address or specify a static IP-address (e.g. '192.168.2.50'). |
 | `ip_netmask` |  |  | Network mask (e.g. '255.255.255.0') |
 | `ip_gateway` |  |  | Gateway address (e.g. '192.168.2.1') |

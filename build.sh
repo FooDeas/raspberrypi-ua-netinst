@@ -393,8 +393,9 @@ function create_cpio {
 	cp_executable tmp/sbin/blkid rootfs/sbin/
 	cp_executable tmp/sbin/mkswap rootfs/sbin/
 
-	# wpa_supplicant components
+	# wpasupplicant components
 	cp_executable tmp/sbin/wpa_supplicant rootfs/sbin/wpa_supplicant
+	cp_executable tmp/usr/bin/wpa_passphrase rootfs/usr/bin/wpa_passphrase
 	cp --preserve=xattr,timestamps -r tmp/etc/wpa_supplicant rootfs/etc/wpa_supplicant
 
 	# libc-bin components

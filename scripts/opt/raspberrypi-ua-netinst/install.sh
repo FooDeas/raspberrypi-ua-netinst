@@ -60,6 +60,7 @@ variables_reset() {
 	wlan_country=
 	wlan_ssid=
 	wlan_psk=
+	wlan_psk_encrypted=
 	ip_addr=
 	ip_netmask=
 	ip_broadcast=
@@ -899,12 +900,16 @@ if echo "${ifname}" | grep -q "wlan"; then
 		inputfile_sanitize "${wlan_configfile}"
 	else
 		echo "  wlan_ssid = ${wlan_ssid}"
-		echo "  wlan_psk = ${wlan_psk}"
+		if [ -z "${wlan_psk_encrypted}" ]; then
+			echo "  wlan_psk = ${wlan_psk}"
+			wlan_psk_encrypted="$(wpa_passphrase "${wlan_ssid}" "${wlan_psk}" | grep "psk=" | grep -v "#" | sed "s/.*psk=\(.*\)/\1/")"
+		fi
+		echo "  wlan_psk_encrypted = ${wlan_psk_encrypted}"
 		{
 			echo "network={"
 			echo "    scan_ssid=1"
 			echo "    ssid=\"${wlan_ssid}\""
-			echo "    psk=\"${wlan_psk}\""
+			echo "    psk=${wlan_psk_encrypted}"
 			echo "}"
 		} > ${wlan_configfile}
 	fi
@@ -2568,9 +2573,14 @@ if [ "${cleanup_logfiles}" = "1" ]; then
 	rm -f /rootfs/boot/raspberrypi-ua-netinst/error-*.log
 else
 	sleep 1
-	# root and user passwords are deleted from logfile before it is written to the filesystem
-	sed "/rootpw/d;/userpw/d" "${logfile}" > /rootfs/var/log/raspberrypi-ua-netinst.log
+	# root, user and wifi passwords are deleted from logfile before it is written to the filesystem
+	sed "/rootpw/d;/userpw/d;/wlan_psk/d" "${logfile}" > /rootfs/var/log/raspberrypi-ua-netinst.log
 	chmod 0640 /rootfs/var/log/raspberrypi-ua-netinst.log
+fi
+
+# remove clear text wifi password from installer config
+if [ -n "${wlan_psk}" ]; then
+	sed -i "s/wlan_psk=.*/wlan_psk_encrypted=${wlan_psk_encrypted}/" "/rootfs/boot/raspberrypi-ua-netinst/config/installer-config.txt"
 fi
 
 # Cleanup installer files
