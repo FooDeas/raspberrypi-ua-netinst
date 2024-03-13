@@ -44,6 +44,7 @@ variables_reset() {
 	userperms_admin=
 	userperms_sound=
 	cdebootstrap_cmdline=
+	cdebootstrap_debug=
 	bootsize=
 	bootoffset=
 	rootsize=
@@ -150,7 +151,7 @@ variables_set_defaults() {
 	else
 		variable_set "mirror" "http://mirrordirector.raspbian.org/raspbian/"
 	fi
-	variable_set "release" "bullseye"
+	variable_set "release" "bookworm"
 	variable_set "hostname" "pi"
 	variable_set "rootpw" "raspbian"
 	variable_set "root_ssh_pwlogin" "1"
@@ -181,6 +182,7 @@ variables_set_defaults() {
 	variable_set "installer_pkg_downloadretries" "5"
 	variable_set "hwrng_support" "1"
 	variable_set "watchdog_enable" "0"
+	variable_set "cdebootstrap_debug" "0"
 	variable_set "quiet_boot" "0"
 	variable_set "disable_raspberries" "0"
 	variable_set "disable_splash" "0"
@@ -1058,49 +1060,28 @@ PRE_NETWORK_DURATION=$(date +%s)
 
 date_set=false
 if [ "${date_set}" = "false" ]; then
-	# set time with ntpdate
-	echo -n "Set time using ntpdate... "
-	if ntpdate-debian -b &> /dev/null; then
-		echo "OK"
-		date_set=true
-	fi
-
-	if [ "${date_set}" = "false" ]; then
-		echo "Failed to set time via ntpdate. Switched to rdate."
-		# failed to set time with ntpdate, fall back to rdate
-		# time server addresses taken from http://tf.nist.gov/tf-cgi/servers.cgi
-		timeservers="${timeserver}"
-		timeservers="${timeservers} time.nist.gov nist1.symmetricom.com"
-		timeservers="${timeservers} nist-time-server.eoni.com utcnist.colorado.edu"
-		timeservers="${timeservers} nist1-pa.ustiming.org nist.expertsmi.com"
-		timeservers="${timeservers} nist1-macon.macon.ga.us wolfnisttime.com"
-		timeservers="${timeservers} nist.time.nosc.us nist.netservicesgroup.com"
-		timeservers="${timeservers} nisttime.carsoncity.k12.mi.us nist1-lnk.binary.net"
-		timeservers="${timeservers} ntp-nist.ldsbc.edu utcnist2.colorado.edu"
-		timeservers="${timeservers} nist1-ny2.ustiming.org wwv.nist.gov"
-		echo -n "Set time using timeserver "
-		for ts in ${timeservers}; do
-			echo -n "'${ts}'... "
-			if rdate "${ts}" &> /dev/null; then
-				echo "OK"
-				date_set=true
-				break
-			fi
-		done
-	fi
+	# set time with rdate
+	# time server addresses taken from http://tf.nist.gov/tf-cgi/servers.cgi
+	echo -n "Set time using timeserver "
+	for ts in ${timeserver} time.nist.gov time-{a..e}-{g,b,wwv}.nist.gov utcnist{,2}.colorado.edu; do
+		echo -n "'${ts}'... "
+		if rdate "${ts}" &> /dev/null; then
+			echo "OK"
+			date_set=true
+			break
+		fi
+	done
 
 	if [ "${date_set}" = "false" ]; then
 		echo "Failed to set time via rdate. Switched to HTTP."
 		# Try to set time via http to work behind proxies.
-		# Timeserver has to return the time in the format: YYYY-MM-DD HH:MM:SS.
-		timeservers_http="${timeserver_http}"
-		timeservers_http="${timeservers_http} http://chronic.herokuapp.com/utc/now?format=%25F+%25T"
-		timeservers_http="${timeservers_http} http://www.timeapi.org/utc/now?format=%25F+%25T"
-		echo -n "Set time using HTTP timeserver "
+		timeservers_http="${timeserver_http} deb.debian.org kernel.org example.com archive.org icann.org iana.org ietf.org"
+		date_re=$'.*^[[:space:]]*Date:([^\r\n]+)'
+		echo -n "Set time using HTTP Date header "
 		for ts_http in ${timeservers_http}; do
 			echo -n "'${ts_http}'... "
-			http_time="$(wget -q -O - "${ts_http}")"
-			if date -u -s "${http_time}" &> /dev/null; then
+			http_date="$(wget --method=HEAD -qSO- -t 2 -T 3 --max-redirect=0 "${ts_http}" 2>&1)"
+			if [[ $http_date =~ $date_re && -n "${BASH_REMATCH[1]//[[:space:]]}" ]] && date -s "${BASH_REMATCH[1]}" &> /dev/null; then
 				echo "OK"
 				date_set=true
 				break
@@ -1197,7 +1178,7 @@ fi
 
 # determine available releases
 mirror_base=http://archive.raspberrypi.org/debian/dists/
-release_fallback=bullseye
+release_fallback=bookworm
 release_base="${release}"
 release_raspbian="${release}"
 if ! wget --spider "${mirror_base}/${release}/" &> /dev/null; then
@@ -1264,13 +1245,13 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 	# minimal
 	minimal_packages="cpufrequtils,openssh-server,dosfstools"
 	if [ "${init_system}" != "systemd" ] || [ "${use_systemd_services}" = "0" ]; then
-		minimal_packages="${minimal_packages},ntp"
+		minimal_packages="${minimal_packages},ntpsec"
 		if [ -z "${rtc}" ]; then
 			minimal_packages="${minimal_packages},fake-hwclock"
 		fi
 		minimal_packages="${minimal_packages},ifupdown,net-tools"
 	else
-		minimal_packages="${minimal_packages},iproute2"
+		minimal_packages="${minimal_packages},iproute2,systemd-resolved,systemd-timesyncd"
 	fi
 	minimal_packages_postinstall="${base_packages_postinstall},${minimal_packages_postinstall},raspberrypi-sys-mods"
 	if echo "${ifname}" | grep -q "wlan"; then
@@ -1327,6 +1308,11 @@ if [ -z "${cdebootstrap_cmdline}" ]; then
 			fi
 			;;
 	esac
+
+	# enable cdebootstrap verbose output
+	if [ "${cdebootstrap_debug}" = "1" ]; then
+		cdebootstrap_cmdline="--verbose --debug ${cdebootstrap_cmdline}";
+	fi
 
 	# add user defined syspackages
 	if [ -n "${syspackages}" ]; then
@@ -1419,6 +1405,7 @@ echo "  usersysgroups = ${usersysgroups}"
 echo "  userperms_admin = ${userperms_admin}"
 echo "  userperms_sound = ${userperms_sound}"
 echo "  cdebootstrap_cmdline = ${cdebootstrap_cmdline}"
+echo "  cdebootstrap_debug = ${cdebootstrap_debug}"
 echo "  packages_postinstall = ${packages_postinstall}"
 echo "  boot_volume_label = ${boot_volume_label}"
 echo "  root_volume_label = ${root_volume_label}"
@@ -2157,8 +2144,20 @@ if grep -l '__RELEASE__' /rootfs/etc/apt/sources.list > /dev/null; then
 else
 	echo "OK"
 fi
-echo -n "  Adding raspberrypi.org GPG key to apt-key... "
-(chroot /rootfs /usr/bin/apt-key add - &> /dev/null) < /usr/share/keyrings/raspberrypi.gpg.key || fail
+echo -n "  Checking Raspbian/Debian GPG key... "
+if [ "$(chroot /rootfs /usr/bin/gpg --keyring "/usr/share/keyrings/raspbian-archive-keyring.gpg" --with-colons --fingerprint 2> /dev/null)" == \
+     "$(chroot /rootfs /usr/bin/gpg --keyring "/etc/apt/trusted.gpg" --with-colons --fingerprint 2> /dev/null)" ]; then
+	# deprecated apt-key usage detected; remove legacy trusted.gpg keyring
+	echo -n "Moving key to /etc/apt/trusted.gpg.d/... "
+	(chroot /rootfs install -m 644 "/usr/share/keyrings/raspbian-archive-keyring.gpg" "/etc/apt/trusted.gpg.d/") || fail
+	rm "/rootfs/etc/apt/trusted.gpg" || fail
+fi
+echo "OK"
+
+echo -n "  Adding raspberrypi.org GPG key to /etc/apt/trusted.gpg.d/... "
+raspberrypi_gpg="/rootfs/etc/apt/trusted.gpg.d/raspberrypi.gpg"
+(chroot /rootfs /usr/bin/gpg --dearmor - > "$raspberrypi_gpg") < /usr/share/keyrings/raspberrypi.gpg.key || fail
+chmod 644 "$raspberrypi_gpg" || fail
 echo "OK"
 
 echo -n "  Configuring RaspberryPi repository... "

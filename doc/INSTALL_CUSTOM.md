@@ -29,7 +29,7 @@
 | Preset | Packages |
 |---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `base` | _\<essential\>,apt,gnupg,kmod_ |
-| `minimal` | _\<base\>,cpufrequtils,fake-hwclock,ifupdown,net-tools,ntp,openssh-server,dosfstools,raspberrypi-sys-mods_ |
+| `minimal` | _\<base\>,cpufrequtils,fake-hwclock,ifupdown,net-tools,ntpsec,openssh-server,dosfstools,raspberrypi-sys-mods_ |
 | `server` | _\<minimal\>,systemd-sysv,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,tzdata,less,man-db,logrotate,bash-completion,console-setup,apt-utils,libraspberrypi-bin,raspi-copies-and-fills (raspi-copies-and-fills is not available on arm64)_ |
 
 Note that if the networking configuration is set to use DHCP, `isc-dhcp-client` will also be installed.
@@ -39,7 +39,7 @@ Note that if the networking configuration is set to use DHCP, `isc-dhcp-client` 
 | Preset | Packages |
 |---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `base` | _\<essential\>,apt,kmod_ |
-| `minimal` | _\<base\>,cpufrequtils,iproute2,openssh-server,dosfstools,raspberrypi-sys-mods_ |
+| `minimal` | _\<base\>,cpufrequtils,iproute2,systemd-resolved,systemd-timesyncd,openssh-server,dosfstools,raspberrypi-sys-mods_ |
 | `server` | _\<minimal\>,systemd-sysv,vim-tiny,iputils-ping,wget,ca-certificates,rsyslog,cron,dialog,locales,tzdata,less,man-db,logrotate,bash-completion,console-setup,apt-utils,libraspberrypi-bin,raspi-copies-and-fills (raspi-copies-and-fills is not available on arm64)_ |
 
 Note that if the networking configuration is set to use DHCP, no additional packages will be installed as `systemd-networkd` provides DHCP client support.
@@ -153,6 +153,7 @@ Note that if the networking configuration is set to use DHCP, no additional pack
 | `hwrng_support` | `1` | `0`/`1` | Install support for the ARM hardware random number generator. The default is enabled (1) on all presets. Users requiring a `base` install are advised that `hwrng_support=0` must be added in `installer-config.txt` if HWRNG support is undesirable. |
 | `watchdog_enable` | `0` | `0`/`1` | Set to "1" to enable and use the hardware watchdog. |
 | `cdebootstrap_cmdline` |  |  |  |
+| `cdebootstrap_debug` | `0` | `0`/`1` | Set to "1" to enable cdebootstrap verbose/debug output. |
 | `rootfs_mkfs_options` |  |  |  |
 | `rootsize` |  |  | / partition size in megabytes, provide it in the form '+\<number\>M' (without quotes), leave empty to use all free space |
 | `timeserver` | `time.nist.gov` |  |  |

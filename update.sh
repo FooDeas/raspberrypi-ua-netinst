@@ -5,9 +5,10 @@
 ARCHIVE_KEYS=()
 ARCHIVE_KEYS+=("https://archive.raspbian.org;raspbian.public.key;A0DA38D0D76E8B5D638872819165938D90FDDD2E")
 ARCHIVE_KEYS+=("https://archive.raspberrypi.org/debian;raspberrypi.gpg.key;CF8A1AF502A2AA2D763BAE7E82B129927FA3303E")
-ARCHIVE_KEYS+=("https://ftp-master.debian.org/keys;archive-key-10.asc;80D15823B7FD1561F9F7BCDDDC30D7C23CBBABEE")
 ARCHIVE_KEYS+=("https://ftp-master.debian.org/keys;archive-key-11.asc;1F89983E0081FDE018F3CC9673A4F27B8DD47936")
 ARCHIVE_KEYS+=("https://ftp-master.debian.org/keys;release-11.asc;A4285295FC7B1A81600062A9605C66F00D6C9793")
+ARCHIVE_KEYS+=("https://ftp-master.debian.org/keys;archive-key-12.asc;B8B80B5B623EAB6AD8775C45B7C5D7D6350947F8")
+ARCHIVE_KEYS+=("https://ftp-master.debian.org/keys;release-12.asc;4D64FEC119C2029067D6E791F8D2585B8783D481")
 
 mirror_raspbian=http://mirrordirector.raspbian.org/raspbian
 mirror_raspberrypi=http://archive.raspberrypi.org/debian
@@ -15,7 +16,10 @@ mirror_debian=http://deb.debian.org/debian
 declare mirror_raspbian_cache
 declare mirror_raspberrypi_cache
 declare mirror_debian_cache
-release=bullseye
+release=bookworm
+
+# set debug_cache=non-empty-value to run this script using cached data in packages/ from a previous run.
+debug_cache=
 
 packages=()
 
@@ -38,10 +42,9 @@ packages+=("f2fs-tools")
 packages+=("gpgv")
 packages+=("ifupdown")
 packages+=("iproute2")
-packages+=("lsb-base")
+packages+=("sysvinit-utils")
 packages+=("netbase")
 packages+=("netcat-openbsd")
-packages+=("ntpdate")
 packages+=("raspbian-archive-keyring")
 packages+=("debian-archive-keyring")
 packages+=("rng-tools5")
@@ -60,6 +63,7 @@ packages_sha256=
 packages_done=()
 
 download_file() {
+	[ "$debug_cache" ] && return
 	local download_source=$1
 	local download_target=$2
 	local progress_option
@@ -136,7 +140,6 @@ check_key() {
 }
 
 setup_archive_keys() {
-
 	mkdir -m 0700 -p gnupg
 	# Let gpg set itself up already in the 'gnupg' dir before we actually use it
 	echo "Setting up gpg... "
@@ -191,7 +194,7 @@ download_package_list() {
 		if grep -q "${package_section}/binary-armhf/Packages${extension}" "${1}_Release"; then
 
 			# Download Packages file
-			echo -e "\nDownloading ${package_section} package list..."
+			echo -e "\n${1}: Downloading ${package_section} package list..."
 			if ! download_file "${2}/dists/$release/$package_section/binary-armhf/Packages${extension}" "tmp${extension}"; then
 				echo -e "ERROR\nDownloading '${package_section}' package list failed! Exiting."
 				cd ..
@@ -226,7 +229,7 @@ download_package_list() {
 }
 
 download_package_lists() {
-	echo -e "\nDownloading Release file and its signature..."
+	echo -e "\n--- ${1} ---\nDownloading Release file and its signature..."
 	download_file "${2}/dists/$release/Release" "${1}_Release"
 	download_file "${2}/dists/$release/Release.gpg" "${1}_Release.gpg"
 	echo -n "Verifying Release file... "
@@ -239,8 +242,13 @@ download_package_lists() {
 	fi
 
 	echo -n > "${1}_Packages"
-	package_section=firmware
-	download_package_list "${1}" "${2}"
+	if [ "${1}" != "debian" ]; then
+		package_section=firmware
+		download_package_list "${1}" "${2}"
+	else
+		package_section=non-free-firmware
+		download_package_list "${1}" "${2}"
+	fi
 	package_section=main
 	download_package_list "${1}" "${2}"
 	package_section=non-free
@@ -248,7 +256,7 @@ download_package_lists() {
 }
 
 add_packages() {
-	echo -e "\nAdding required packages..."
+	echo -e "\n--- ${1} ---\nAdding required packages..."
 	filter_package_list < "${1}_Packages" >"${1}_Packages.tmp"
 	while true; do
 		libs=()
@@ -319,6 +327,7 @@ download_packages() {
 }
 
 download_remote_file() {
+	[ "$debug_cache" ] && return
 	if [ "${4}" != "" ]; then
 		echo -e "\nDownloading '${4}'..."
 	else
@@ -344,8 +353,10 @@ fi
 
 # Download packages
 (
-	rm -rf packages/
-	mkdir packages && cd packages
+	if [ ! "$debug_cache" ]; then
+		rm -rf packages/
+	fi
+	mkdir -p packages && cd packages
 
 	## Add caching proxy if configured
 	if [ -n "${mirror_raspbian_cache}" ]; then
@@ -365,9 +376,11 @@ fi
 	fi
 
 	## Download package list
-	download_package_lists raspberry "${mirror_raspberrypi}"
-	download_package_lists raspbian "${mirror_raspbian}"
-	download_package_lists debian "${mirror_debian}"
+	if [ ! "$debug_cache" ]; then
+		download_package_lists raspberry "${mirror_raspberrypi}"
+		download_package_lists raspbian "${mirror_raspbian}"
+		download_package_lists debian "${mirror_debian}"
+	fi
 
 	## Select packages for download
 	packages_debs=()
@@ -383,7 +396,9 @@ fi
 	fi
 
 	## Download selected packages
-	download_packages
+	if [ ! "$debug_cache" ]; then
+		download_packages
+	fi
 ) || exit $?
 
 # Download additional resources

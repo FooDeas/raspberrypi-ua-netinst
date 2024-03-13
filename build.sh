@@ -10,6 +10,9 @@ packages_dir=./packages
 resources_dir=./res
 scripts_dir=./scripts
 
+# set cleanup=non-empty-value to remove temporary build files
+cleanup=1
+
 libs_to_copy=()
 
 # update version and date
@@ -163,7 +166,6 @@ function create_cpio {
 	mkdir -p rootfs/usr/sbin/
 	mkdir -p rootfs/usr/share/{dpkg,keyrings,libc-bin}
 	mkdir -p rootfs/var/lib/dpkg/{alternatives,info,parts,updates}
-	mkdir -p rootfs/var/lib/ntpdate
 	mkdir -p rootfs/var/log/
 	mkdir -p rootfs/var/run/
 
@@ -255,7 +257,7 @@ function create_cpio {
 	# busybox components
 	cp_executable tmp/bin/busybox rootfs/bin
 	cd rootfs && ln -s bin/busybox init; cd ..
-	echo "\$MODALIAS=.* 0:0 660 @/opt/busybox/bin/modprobe \"\$MODALIAS\"" > rootfs/etc/mdev.conf
+	echo -e "\$MODALIAS=.* 0:0 660 @/opt/busybox/bin/modprobe \"\$MODALIAS\"\n(null|zero|full|u?random) 0:0 666" > rootfs/etc/mdev.conf
 
 	# bash-static components
 	cp --preserve=xattr,timestamps tmp/bin/bash-static rootfs/bin
@@ -356,7 +358,7 @@ function create_cpio {
 	# iproute2 components
 	cp_executable tmp/bin/ip rootfs/bin/
 
-	# lsb-base components
+	# sysvinit-utils components
 	cp --preserve=xattr,timestamps tmp/lib/lsb/init-functions rootfs/lib/lsb/
 	cp --preserve=xattr,timestamps tmp/lib/lsb/init-functions.d/00-verbose rootfs/lib/lsb/init-functions.d/
 
@@ -367,12 +369,6 @@ function create_cpio {
 
 	# netcat-openbsd
 	cp_executable tmp/bin/nc.openbsd rootfs/bin/nc
-
-	# ntpdate components
-	cp --preserve=xattr,timestamps tmp/etc/default/ntpdate rootfs/etc/default/
-	sed -i s/NTPDATE_USE_NTP_CONF=yes/NTPDATE_USE_NTP_CONF=no/ rootfs/etc/default/ntpdate
-	cp_executable tmp/usr/sbin/ntpdate rootfs/usr/sbin/
-	cp_executable tmp/usr/sbin/ntpdate-debian rootfs/usr/sbin/
 
 	# raspberrypi.org GPG key
 	cp --preserve=xattr,timestamps ../"${packages_dir}"/raspberrypi.gpg.key rootfs/usr/share/keyrings/
@@ -466,7 +462,7 @@ function create_cpio {
 	INITRAMFS="../raspberrypi-ua-netinst.cpio.gz"
 	(cd rootfs && find . | cpio -H newc -ov | gzip --best > $INITRAMFS)
 
-	rm -rf rootfs
+	[ "$cleanup" ] && rm -rf rootfs
 }
 
 # Run update if never run
@@ -549,4 +545,4 @@ cd bootfs && zip -r -9 "../${zipfile}" ./*; cd ..
 mv "${zipfile}" ../
 
 # clean up
-rm -rf tmp
+[ "$cleanup" ] && rm -rf tmp
